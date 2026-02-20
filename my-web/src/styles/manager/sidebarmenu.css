@@ -1,0 +1,207 @@
+/* =========================================
+   1. LAYOUT ENGINE (The Black Space Fix)
+   Apply these classes in landing-page.jsx
+   ========================================= */
+.admin-layout-wrapper {
+  display: flex;             /* Connects Sidebar and Main content */
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;          /* Prevents whole-page scrolling */
+  background-color: #fcf6c4; /* Cream background base */
+}
+
+.main-content-area {
+  flex: 1;                   /* STRETCH: Fills 100% of remaining width */
+  height: 100vh;
+  overflow-y: auto;          /* Only content area scrolls */
+  overflow-x: hidden;        /* Kills the horizontal scroll bug */
+  background-color: #fcf6c4;
+}
+
+/* =========================================
+   2. SIDEBAR STYLING
+   ========================================= */
+.sidebar {
+  width: 260px;              /* Exact requested width */
+  background-color: #f3071d; /* Brand Red */
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  height: 100vh;
+  flex-shrink: 0;            /* Prevents sidebar from being squished */
+  z-index: 100;
+}
+
+.sidebar.collapsed {
+  width: 80px;               /* Compact mode */
+}
+
+/* HEADER & LOGO */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  margin-bottom: 20px;
+  min-height: 60px;
+}
+
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar-logo-container {
+  width: 45px;
+  height: 45px;
+}
+
+.sidebar-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.logo-text h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-family: Georgia, serif;
+  color: #f7dd30; /* Yellow accent */
+  font-weight: bold;
+}
+
+.logo-text p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #ffffff;
+}
+
+/* COLLAPSE BUTTON */
+.collapse-btn {
+  margin-left: auto;
+  background: #f7dd30;
+  color: #1a1815;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar.collapsed .collapse-btn {
+  margin-left: 0;
+  padding: 5px;
+  background: transparent;
+}
+
+.collapse-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+}
+
+/* USER INFO */
+.user-info {
+  padding: 0 20px;
+  margin-bottom: 25px;
+}
+
+.user-info h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-family: Georgia, serif;
+  color: #f7dd30;
+}
+
+.user-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+/* NAVIGATION */
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 15px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border: none;
+  background-color: #fcf6c4; /* Cream items */
+  font-family: Georgia, serif;
+  font-size: 0.9rem;
+  color: #000;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.nav-item:hover, .nav-item.active {
+  background-color: #f7dd30 !important; /* Yellow active state */
+  font-weight: bold;
+  transform: translateX(4px);
+}
+
+.sidebar.collapsed .nav-item:hover {
+  transform: none;
+}
+
+/* FOOTER */
+.sidebar-footer {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.footer-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  border: none;
+  background: #fcf6c4;
+  border-radius: 8px;
+  font-family: Georgia, serif;
+  cursor: pointer;
+  color: #000;
+  transition: 0.2s;
+}
+
+.sidebar.collapsed .footer-nav-item {
+  justify-content: center;
+}
+
+.footer-nav-item:hover {
+  background-color: #f7dd30;
+}
+
+.logout:hover {
+  background-color: #000;
+  color: #fff;
+}
