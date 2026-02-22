@@ -1,5 +1,5 @@
 /* ─── Page Container ──────────────────────────────────────────────────────────*/
-.settings-page-container {
+.seller-settings-page-container {
   animation: fadeIn 0.3s ease;
   gap: 25px;
 }
@@ -16,25 +16,25 @@
 }
 
 /* ─── Header ──────────────────────────────────────────────────────────────────*/
-.settings-header {
+.seller-settings-header {
   margin-bottom: 30px;
 }
 
-.settings-title {
+.seller-settings-title {
   font-size: 1.8rem;
   margin: 0;
   color: #000;
   font-weight: bold;
 }
 
-.settings-subtitle {
+.seller-settings-subtitle {
   color: #888;
   margin: 5px 0 0 0;
   font-size: 1rem;
 }
 
 /* ─── Card ────────────────────────────────────────────────────────────────────*/
-.settings-card {
+.seller-settings-card {
   background: #fff;
   border-radius: 12px;
   padding: 30px;
@@ -44,21 +44,21 @@
 }
 
 /* Card Header */
-.card-header {
+.seller-card-header {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 0.1px;
 }
 
-.header-content {
+.seller-header-content {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 30px;
 }
 
-.profile-icon-container {
+.seller-profile-icon-container {
   width: 45px;
   height: 45px;
   border-radius: 8px;
@@ -68,42 +68,42 @@
   font-size: 1.2rem;
 }
 
-.violet-bg { background: #c026d3; }
-.blue-bg   { background: #0ea5e9; }
+.seller-violet-bg { background: #c026d3; }
+.seller-blue-bg   { background: #0ea5e9; }
 
-.card-title {
+.seller-card-title {
   font-size: 1.25rem;
   font-weight: bold;
   margin: 0;
   color: #000;
 }
 
-.card-subtitle {
+.seller-card-subtitle {
   font-size: 0.9rem;
   color: #888;
   margin: 0.5px 0 0 0;
 }
 
 /* ─── Form ────────────────────────────────────────────────────────────────────*/
-.settings-form {
+.seller-settings-form {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.input-group {
+.seller-input-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.input-group label {
+.seller-input-group label {
   font-weight: bold;
   font-size: 0.95rem;
   color: #000;
 }
 
-.input-group input {
+.seller-input-group input {
   padding: 12px 15px;
   border-radius: 8px;
   border: none;
@@ -112,12 +112,12 @@
   color: #333;
 }
 
-.readonly-input {
+.seller-readonly-input {
   color: #999 !important;
 }
 
 /* ─── Button ──────────────────────────────────────────────────────────────────*/
-.save-changes-btn {
+.seller-save-changes-btn {
   background-color: #dc3545;
   color: white;
   border: none;
@@ -134,18 +134,18 @@
   transition: opacity 0.2s;
 }
 
-.save-changes-btn:hover {
+.seller-save-changes-btn:hover {
   opacity: 0.9;
 }
 
 /* ─── System Information ──────────────────────────────────────────────────────*/
-.system-info-container {
+.seller-system-info-container {
   display: flex;
   flex-direction: column;
   margin-top: 10px;
 }
 
-.info-row {
+.seller-info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -153,20 +153,20 @@
   border-bottom: 1px solid #f0f0f0;
 }
 
-.info-row:last-child {
+.seller-info-row:last-child {
   border-bottom: none;
 }
 
-.info-label {
+.seller-info-label {
   color: #888;
   font-size: 0.95rem;
 }
 
-.info-value {
+.seller-info-value {
   color: #000;
   font-size: 0.95rem;
   text-align: right;
 }
 
-.info-value.mono { font-family: monospace; }
-.info-value.bold { font-weight: bold; }
+.seller-info-value.mono { font-family: monospace; }
+.seller-info-value.bold { font-weight: bold; }

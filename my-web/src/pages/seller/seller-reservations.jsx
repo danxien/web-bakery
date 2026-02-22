@@ -1,14 +1,16 @@
 import React from 'react';
+import { Trash2 } from 'lucide-react';
 import '../../styles/seller/seller-sales.css';
-const SellerReservations = ({ reservations, onUpdateStatus }) => {
+
+const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDelete = () => {} }) => {
   return (
-    <div className="sales-page-container">
-      <div className="sales-header">
-        <h1 className="sales-title">Reservations</h1>
-        <p className="sales-subtitle">Customer cake reservations</p>
+    <div className="seller-sales-container">
+      <div className="seller-sales-header">
+        <h1 className="seller-sales-title">Reservations</h1>
+        <p className="seller-sales-subtitle">Customer cake reservations</p>
       </div>
-      <div className="table-container">
-        <table className="sales-table">
+      <div className="seller-table-container">
+        <table className="seller-sales-table">
           <thead>
             <tr>
               <th>Reserved Date</th>
@@ -19,6 +21,7 @@ const SellerReservations = ({ reservations, onUpdateStatus }) => {
               <th>Amount</th>
               <th>Status</th>
               <th>Actions</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -32,37 +35,34 @@ const SellerReservations = ({ reservations, onUpdateStatus }) => {
                   <td>{res.qty}</td>
                   <td>₱{res.amount.toLocaleString()}</td>
                   <td>
-                    <span className={`status-badge ${res.status?.toLowerCase().replace(/\s/g, '-') || 'pending'}`}>
+                    <span className={`seller-status-badge ${res.status?.toLowerCase().replace(/\s/g, '-') || 'pending'}`}>
                       {res.status || 'Pending'}
                     </span>
                   </td>
                   <td>
                     {res.isCompleted ? (
-                      <span className="completed-text" style={{ color: '#03c04a', fontWeight: 'bold' }}>
-                        Completed
-                      </span>
+                      <span className="seller-completed-text">Completed</span>
                     ) : (
-                      <div className="action-buttons-group">
-                        <button
-                          className="btn-picked-up"
-                          onClick={() => onUpdateStatus(res.id, 'Picked Up')}
-                        >
+                      <div className="seller-action-buttons-group">
+                        <button className="seller-btn-picked-up" onClick={() => onUpdateStatus(res.id, 'Picked Up')}>
                           Picked Up
                         </button>
-                        <button
-                          className="btn-not-picked-up"
-                          onClick={() => onUpdateStatus(res.id, 'Not Picked Up')}
-                        >
+                        <button className="seller-btn-not-picked-up" onClick={() => onUpdateStatus(res.id, 'Not Picked Up')}>
                           Not Picked Up
                         </button>
                       </div>
                     )}
                   </td>
+                  <td>
+                    <button className="seller-delete-btn" onClick={() => onDelete(res.id)}>
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="empty-row">No reservations found.</td>
+                <td colSpan="9" className="seller-empty-row">No reservations found.</td>
               </tr>
             )}
           </tbody>
@@ -71,4 +71,5 @@ const SellerReservations = ({ reservations, onUpdateStatus }) => {
     </div>
   );
 };
+
 export default SellerReservations;

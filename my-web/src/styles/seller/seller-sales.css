@@ -1,36 +1,47 @@
-.sales-page-container {
-  animation: fadeIn 0.3s ease;
+/* ─── Page Container ──────────────────────────────────────────────────────────*/
+.seller-sales-container {
+  animation: sellerFadeIn 0.3s ease;
 }
 
-.sales-header {
+@keyframes sellerFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────────────*/
+.seller-sales-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   margin-bottom: 30px;
 }
 
-.sales-title {
+.seller-sales-title {
   font-size: 1.8rem;
   margin: 0;
   color: #000;
 }
 
-.sales-subtitle {
+.seller-sales-subtitle {
   color: #888;
   margin: 5px 0 0 0;
 }
 
-.table-container {
+/* ─── Table ───────────────────────────────────────────────────────────────────*/
+.seller-table-container {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
-.sales-table {
+.seller-sales-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
 }
 
-.sales-table th {
+.seller-sales-table th {
   padding: 18px 20px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
@@ -38,24 +49,27 @@
   color: #000;
 }
 
-.sales-table td {
+.seller-sales-table td {
   padding: 15px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
 }
 
-.empty-row {
+.seller-empty-row {
   text-align: center;
   padding: 40px !important;
   color: #999;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.seller-no-data {
+  text-align: center;
+  padding: 40px !important;
+  color: #888;
+  background-color: transparent !important;
 }
 
-.status-badge {
+/* ─── Status Badge ────────────────────────────────────────────────────────────*/
+.seller-status-badge {
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 0.85rem;
@@ -64,66 +78,87 @@
   font-family: Georgia, serif;
 }
 
-.status-badge.pending { background-color: #f1f3f5; color: #495057; }
-.status-badge.picked-up { background-color: #28a745; color: white; }
-.status-badge.not-picked-up { background-color: #dc3545; color: white; }
+.seller-status-badge.pending        { background-color: #f1f3f5; color: #495057; }
+.seller-status-badge.picked-up      { background-color: #28a745; color: white; }
+.seller-status-badge.not-picked-up  { background-color: #dc3545; color: white; }
 
-.action-buttons-group {
+/* ─── Delete Button ───────────────────────────────────────────────────────────*/
+.seller-delete-btn {
   display: flex;
-  gap: 8px;
-}
-
-.btn-picked-up, .btn-not-picked-up {
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-family: Georgia, serif;
-  font-weight: 500;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  background: transparent;
+  color: #dc3545;
   cursor: pointer;
-  background-color: white;
   transition: all 0.2s;
 }
 
-.btn-picked-up {
-  border: 1px solid #28a745;
-  color: #28a745;
-}
-
-.btn-picked-up:hover {
-  background-color: #28a745;
-  color: white;
-}
-
-.btn-not-picked-up {
-  border: 1px solid #dc3545;
-  color: #dc3545;
-}
-
-.btn-not-picked-up:hover {
+.seller-delete-btn:hover {
   background-color: #dc3545;
   color: white;
 }
 
-.completed-text {
+/* ─── Action Buttons ──────────────────────────────────────────────────────────*/
+.seller-action-buttons-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seller-btn-picked-up,
+.seller-btn-not-picked-up {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: Georgia, serif;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  background-color: white;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seller-btn-picked-up {
+  border: 1px solid #28a745;
+  color: #28a745;
+}
+
+.seller-btn-picked-up:hover {
+  background-color: #28a745;
+  color: white;
+}
+
+.seller-btn-not-picked-up {
+  border: 1px solid #dc3545;
+  color: #dc3545;
+}
+
+.seller-btn-not-picked-up:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* ─── Misc Text ───────────────────────────────────────────────────────────────*/
+.seller-completed-text {
   font-family: Georgia, serif;
   color: #000000;
   font-size: 0.95rem;
-  opacity: 0.6;
+  font-weight: bold;
+  opacity: 1;
 }
 
-.instructions-text {
+.seller-instructions-text {
   display: block;
-  max-width: 250px; 
+  max-width: 250px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: #666;
   font-style: italic;
   font-size: 0.9rem;
-}
-
-.no-data {
-  text-align: center;
-  padding: 40px !important;
-  color: #888;
-  background-color: transparent !important;
 }
