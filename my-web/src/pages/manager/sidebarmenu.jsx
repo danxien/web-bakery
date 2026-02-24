@@ -80,7 +80,11 @@ export default function SidebarMenu({ activePage, onNavigate, collapsed, onToggl
 
       {/* ── Footer ── */}
       <div className="sidebar-footer">
-        <button className="footer-nav-item">
+        {/* ✅ Settings now has active state + triggers onNavigate */}
+        <button
+          className={`footer-nav-item ${activePage === "settings" ? "active" : ""}`}
+          onClick={() => onNavigate("settings")}
+        >
           <Settings size={20} />
           {!collapsed && <span>Settings</span>}
         </button>

@@ -12,6 +12,8 @@ import '../../styles/seller/seller-section.css';
 import SellerSales from './seller-sales';
 import SellerReservations from './seller-reservations';
 import SellerCustom from './seller-custom';
+import SellerDeliveries from './seller-deliveries';
+import SellerInventory from './seller-inventory';
 import SellerMessages from './seller-messages';
 import SellerSettings from './seller-settings';
 
@@ -346,8 +348,8 @@ const SellerSection = ({ onLogout }) => {
         )}
 
         {activeTab === 'sales' && <SellerSales transactions={salesHistory} onDelete={handleDeleteSale} />}
-        {activeTab === 'inventory' && <h1>Inventory Content Coming Soon...</h1>}
-        {activeTab === 'deliveries' && <h1>Deliveries Content Coming Soon...</h1>}
+        {activeTab === 'inventory' && <SellerInventory />}
+        {activeTab === 'deliveries' && <SellerDeliveries />}
         {activeTab === 'custom' && <SellerCustom customOrders={customOrdersList} onDelete={handleDeleteCustomOrder} />}
         {activeTab === 'messages' && <SellerMessages onOpenMessageModal={() => openModal(setIsMsgModalOpen)} />}
         {activeTab === 'reservations' && (
