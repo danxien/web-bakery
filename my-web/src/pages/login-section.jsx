@@ -4,18 +4,18 @@ import '../styles/login-section.css';
 import logo from '../assets/logo.png';
 
 const LoginSection = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username,     setUsername]     = useState('');
+  const [password,     setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error,        setError]        = useState('');
 
   const handleLogin = () => {
     if (username === 'packer' && password === 'packer123') {
-      onLogin('packer');
+      onLogin('packer', username);
     } else if (username === 'seller' && password === 'seller123') {
-      onLogin('seller');
+      onLogin('seller', username);
     } else if (username === 'manager' && password === 'manager123') {
-      onLogin('manager');
+      onLogin('manager', username);
     } else {
       setError('Invalid Account. Please try again.');
     }

@@ -29,8 +29,10 @@
   padding: 15px 0;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100vh;
+  max-height: 100vh;        /* ← ADD THIS */
   flex-shrink: 0;
   z-index: 100;
+  overflow: hidden;         /* ← ADD THIS */
 }
 
 .sidebar.collapsed {
@@ -121,7 +123,29 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 0 15px;
+  padding: 8px 15px 12px 15px;
+  overflow-y: auto;
+  min-height: 0;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 99px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45);
 }
 
 .nav-item {
@@ -182,6 +206,7 @@
   flex-direction: column;
   gap: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;           /* ← ADD THIS — prevents footer from being squeezed */
 }
 
 .footer-nav-item {
@@ -230,3 +255,4 @@
 }
 
 .logout:hover svg { color: #fff; }
+

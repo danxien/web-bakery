@@ -1,0 +1,578 @@
+/* =============================================================
+   customOrders.css
+   STRUCTURAL MIRROR of inventoryOverview.css
+   Every spacing, radius, shadow, font-size, color value is
+   copied verbatim from inventoryOverview.css.
+   Only class names and content-specific additions differ.
+   ============================================================= */
+
+/* ── Animation — identical to inventory ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.co-page-container {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ── Header — identical values to .inventory-header ── */
+.co-header {
+  margin-bottom: 30px;            /* == .inventory-header */
+}
+
+.co-title {
+  font-family: Georgia, serif;    /* == .inventory-title */
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.co-subtitle {
+  color: #888;                    /* == .inventory-subtitle */
+  margin: 5px 0 0 0;
+}
+
+/* =========================================================
+   METRIC CARDS — identical to .metrics-row / .metric-card
+   metric-cards are <button> here (clickable) but every
+   visual property is copied from the inventory <div>.
+   ========================================================= */
+.co-metrics-row {
+  display: flex;                  /* == .metrics-row */
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.co-metric-card {
+  flex: 1;                        /* == .metric-card */
+  background: #fff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* button resets — keep visual identical to div */
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.co-metric-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
+  transform: translateY(-1px);
+}
+.co-metric-card.is-active {
+  outline: 2px solid #e5c800;
+  outline-offset: 2px;
+}
+
+.co-card-top {
+  display: flex;                  /* == .card-top */
+  justify-content: space-between;
+  align-items: center;
+}
+
+.co-metric-label {
+  font-size: 0.875rem;            /* == .metric-label */
+  font-weight: 600;
+  color: #333;
+}
+
+/* Icon colours — identical to .blue-icon / .green-icon / .yellow-icon */
+.co-blue-icon   { color: #6366f1; }
+.co-green-icon  { color: #22c55e; }
+.co-yellow-icon { color: #eab308; }
+
+.co-card-bottom {
+  display: flex;                  /* == .card-bottom */
+  flex-direction: column;
+  gap: 2px;
+}
+
+.co-metric-value {
+  font-family: Georgia, serif;    /* == .metric-value */
+  font-size: 1.9rem;
+  font-weight: bold;
+  color: #111;
+  line-height: 1.1;
+}
+
+.co-metric-subtext {
+  font-size: 0.78rem;             /* == .metric-subtext */
+  color: #999;
+}
+
+/* =========================================================
+   ALERTS — identical to .alerts-container / .alert-wrapper
+   alert rows are <button> here (clickable to filter table)
+   but every visual property is copied from inventory <div>.
+   ========================================================= */
+.co-alerts-container {
+  display: flex;                  /* == .alerts-container */
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.co-alert-wrapper {
+  background: #fff;               /* == .alert-wrapper */
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 10px 12px;
+}
+
+.co-alert-row {
+  display: flex;                  /* == .alert-row */
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-left: 4px solid transparent;
+  /* button resets */
+  width: 100%;
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  text-align: left;
+  cursor: pointer;
+  transition: filter 0.13s;
+}
+.co-alert-row:hover       { filter: brightness(0.95); }
+.co-alert-row.is-active   { filter: brightness(0.90); }
+
+.co-alert-row.critical {
+  background: #fee2e2;            /* == .alert-row.critical */
+  color: #b91c1c;
+  border-left-color: #ef4444;
+}
+
+.co-alert-row.warning {
+  background: #fef9c3;            /* == .alert-row.warning */
+  color: #854d0e;
+  border-left-color: #eab308;
+}
+
+.co-alert-count {
+  font-family: Georgia, serif;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-right: 2px;
+}
+
+.co-alert-arrow {
+  margin-left: auto;
+  font-size: 0.85rem;
+  opacity: 0.45;
+}
+
+/* =========================================================
+   TABLE CONTAINER — identical to .table-container
+   ========================================================= */
+.co-table-container {
+  background: #fff;               /* == .table-container */
+  border-radius: 12px;
+  /* overflow: visible so the filter dropdown can escape the container */
+  overflow: visible;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  /* Clamp table container height to remaining viewport space. */
+  max-height: calc(100vh - 60px);
+}
+
+
+/* Toolbar — identical to .table-toolbar */
+.co-table-toolbar {
+  display: flex;                  /* == .table-toolbar */
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0; /* toolbar never shrinks when container is height-constrained */
+}
+
+.co-table-section-title {
+  font-family: Georgia, serif;    /* == .table-section-title */
+  font-size: 1rem;
+  font-weight: bold;
+  color: #222;
+}
+
+/* Table count pill — sits beside title, same row */
+.co-table-count-pill {
+  font-size: 0.78rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+
+/* Search inputs inside toolbar */
+.co-toolbar-search {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #333;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.co-toolbar-search:focus { border-color: #e5c800; }
+
+/* Filter button — identical to .filter-icon-btn */
+.co-filter-icon-btn {
+  display: flex;                  /* == .filter-icon-btn */
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.co-filter-icon-btn:hover,
+.co-filter-icon-btn.open {
+  background: #f7dd30;            /* == .filter-icon-btn:hover */
+  border-color: #e5c800;
+  color: #111;
+}
+
+/* Filter dropdown — identical to .filter-dropdown-wrapper / .filter-dropdown */
+.co-filter-dropdown-wrapper {
+  position: relative;             /* == .filter-dropdown-wrapper */
+}
+
+.co-filter-dropdown {
+  position: absolute;             /* == .filter-dropdown */
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 148px;
+}
+
+.co-dropdown-item {
+  display: block;                 /* == .dropdown-item */
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+.co-dropdown-item:hover    { background: #fcf6c4; }    /* == .dropdown-item:hover */
+.co-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+
+/* =========================================================
+   TABLE SCROLL WRAPPER
+   Scrolls only the table body area; toolbar + pagination
+   remain fixed at top/bottom of the container.
+   ========================================================= */
+.co-table-scroll-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  /* Subtle scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+.co-table-scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.co-table-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.co-table-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+.co-table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
+/* ── Table — identical values to .inventory-table ── */
+.co-orders-table {
+  width: 100%;                    /* == .inventory-table */
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.co-orders-table thead th {
+  position: sticky;               /* Freeze header while table body scrolls */
+  top: 0;
+  z-index: 2;
+}
+
+.co-orders-table th {
+  padding: 18px 20px;             /* == .inventory-table th */
+  background-color: #fff;
+  border-bottom: 2px solid #fcf6c4;
+  font-weight: bold;
+  font-family: Georgia, serif;
+  color: #000;
+  white-space: nowrap;
+}
+
+.co-orders-table td {
+  padding: 18px 20px;             /* == .inventory-table td */
+  border-bottom: 1px solid #eee;
+  color: #333;
+  vertical-align: middle;
+}
+
+.co-orders-table tbody tr:last-child td {
+  border-bottom: none;            /* == .inventory-table tbody tr:last-child td */
+}
+
+.co-orders-table tbody tr:hover {
+  background-color: #fffde8;     /* == .inventory-table tbody tr:hover */
+}
+
+/* ── Cell helpers ── */
+.co-cake-name-text { font-weight: 500; }   /* == .cake-name-text */
+
+.co-order-id-text  { font-weight: 600; color: #6366f1; font-size: 0.85rem; }
+.co-price-text     { font-weight: 600; color: #22c55e; }
+
+.co-instructions-text {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: #888;
+  display: block;
+}
+
+.co-pickup-text            { font-weight: 600; font-size: 0.85rem; }
+.co-pickup-text.is-today   { color: #854d0e; }
+.co-pickup-text.is-overdue { color: #b91c1c; }
+
+.co-created-by-text { font-size: 0.8rem; color: #999; }
+.co-updated-text    { font-size: 0.8rem; color: #bbb; font-style: italic; }
+
+/* Status pills — identical structure to .status-pill */
+.co-status-pill {
+  display: inline-block;          /* == .status-pill */
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.co-status-pill.pending       { background: #fef9c3; color: #854d0e; }
+.co-status-pill.approved      { background: #e0e7ff; color: #3730a3; }
+.co-status-pill.in-production { background: #f3e8ff; color: #6b21a8; }
+.co-status-pill.ready         { background: #dcfce7; color: #166534; }
+.co-status-pill.delivered     { background: #d1fae5; color: #065f46; }
+.co-status-pill.declined      { background: #f3f4f6; color: #6b7280; }
+.co-status-pill.overdue       { background: #fee2e2; color: #991b1b; }
+
+/* No data — identical to .no-data */
+.co-no-data {
+  text-align: center;             /* == .no-data */
+  padding: 40px !important;
+  color: #888;
+}
+
+/* View button */
+.co-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.co-view-btn:hover {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+/* ── Pagination — sits inside .co-table-container after table ── */
+.co-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0; /* pagination never shrinks when container is height-constrained */
+}
+
+.co-pagination-info {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.co-pagination-btns { display: flex; gap: 4px; }
+
+.co-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+.co-page-btn:hover     { background: #fcf6c4; border-color: #e5c800; }
+.co-page-btn.active    { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.co-page-btn:disabled  { opacity: 0.38; cursor: not-allowed; }
+
+/* ── Modal — order detail / timeline ── */
+.co-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.co-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.co-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 28px 20px;
+  border-bottom: 2px solid #fcf6c4;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+
+.co-modal-cake-name {
+  font-family: Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+
+.co-modal-close-btn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: transparent;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.co-modal-close-btn:hover { background: #fee2e2; color: #b91c1c; border-color: transparent; }
+
+.co-modal-body {
+  padding: 24px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.co-modal-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.co-info-item              { display: flex; flex-direction: column; gap: 3px; }
+.co-info-item.full-width   { grid-column: span 2; }
+
+.co-info-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.co-info-value             { font-size: 0.88rem; color: #222; line-height: 1.4; }
+.co-info-value.price-val   { font-family: Georgia, serif; font-size: 1.15rem; font-weight: bold; color: #22c55e; }
+.co-info-value.instructions-val {
+  padding: 10px 12px;
+  background: #fefce8;
+  border-radius: 8px;
+  border-left: 3px solid #eab308;
+  font-style: italic;
+  color: #555;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.co-modal-section-title {
+  font-family: Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #fcf6c4;
+}
+
+/* =========================================================
+   RESPONSIVE — identical breakpoint to inventory
+   ========================================================= */
+@media (max-width: 768px) {
+  .co-metrics-row     { flex-direction: column; }   /* == .metrics-row @768px */
+  .co-modal-info-grid { grid-template-columns: 1fr; }
+  .co-info-item.full-width { grid-column: span 1; }
+}
