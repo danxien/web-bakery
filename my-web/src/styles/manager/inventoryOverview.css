@@ -1,8 +1,25 @@
-.inventory-page-container {
-  animation: fadeIn 0.3s ease;
+/* =============================================================
+   inventoryOverview.css
+   Mirrors the structure of customOrders.css / reservationOverview.css.
+   All spacing, radius, shadow, font-size, and color values
+   are kept consistent across manager pages.
+   ============================================================= */
+
+/* ── Animation ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* HEADER — mirrors .sales-header exactly */
+.inventory-page-container {
+  animation: fadeIn 0.3s ease;
+  /* Sidebar-safe: never overflow the content area */
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
 .inventory-header {
   margin-bottom: 30px;
 }
@@ -21,16 +38,17 @@
 }
 
 /* =========================================================
-   METRICS ROW
+   METRIC CARDS — static display, NOT clickable
    ========================================================= */
 .metrics-row {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .metric-card {
-  flex: 1;
+  flex: 1 1 200px;
   background: #fff;
   padding: 18px 20px;
   border-radius: 12px;
@@ -38,6 +56,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
+  /* No cursor, no hover, no transition — display-only */
 }
 
 .card-top {
@@ -52,9 +72,9 @@
   color: #333;
 }
 
-.blue-icon  { color: #6366f1; }
-.green-icon { color: #22c55e; }
-.yellow-icon{ color: #eab308; }
+.blue-icon   { color: #6366f1; }
+.green-icon  { color: #22c55e; }
+.yellow-icon { color: #eab308; }
 
 .card-bottom {
   display: flex;
@@ -94,14 +114,26 @@
 
 .alert-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;   /* top-align icon with multi-line text */
   gap: 12px;
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
   border-left: 4px solid transparent;
+  line-height: 1.5;
+  /* Button reset — visually identical to the old <div>, now interactive */
+  width: 100%;
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  text-align: left;
+  cursor: pointer;
+  transition: filter 0.13s;
 }
+.alert-row:hover     { filter: brightness(0.95); }
+.alert-row.is-active { filter: brightness(0.90); }
 
 .alert-row.critical {
   background: #fee2e2;
@@ -116,22 +148,31 @@
 }
 
 /* =========================================================
-   TABLE — mirrors .table-container from reference
+   TABLE CONTAINER — sidebar-safe flex column
    ========================================================= */
 .table-container {
   background: #fff;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;              /* allow dropdown to escape */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Toolbar inside the white card */
+/* Toolbar */
 .table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px 0;
   margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .table-section-title {
@@ -139,6 +180,16 @@
   font-size: 1rem;
   font-weight: bold;
   color: #222;
+}
+
+/* Count pill — sits beside title */
+.inventory-count-pill {
+  font-size: 0.78rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
 }
 
 /* Filter button */
@@ -178,7 +229,7 @@
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   overflow: hidden;
-  z-index: 100;
+  z-index: 10000;
   min-width: 148px;
 }
 
@@ -198,11 +249,37 @@
 .dropdown-item:hover    { background: #fcf6c4; }
 .dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
 
-/* Table — mirrors .sales-table */
+/* =========================================================
+   TABLE SCROLL WRAPPER — sidebar-safe
+   ========================================================= */
+.inventory-table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+.inventory-table-scroll::-webkit-scrollbar       { width: 6px; height: 6px; }
+.inventory-table-scroll::-webkit-scrollbar-track { background: transparent; }
+.inventory-table-scroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+.inventory-table-scroll::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+/* ── Table ── */
 .inventory-table {
   width: 100%;
+  min-width: 760px;              /* prevents column crush; wrapper handles scroll */
   border-collapse: collapse;
   text-align: left;
+}
+
+.inventory-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .inventory-table th {
@@ -212,12 +289,14 @@
   font-weight: bold;
   font-family: Georgia, serif;
   color: #000;
+  white-space: nowrap;
 }
 
 .inventory-table td {
   padding: 18px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
+  vertical-align: middle;
 }
 
 .inventory-table tbody tr:last-child td {
@@ -228,26 +307,48 @@
   background-color: #fffde8;
 }
 
-.cake-name-text { font-weight: 500; }
-
-.qty-low {
-  color: #dc3545;
-  font-weight: bold;
+/* Expired row — subtle muted tint so manager can spot at a glance */
+.inventory-table tbody tr.row-expired {
+  background-color: #fef2f2;
+}
+.inventory-table tbody tr.row-expired:hover {
+  background-color: #fee2e2;
 }
 
-/* Status badges */
+/* ── Cell helpers ── */
+.cake-name-text { font-weight: 500; }
+
+/* Quantity — red + bold when at or below low stock threshold */
+.qty-low {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Price — green, matches revenue styling across pages */
+.price-text {
+  font-weight: 600;
+  color: #22c55e;
+}
+
+/* Expiry date — colour-coded by urgency */
+.expiry-soon    { color: #854d0e; font-weight: 600; }
+.expiry-overdue { color: #b91c1c; font-weight: 700; }
+
+/* ── Status pills ── */
 .status-pill {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .status-pill.fresh       { background: #dcfce7; color: #166534; }
 .status-pill.near-expiry { background: #fef9c3; color: #854d0e; }
 .status-pill.expired     { background: #fee2e2; color: #991b1b; }
 
+/* No data */
 .no-data {
   text-align: center;
   padding: 40px !important;
@@ -255,18 +356,8 @@
 }
 
 /* =========================================================
-   ANIMATION — same as reference
-   ========================================================= */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .metrics-row {
-    flex-direction: column;
-  }
+  .metrics-row { flex-direction: column; }
 }

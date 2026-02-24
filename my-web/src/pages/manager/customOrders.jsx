@@ -402,10 +402,7 @@ const CustomOrders = () => {
       <div className="co-metrics-row">
 
         {/* Total Custom Orders */}
-        <button
-          className={`co-metric-card ${quickFilter === NO_QUICK && statusFilter === 'All' ? 'is-active' : ''}`}
-          onClick={() => { setQuickFilter(NO_QUICK); setStatusFilter('All'); setPage(1); }}
-        >
+        <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Total Custom Orders</span>
             <ShieldCheck className="co-blue-icon" size={20} />
@@ -414,13 +411,10 @@ const CustomOrders = () => {
             <span className="co-metric-value">{totalOrders}</span>
             <span className="co-metric-subtext">All orders on record</span>
           </div>
-        </button>
+        </div>
 
         {/* Revenue */}
-        <button
-          className={`co-metric-card ${quickFilter === 'revenue' ? 'is-active' : ''}`}
-          onClick={() => activateQuick('revenue')}
-        >
+        <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Custom Orders Revenue</span>
             <CircleDollarSign className="co-green-icon" size={20} />
@@ -429,25 +423,21 @@ const CustomOrders = () => {
             <span className="co-metric-value">₱{revenueTotal.toLocaleString()}</span>
             <span className="co-metric-subtext">Excl. Pending &amp; Declined</span>
           </div>
-        </button>
+        </div>
 
         {/* FIX #3: Pending Approval — updated subtext */}
-        <button
-          className={`co-metric-card ${quickFilter === 'pending' ? 'is-active' : ''}`}
-          onClick={() => activateQuick('pending')}
-        >
+        <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Pending Approval</span>
             <ClipboardList className="co-yellow-icon" size={20} />
           </div>
           <div className="co-card-bottom">
             <span className="co-metric-value">{pendingCount}</span>
-            {/* FIX #3: Replaced "Awaiting Manager review" */}
             <span className="co-metric-subtext">
               {pendingCount === 1 ? 'Pending cake order' : 'Pending cake orders'}
             </span>
           </div>
-        </button>
+        </div>
 
       </div>
 

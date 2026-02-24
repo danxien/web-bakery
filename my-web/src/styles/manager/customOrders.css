@@ -62,17 +62,8 @@
   gap: 10px;
   border: none;
   text-align: left;
-  cursor: pointer;
-  transition: box-shadow 0.15s, transform 0.15s;
   min-width: 0;                   /* FIX #1: Prevent overflow in flex child */
-}
-.co-metric-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
-  transform: translateY(-1px);
-}
-.co-metric-card.is-active {
-  outline: 2px solid #e5c800;
-  outline-offset: 2px;
+  /* Display-only — no cursor, no hover, no transition */
 }
 
 .co-card-top {
