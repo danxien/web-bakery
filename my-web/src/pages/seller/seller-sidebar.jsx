@@ -50,7 +50,7 @@ export default function SellerSidebar({
         )}
       </div>
 
-      {/* ── User Info w/ collapsed ── */}
+      {/* ── User Info with collapsed */}
       {!collapsed && (
         <div className="seller-user-info">
           <h3>{fullName}</h3>
