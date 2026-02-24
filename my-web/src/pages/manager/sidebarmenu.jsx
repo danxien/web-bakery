@@ -1,32 +1,35 @@
 // ─── Imports ──────────────────────────────────────────────────────────────────
-// Third-party Libraries
 import {
   LayoutDashboard, Package, BarChart3, ClipboardList,
-  Users, Truck, MessageSquare, Settings, LogOut, FileText
+  Users, Truck, MessageSquare, Settings, LogOut, FileText, CalendarCheck
 } from "lucide-react";
 
-// Assets
 import logo from "../../assets/logo.png";
-
-// Styles
 import "../../styles/manager/sidebarmenu.css";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: "dashboard",    label: "Dashboard",       icon: LayoutDashboard },
-  { key: "inventory",    label: "Inventory",        icon: Package },
-  { key: "sales",        label: "Sales",            icon: BarChart3 },
-  { key: "customOrders", label: "Custom Orders",    icon: ClipboardList },
-  { key: "reports",      label: "Reports",          icon: FileText },
-  { key: "deliveries",   label: "Deliveries",       icon: Truck },
-  { key: "messages",     label: "Messages",         icon: MessageSquare },
-  { key: "users",        label: "User Management",  icon: Users },
+  { key: "dashboard",    label: "Dashboard",      icon: LayoutDashboard },
+  { key: "inventory",    label: "Inventory",       icon: Package },
+  { key: "deliveries",   label: "Deliveries",      icon: Truck },
+  { key: "reservations", label: "Reservations",    icon: CalendarCheck },
+  { key: "customOrders", label: "Custom Orders",   icon: ClipboardList },
+  { key: "sales",        label: "Sales",           icon: BarChart3 },
+  { key: "reports",      label: "Reports",         icon: FileText },
+  { key: "messages",     label: "Messages",        icon: MessageSquare },
+  { key: "users",        label: "User Management", icon: Users },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function SidebarMenu({ activePage, onNavigate, collapsed, onToggle, onLogout }) {
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+// managerName — passed down from ManagerLandingPage, updated by ManagerSettings
+export default function SidebarMenu({
+  activePage,
+  onNavigate,
+  collapsed,
+  onToggle,
+  onLogout,
+  managerName = 'Manager',   // replaces hardcoded "Dadi Rob"
+}) {
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
 
@@ -34,7 +37,6 @@ export default function SidebarMenu({ activePage, onNavigate, collapsed, onToggl
       <div className="sidebar-header">
         {!collapsed && (
           <div className="logo-group">
-            {/* Logo acts as collapse toggle */}
             <div className="sidebar-logo-container" onClick={onToggle}>
               <img src={logo} alt="Regis Logo" className="sidebar-logo-img" />
             </div>
@@ -44,8 +46,6 @@ export default function SidebarMenu({ activePage, onNavigate, collapsed, onToggl
             </div>
           </div>
         )}
-
-        {/* Collapsed: logo is centered and still acts as toggle */}
         {collapsed && (
           <div className="sidebar-logo-container" onClick={onToggle}>
             <img src={logo} alt="Regis Logo" className="sidebar-logo-img" />
@@ -56,7 +56,7 @@ export default function SidebarMenu({ activePage, onNavigate, collapsed, onToggl
       {/* ── User Info — hidden when collapsed ── */}
       {!collapsed && (
         <div className="user-info">
-          <h3>Dadi Rob</h3>
+          <h3>{managerName}</h3>   {/* dynamic — updates live from Settings */}
           <p>Manager</p>
         </div>
       )}
@@ -80,7 +80,6 @@ export default function SidebarMenu({ activePage, onNavigate, collapsed, onToggl
 
       {/* ── Footer ── */}
       <div className="sidebar-footer">
-        {/* ✅ Settings now has active state + triggers onNavigate */}
         <button
           className={`footer-nav-item ${activePage === "settings" ? "active" : ""}`}
           onClick={() => onNavigate("settings")}
