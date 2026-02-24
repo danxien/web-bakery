@@ -7,8 +7,6 @@ import {
   Wallet,
   Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -33,26 +31,17 @@ export default function PackerSidebar({
   return (
     <aside className={sidebarClass}>
       <div className="packer-sidebar-header">
-        {!isMinimized && (
-          <div className="packer-logo-group">
-            <div className="packer-logo-wrap">
-              <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
-            </div>
+        <div className="packer-logo-group" onClick={onToggleMinimize} style={{ cursor: 'pointer' }}>
+          <div className="packer-logo-wrap">
+            <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
+          </div>
+          {!isMinimized && (
             <div className="packer-logo-text">
               <h2>Regis Cake Shop</h2>
               <p>Main Branch</p>
             </div>
-          </div>
-        )}
-        {isMinimized && (
-          <div className="packer-logo-wrap packer-logo-wrap-collapsed">
-            <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
-          </div>
-        )}
-
-        <button className="packer-minimize-btn" onClick={onToggleMinimize} aria-label="Toggle sidebar">
-          {isMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+          )}
+        </div>
       </div>
 
       {!isMinimized && (
@@ -70,10 +59,18 @@ export default function PackerSidebar({
               key={item.id}
               className={`packer-nav-item ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => onTabChange(item.id)}
+              title={isMinimized ? item.label : ''}
             >
-              <Icon size={18} />
-              {!isMinimized && <span>{item.label}</span>}
-              {item.id === 'messages' && !isMinimized && <span className="packer-badge">{unreadCount}</span>}
+              <Icon size={20} />
+              {/* Labels and unread numbers only show when NOT minimized */}
+              {!isMinimized && (
+                <>
+                  <span>{item.label}</span>
+                  {item.id === 'messages' && unreadCount > 0 && (
+                    <span className="packer-badge">{unreadCount}</span>
+                  )}
+                </>
+              )}
             </button>
           );
         })}
@@ -81,11 +78,14 @@ export default function PackerSidebar({
 
       <div className="packer-sidebar-footer">
         <button className="packer-footer-item">
-          <Settings size={18} />
+          <Settings size={20} />
           {!isMinimized && <span>Settings</span>}
         </button>
-        <button className="packer-footer-item" onClick={() => onLogout?.('guest')}>
-          <LogOut size={18} />
+        <button 
+          className="packer-footer-item packer-logout" 
+          onClick={() => onLogout?.('guest')}
+        >
+          <LogOut size={20} />
           {!isMinimized && <span>Logout</span>}
         </button>
       </div>

@@ -1,61 +1,76 @@
+/* ─── Variables & Setup ─────────────────────────────────────────────────────── */
 :root {
   --pack-red: #f3071d;
   --pack-yellow: #f7dd30;
   --pack-cream: #fcf6c4;
   --pack-bg: #e9e5ba;
-  --pack-card: #f3f3f3;
-  --pack-text: #111111;
+  --pack-card: #ffffff;      /* Changed to white to match Seller aesthetic */
+  --pack-text: #000000;
   --pack-muted: #666666;
-  --ok: #20a35b;
-  --warn: #b88700;
-  --danger: #d33939;
+  
+  /* Seller Dashboard Shadows */
+  --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 15px rgba(0, 0, 0, 0.1);
+  --font-main: 'Georgia', serif;
 }
 
-html,
-body {
+/* 1. VIEWPORT LOCK: Eliminates the "Black Space" bug */
+html, body {
   margin: 0;
   padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent body scroll to stop layout shifting */
 }
 
+/* 2. THE MAIN WRAPPER (Full Viewport) */
 .packer-dashboard-container {
   display: flex;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
   background: var(--pack-bg);
   color: var(--pack-text);
-  font-family: Georgia, serif;
+  font-family: var(--font-main);
   position: relative;
   overflow: hidden;
 }
 
+/* 3. THE FLEXIBLE CONTENT AREA */
 .packer-main-content {
-  flex: 1;
-  min-width: 0;
+  flex: 1;                 /* Consumes all space next to sidebar */
+  min-width: 0;            /* Prevents flex-item overflow */
   height: 100vh;
-  padding: 24px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  padding: 40px;           /* Increased for Seller Dashboard feel */
+  overflow-y: auto;        /* Content scrolls here, not the whole page */
+  overflow-x: hidden;      /* Kills the horizontal gap */
+  display: flex;
+  flex-direction: column;
 }
 
+/* 4. SELLER-STYLE CARDS */
 .packer-table-card,
 .packer-panel-card {
-  background: #f0f0f0;
-  border: 1px solid #d8d8d8;
-  border-radius: 12px;
-  padding: 14px;
+  background: var(--pack-card);
+  border: none;            /* Removed the thin gray border */
+  border-radius: 20px;     /* Match Seller radius */
+  padding: 25px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 .packer-table-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-  gap: 8px;
+  margin-bottom: 15px;
+  gap: 12px;
 }
 
 .packer-table-head h3,
 .packer-panel-card h3 {
   margin: 0;
+  font-weight: bold;
   font-size: clamp(1.45rem, 2.6vw, 2.1rem);
 }
 
@@ -64,97 +79,57 @@ body {
   color: var(--pack-muted);
 }
 
-.packer-table-head button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #cccccc;
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 7px 10px;
-  cursor: pointer;
-}
-
+/* ─── Table Styling ─────────────────────────────────────────────────────────── */
 .packer-table-wrap {
   overflow-x: auto;
+  width: 100%;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.94rem;
-  min-width: 680px;
+  font-size: 0.95rem;
 }
 
 thead th {
   text-align: left;
-  padding: 11px 8px;
-  border-bottom: 1px solid #dadada;
-  white-space: nowrap;
+  padding: 15px 10px;
+  border-bottom: 2px solid var(--pack-bg);
+  color: var(--pack-muted);
+  font-weight: bold;
 }
 
 tbody td {
-  padding: 11px 8px;
-  border-bottom: 1px solid #e6e6e6;
-  white-space: nowrap;
+  padding: 15px 10px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
+/* ─── Status Chips (Seller Palette) ────────────────────────────────────────── */
 .status-chip {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: bold;
 }
 
-.status-chip.ok {
-  background: #d5f4e2;
-  color: #0f7a44;
-}
+.status-chip.ok     { background: #d5f4e2; color: #03c04a; }
+.status-chip.warn   { background: var(--pack-yellow); color: #000; }
+.status-chip.danger { background: var(--pack-red); color: #fff; }
 
-.status-chip.warn {
-  background: #fff2bf;
-  color: #926c00;
-}
-
-.status-chip.danger {
-  background: #ffd8d8;
-  color: #9f1f1f;
-}
-
-.mt-14 {
-  margin-top: 14px;
-}
-
-@media (max-width: 1024px) {
-  .packer-main-content {
-    padding: 18px;
-  }
+/* ─── Utility & Animations ──────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 900px) {
   .packer-dashboard-container {
     flex-direction: column;
-    height: auto;
-    overflow: visible;
+    overflow-y: auto;
   }
-
   .packer-main-content {
-    width: 100%;
     height: auto;
-    padding: 14px;
+    padding: 20px;
     overflow: visible;
   }
 }
-
-@media (max-width: 600px) {
-  .packer-table-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .packer-table-head button {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
