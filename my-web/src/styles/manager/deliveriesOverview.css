@@ -1,0 +1,397 @@
+/* =============================================================
+   deliveriesOverview.css
+   STRUCTURAL MIRROR of reservationOverview.css
+   Every spacing, radius, shadow, font-size, color value is
+   copied verbatim from reservationOverview.css.
+   Only class names (.do- prefix) and delivery-specific
+   status pills and date highlight colors differ.
+   ============================================================= */
+
+/* ── Animation ── */
+@keyframes do-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.do-page-container {
+  animation: do-fadeIn 0.3s ease;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.do-header {
+  margin-bottom: 30px;
+}
+
+.do-title {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.do-subtitle {
+  color: #888;
+  margin: 5px 0 0 0;
+}
+
+/* =========================================================
+   METRIC CARDS — static display, NOT clickable
+   ========================================================= */
+.do-metrics-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.do-metric-card {
+  flex: 1 1 200px;
+  background: #fff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: none;
+  text-align: left;
+  min-width: 0;
+  /* No cursor, no hover, no transition — cards are display-only */
+}
+
+.do-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.do-metric-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.do-blue-icon   { color: #6366f1; }
+.do-green-icon  { color: #22c55e; }
+.do-yellow-icon { color: #eab308; }
+
+.do-card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.do-metric-value {
+  font-family: Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: bold;
+  color: #111;
+  line-height: 1.1;
+}
+
+.do-metric-subtext {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+/* =========================================================
+   ALERTS — 3 rows: warning (yellow), info (blue), critical (red)
+   ========================================================= */
+.do-alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.do-alert-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 10px 12px;
+}
+
+.do-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-left: 4px solid transparent;
+  width: 100%;
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  text-align: left;
+  cursor: pointer;
+  transition: filter 0.13s;
+}
+.do-alert-row:hover     { filter: brightness(0.95); }
+.do-alert-row.is-active { filter: brightness(0.90); }
+
+/* Deliveries Today — yellow */
+.do-alert-row.warning {
+  background: #fef9c3;
+  color: #854d0e;
+  border-left-color: #eab308;
+}
+
+/* Pending Deliveries — blue */
+.do-alert-row.info {
+  background: #eff6ff;
+  color: #1e40af;
+  border-left-color: #3b82f6;
+}
+
+/* Overdue Deliveries — red/critical */
+.do-alert-row.critical {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-left-color: #ef4444;
+}
+
+/* =========================================================
+   TABLE CONTAINER — sidebar-safe flex column
+   ========================================================= */
+.do-table-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow: visible;              /* allow dropdown to escape */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Toolbar */
+.do-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.do-table-section-title {
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #222;
+}
+
+.do-table-count-pill {
+  font-size: 0.78rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+
+.do-filter-icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.do-filter-icon-btn:hover,
+.do-filter-icon-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.do-filter-dropdown-wrapper {
+  position: relative;
+}
+
+.do-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 168px;
+}
+
+.do-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+.do-dropdown-item:hover    { background: #fcf6c4; }
+.do-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+
+/* =========================================================
+   TABLE SCROLL WRAPPER — sidebar-safe
+   ========================================================= */
+.do-table-scroll-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+.do-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
+.do-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+.do-table-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+.do-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+/* ── Table ── */
+.do-deliveries-table {
+  width: 100%;
+  min-width: 980px;               /* prevents column crush; wrapper handles scroll */
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.do-deliveries-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.do-deliveries-table th {
+  padding: 18px 20px;
+  background-color: #fff;
+  border-bottom: 2px solid #fcf6c4;
+  font-weight: bold;
+  font-family: Georgia, serif;
+  color: #000;
+  white-space: nowrap;
+}
+
+.do-deliveries-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  vertical-align: middle;
+}
+
+.do-deliveries-table tbody tr:last-child td { border-bottom: none; }
+.do-deliveries-table tbody tr:hover         { background-color: #fffde8; }
+
+/* ── Cell helpers ── */
+.do-cake-name-text {
+  font-weight: 500;
+  cursor: default; /* title attr provides hover tooltip for full list */
+}
+
+.do-price-text   { font-weight: 600; color: #22c55e; }
+.do-contact-text { font-size: 0.82rem; color: #555; font-variant-numeric: tabular-nums; }
+
+.do-address-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: #666;
+  display: block;
+  cursor: default; /* title attr shows full address on hover */
+}
+
+/* Delivery Date highlight variants */
+.do-date-text            { font-weight: 600; font-size: 0.85rem; }
+.do-date-text.is-today   { color: #854d0e; }
+.do-date-text.is-overdue { color: #b91c1c; }
+
+/* ── Status pills ── */
+.do-status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.do-status-pill.pending          { background: #fef9c3; color: #854d0e; }
+.do-status-pill.out-for-delivery { background: #e0e7ff; color: #3730a3; }
+.do-status-pill.delivered        { background: #d1fae5; color: #065f46; }
+.do-status-pill.cancelled        { background: #f3f4f6; color: #6b7280; }
+.do-status-pill.overdue          { background: #fee2e2; color: #991b1b; }
+
+/* No data */
+.do-no-data {
+  text-align: center;
+  padding: 40px !important;
+  color: #888;
+}
+
+/* ── Pagination ── */
+.do-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.do-pagination-info { font-size: 0.78rem; color: #999; }
+.do-pagination-btns { display: flex; gap: 4px; }
+
+.do-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+.do-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
+.do-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.do-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 768px) {
+  .do-metrics-row { flex-direction: column; }
+}
