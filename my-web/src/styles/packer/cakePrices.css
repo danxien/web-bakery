@@ -1,0 +1,112 @@
+.cake-prices-panel {
+  background: linear-gradient(180deg, #f2efda 0%, #e8e3be 100%);
+  border: 1px solid #cfbf83;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.cake-prices-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cake-prices-header h3 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.4vw, 1.8rem);
+}
+
+.cake-prices-header p {
+  margin: 4px 0 0;
+  color: #4f4f4f;
+}
+
+.cake-prices-add-btn {
+  border: 1px solid #9b1818;
+  border-radius: 10px;
+  background: #c72020;
+  color: #fff7d1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.cake-prices-table {
+  border: 1px solid #d5ca9a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cake-prices-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(140px, 0.55fr) minmax(220px, 0.8fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-bottom: 1px solid #dacc94;
+}
+
+.cake-prices-row:last-child {
+  border-bottom: none;
+}
+
+.cake-prices-row-head {
+  background: #ddd49f;
+  font-weight: 700;
+}
+
+.cake-prices-input {
+  border: 1px solid #d3cda9;
+  border-radius: 10px;
+  background: #ece7c8;
+  color: #1a1a1a;
+  padding: 9px 12px;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cake-prices-input:focus {
+  outline: 2px solid #f7dd30;
+  outline-offset: 1px;
+}
+
+.cake-prices-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cake-prices-action-btn {
+  border: 1px solid #bdb27d;
+  border-radius: 10px;
+  background: #f4f0d3;
+  color: #1f1f1f;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.cake-prices-action-btn.delete {
+  border-color: #b14444;
+  color: #7a1f1f;
+  background: #f6dddd;
+}
+
+@media (max-width: 900px) {
+  .cake-prices-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cake-prices-actions {
+    width: 100%;
+  }
+
+  .cake-prices-action-btn {
+    flex: 1;
+  }
+}
