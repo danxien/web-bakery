@@ -1,29 +1,33 @@
 import { useState } from "react";
-import Sidebar from "./sidebarmenu";
-import Dashboard from "./dashboard";
-import Reports from "./reports";
-import InventoryOverview from "./inventoryOverview";
-import SalesOverview from "./salesOverview";
-import CustomOrders from "./customOrders";
-import UserManagement from "./userManagement";
-import SystemSettings from "./systemSettings";
-import DeliveryOverview from "./deliveriesOverview";
-import Messages from "./messages";
 
-// Import the CSS that contains the layout wrapper fixes
+// ─── Page Components ──────────────────────────────────────────────────────────
+import Sidebar              from "./sidebarmenu";
+import Dashboard            from "./dashboard";
+import Reports              from "./reports";
+import InventoryOverview    from "./inventoryOverview";
+import SalesOverview        from "./salesOverview";
+import CustomOrders         from "./customOrders";
+import UserManagement       from "./userManagement";
+import DeliveryOverview     from "./deliveriesOverview";
+import Messages             from "./messages";
+import ReservationsOverview from "./reservationOverview";
+import ManagerSettings      from "./ManagerSettings";
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 import "../../styles/manager/landing-page.css";
 
-export default function ManagerLandingPage({ onLogout }) {
-  const [activePage, setActivePage] = useState("dashboard");
+// ─── Component ────────────────────────────────────────────────────────────────
+// initialName — the username typed at login, passed from App.jsx
+export default function ManagerLandingPage({ onLogout, initialName = 'Manager' }) {
+  const [activePage,       setActivePage]       = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const handleNavigate = (page) => {
-    setActivePage(page);
-  };
+  // Seeded from login username, editable via ManagerSettings
+  const [managerName, setManagerName] = useState(initialName);
 
-  const handleToggleSidebar = () => {
-    setSidebarCollapsed((prev) => !prev);
-  };
+  const handleNavigate      = (page) => setActivePage(page);
+  const handleToggleSidebar = ()     => setSidebarCollapsed((prev) => !prev);
+  const handleSaveName      = (name) => setManagerName(name);
 
   const renderPage = () => {
     switch (activePage) {
@@ -37,10 +41,17 @@ export default function ManagerLandingPage({ onLogout }) {
         return <SalesOverview />;
       case "customOrders":
         return <CustomOrders />;
+      case "reservations":
+        return <ReservationsOverview />;
       case "users":
         return <UserManagement />;
       case "settings":
-        return <SystemSettings />;
+        return (
+          <ManagerSettings
+            managerName={managerName}
+            onSaveName={handleSaveName}
+          />
+        );
       case "deliveries":
         return <DeliveryOverview />;
       case "messages":
@@ -51,25 +62,20 @@ export default function ManagerLandingPage({ onLogout }) {
   };
 
   return (
-    /* STEP 1: This is the main flex container that holds everything */
     <div className="admin-layout-wrapper">
-      
-      {/* THE SIDEBAR: Fixed width (260px or 80px) */}
       <Sidebar
         activePage={activePage}
         onNavigate={handleNavigate}
         collapsed={sidebarCollapsed}
         onToggle={handleToggleSidebar}
         onLogout={onLogout}
+        managerName={managerName}
       />
-
-      {/* STEP 2: The Main Content Area: Stretches to fill remaining width */}
       <main className="main-content-area">
         <div className="content-inner">
           {renderPage()}
         </div>
       </main>
-
     </div>
   );
 }

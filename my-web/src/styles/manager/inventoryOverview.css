@@ -1,13 +1,3 @@
-/* =========================================================
-   INVENTORY OVERVIEW
-   Mirrors the structure of seller-sales.css exactly:
-   - No fixed/sticky header
-   - No height:100vh on container
-   - Scroll handled by parent layout wrapper
-   - Same spacing rhythm as .sales-header / .table-container
-   ========================================================= */
-
-/* PAGE CONTAINER — same pattern as .sales-page-container */
 .inventory-page-container {
   animation: fadeIn 0.3s ease;
 }
