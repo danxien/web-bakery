@@ -1,0 +1,66 @@
+.inventory-add-stock {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.inventory-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.inventory-search,
+.inventory-filter {
+  border: 1px solid #d2d2d2;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.92rem;
+}
+
+.inventory-search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.inventory-qty-input {
+  flex: 0 0 160px;
+  min-width: 120px;
+}
+
+.inventory-filter {
+  width: 170px;
+  background: #ffffff;
+}
+
+.inventory-add-btn {
+  border: 1px solid #d4c98a;
+  border-radius: 8px;
+  background: #fff6c7;
+  color: #3f3200;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.inventory-add-btn:hover {
+  border-color: #c0a83a;
+  background: #ffefad;
+}
+
+@media (max-width: 700px) {
+  .inventory-add-stock,
+  .inventory-controls {
+    flex-direction: column;
+  }
+
+  .inventory-filter {
+    width: 100%;
+  }
+
+  .inventory-qty-input {
+    width: 100%;
+    min-width: 0;
+  }
+}

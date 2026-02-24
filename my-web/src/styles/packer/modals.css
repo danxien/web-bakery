@@ -1,0 +1,116 @@
+.packer-table-head .add-cake-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #a50213;
+  background: var(--pack-red);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.packer-table-head .add-cake-btn:hover {
+  background: #ca0317;
+}
+
+.add-cake-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+}
+
+.add-cake-modal {
+  width: min(520px, 92vw);
+  background: var(--pack-cream);
+  border: 2px solid var(--pack-red);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+}
+
+.add-cake-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.add-cake-modal-header h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.add-cake-modal-header p {
+  margin: 4px 0 0;
+  color: var(--pack-muted);
+}
+
+.close-modal-btn {
+  border: 1px solid #d2d2d2;
+  background: #ffffff;
+  color: #111111;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.add-cake-modal-body {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.add-cake-modal-body label {
+  font-weight: 700;
+}
+
+.add-cake-modal-body input,
+.add-cake-modal-body select {
+  height: 42px;
+  border-radius: 9px;
+  border: 1px solid #d7d7d7;
+  background: #fff9de;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.add-cake-modal-body input:disabled {
+  background: #f0e9bf;
+  color: #444444;
+}
+
+.add-cake-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.confirm-add-cake-btn {
+  border: 1px solid #97010f;
+  background: var(--pack-red);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.cancel-add-cake-btn {
+  border: 1px solid #d0d0d0;
+  background: #ffffff;
+  color: #222222;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
