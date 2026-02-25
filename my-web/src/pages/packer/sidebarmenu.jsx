@@ -6,9 +6,7 @@ import {
   MessageSquare,
   Wallet,
   Settings,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
+  LogOut
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -35,7 +33,7 @@ export default function PackerSidebar({
       <div className="packer-sidebar-header">
         {!isMinimized && (
           <div className="packer-logo-group">
-            <div className="packer-logo-wrap">
+            <div className="packer-logo-wrap" onClick={onToggleMinimize}>
               <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
             </div>
             <div className="packer-logo-text">
@@ -45,14 +43,10 @@ export default function PackerSidebar({
           </div>
         )}
         {isMinimized && (
-          <div className="packer-logo-wrap packer-logo-wrap-collapsed">
+          <div className="packer-logo-wrap packer-logo-wrap-collapsed" onClick={onToggleMinimize}>
             <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
           </div>
         )}
-
-        <button className="packer-minimize-btn" onClick={onToggleMinimize} aria-label="Toggle sidebar">
-          {isMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
       </div>
 
       {!isMinimized && (

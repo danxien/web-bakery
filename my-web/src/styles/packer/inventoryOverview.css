@@ -12,9 +12,11 @@
 
 .inventory-search,
 .inventory-filter {
-  border: 1px solid #d2d2d2;
+  border: 1px solid #d2ccaa;
   border-radius: 8px;
   padding: 8px 10px;
+  background: #fffbe9;
+  color: #202020;
   font-family: inherit;
   font-size: 0.92rem;
 }
@@ -31,7 +33,6 @@
 
 .inventory-filter {
   width: 170px;
-  background: #ffffff;
 }
 
 .inventory-add-btn {

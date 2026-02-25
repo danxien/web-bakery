@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import PackerSidebar from './sidebarmenu';
 import DashboardOverview from './dashboardOverview';
 import InventoryOverview from './inventoryOverview';
@@ -55,6 +55,34 @@ export default function PackerLandingPage({ onLogout }) {
     qty: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
+
+  useEffect(() => {
+    const root = document.getElementById('root');
+    if (!root) return undefined;
+
+    const prevMaxWidth = root.style.maxWidth;
+    const prevWidth = root.style.width;
+    const prevMinHeight = root.style.minHeight;
+    const prevMargin = root.style.margin;
+    const prevPadding = root.style.padding;
+    const prevTextAlign = root.style.textAlign;
+
+    root.style.maxWidth = 'none';
+    root.style.width = '100vw';
+    root.style.minHeight = '100vh';
+    root.style.margin = '0';
+    root.style.padding = '0';
+    root.style.textAlign = 'left';
+
+    return () => {
+      root.style.maxWidth = prevMaxWidth;
+      root.style.width = prevWidth;
+      root.style.minHeight = prevMinHeight;
+      root.style.margin = prevMargin;
+      root.style.padding = prevPadding;
+      root.style.textAlign = prevTextAlign;
+    };
+  }, []);
 
   const totals = useMemo(() => {
     const totalCakes = stockItems.reduce((sum, row) => sum + row.qty, 0);
