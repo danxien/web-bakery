@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Filter } from 'lucide-react';
 
-const STATUS_OPTIONS = ['All', 'Pending', 'Out for Delivery', 'Delivered'];
+const STATUS_OPTIONS = ['All', 'Pending', 'Out for Delivery', 'Delivered', 'Cancelled', 'Overdue'];
 const PER_PAGE = 6;
 
 const toDisplayStatus = (status) => (status === 'In Transit' ? 'Out for Delivery' : status);
@@ -43,12 +43,15 @@ const statusPillClass = (status) => {
 const getActionLabel = (status) => {
   if (status === 'Pending') return 'Mark Out for Delivery';
   if (status === 'Out for Delivery') return 'Mark Delivered';
+  if (status === 'Overdue') return 'Mark Delivered';
   return 'Completed';
 };
 
 const isActionDisabled = (status) => status === 'Delivered' || status === 'Cancelled';
 
-export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, deliveryWarning }) {
+const canCancel = (status) => status === 'Pending' || status === 'Out for Delivery' || status === 'Overdue';
+
+export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onCancelStatus, deliveryWarning }) {
   const [statusFilter, setStatusFilter] = useState('All');
   const [page, setPage] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -58,10 +61,11 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, del
     () =>
       deliveryItems.map((row, sourceIndex) => {
         const computedStatus = toDisplayStatus(row.status);
+        const isOverdue = isOverdueRow(row);
         return {
           ...row,
           sourceIndex,
-          computedStatus,
+          computedStatus: isOverdue ? 'Overdue' : computedStatus,
           totalPrice: Number(row.price || 0) * Number(row.qty || 0),
           deliveryDate: row.pickupDate || row.orderDate || '-',
         };
@@ -146,6 +150,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, del
               <th>Delivery Address</th>
               <th>Delivery Date</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -192,6 +197,15 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, del
                       >
                         {getActionLabel(row.computedStatus)}
                       </button>
+                      {canCancel(row.computedStatus) && (
+                        <button
+                          type="button"
+                          className="pkdo-cancel-btn"
+                          onClick={() => onCancelStatus?.(row.sourceIndex)}
+                        >
+                          Cancel
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );

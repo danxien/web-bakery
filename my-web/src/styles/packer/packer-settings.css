@@ -361,7 +361,7 @@
     min-width: unset;
   }
 }
-.packer-settings--full .manager-settings__body {
+.packer-settings--full .packer-settings__body {
   padding-left: 0;
   padding-right: 0;
 }
@@ -370,13 +370,13 @@
   width: 100%;
 }
 
-.packer-settings--full .manager-settings__header {
+.packer-settings--full .packer-settings__header {
   padding-left: 44px;
   padding-right: 44px;
 }
 
 @media (max-width: 768px) {
-  .packer-settings--full .manager-settings__header {
+  .packer-settings--full .packer-settings__header {
     padding-left: 18px;
     padding-right: 18px;
   }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AtSign, CheckCircle, Lock, Save, User, X } from 'lucide-react';
-import '../../styles/manager/managerSettings.css';
+import '../../styles/packer/packer-settings.css';
 
 export default function PackerSettings({
   packerName = 'Packer',
@@ -53,13 +53,13 @@ export default function PackerSettings({
   };
 
   return (
-    <div className="manager-settings__page">
-      <div className="manager-settings__header">
-        <h1 className="manager-settings__title">Settings</h1>
-        <p className="manager-settings__subtitle">Manage your packer account settings</p>
+    <div className="packer-settings__page">
+      <div className="packer-settings__header">
+        <h1 className="packer-settings__title">Settings</h1>
+        <p className="packer-settings__subtitle">Manage your packer account settings</p>
       </div>
 
-      <div className="manager-settings__body">
+      <div className="packer-settings__body">
         <div className="ms-cards-row">
           <div className="ms-card">
             <div className="ms-card__header">
