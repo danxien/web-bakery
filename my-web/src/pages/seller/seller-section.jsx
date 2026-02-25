@@ -1,75 +1,65 @@
 // ─── Imports ──────────────────────────────────────────────────────────────────
 import { useState } from 'react';
 import {
-  LayoutDashboard, ShoppingCart, Calendar, Star,
-  Truck, Package, MessageSquare, Settings, LogOut,
-  Box, PlusCircle, Sparkles, X, CheckCircle
+  ShoppingCart, Box, MessageSquare,
+  PlusCircle, Sparkles, X, CheckCircle
 } from 'lucide-react';
 
-import logo from '../../assets/logo.png';
-import '../../styles/seller/seller-section.css';
-
-import SellerSales from './seller-sales';
+import SellerSales        from './seller-sales';
 import SellerReservations from './seller-reservations';
-import SellerCustom from './seller-custom';
-import SellerMessages from './seller-messages';
-import SellerSettings from './seller-settings';
+import SellerCustom       from './seller-custom';
+import SellerDeliveries   from './seller-deliveries';
+import SellerInventory    from './seller-inventory';
+import SellerMessages     from './seller-messages';
+import SellerSettings     from './seller-settings';
+
+import '../../styles/seller/seller-section.css';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const cakePrices = {
-  "Chocolate Cake": 500,
-  "Vanilla Cake": 450,
-  "Red Velvet Cake": 600,
-  "Carrot Cake": 550,
-  "Cheesecake": 650,
+  "Chocolate Cake":    500,
+  "Vanilla Cake":      450,
+  "Red Velvet Cake":   600,
+  "Carrot Cake":       550,
+  "Cheesecake":        650,
   "Black Forest Cake": 700,
-  "Strawberry Cake": 580,
-  "Mango Cake": 520
+  "Strawberry Cake":   580,
+  "Mango Cake":        520,
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
-const SellerSection = ({ onLogout }) => {
+export default function SellerSection({ activeTab, setActiveTab, fullName, onSaveName }) {
 
   // ── UI State ──
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [showToast, setShowToast] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // ── Modal State ──
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isResModalOpen, setIsResModalOpen] = useState(false);
-  const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
+  const [isModalOpen,            setIsModalOpen]            = useState(false);
+  const [isResModalOpen,         setIsResModalOpen]         = useState(false);
+  const [isMsgModalOpen,         setIsMsgModalOpen]         = useState(false);
   const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
 
-  // ── User State ──
-  const [fullName, setFullName] = useState("Mami Oni");
-
   // ── Data State ──
-  const [salesHistory, setSalesHistory] = useState([]);
+  const [salesHistory,        setSalesHistory]        = useState([]);
   const [reservationsHistory, setReservationsHistory] = useState([]);
-  const [customOrdersList, setCustomOrdersList] = useState([]);
+  const [customOrdersList,    setCustomOrdersList]    = useState([]);
 
   // ── Form State ──
-  const [selectedCake, setSelectedCake] = useState("Chocolate Cake");
-  const [selectedPrice, setSelectedPrice] = useState(500);
-  const [quantity, setQuantity] = useState(1);
-  const [customerName, setCustomerName] = useState("");
-  const [pickupDate, setPickupDate] = useState("");
-  const [packerMessage, setPackerMessage] = useState("");
-  const [customCakeType, setCustomCakeType] = useState("");
-  const [customPrice, setCustomPrice] = useState(1000);
+  const [selectedCake,       setSelectedCake]       = useState("Chocolate Cake");
+  const [selectedPrice,      setSelectedPrice]      = useState(500);
+  const [quantity,           setQuantity]           = useState(1);
+  const [customerName,       setCustomerName]       = useState("");
+  const [pickupDate,         setPickupDate]         = useState("");
+  const [packerMessage,      setPackerMessage]      = useState("");
+  const [customCakeType,     setCustomCakeType]     = useState("");
+  const [customPrice,        setCustomPrice]        = useState(1000);
   const [customInstructions, setCustomInstructions] = useState("");
 
   // ─── Derived Values ──────────────────────────────────────────────────────────
   const totalSales = salesHistory.reduce((sum, sale) => sum + sale.amount, 0);
   const orderCount = salesHistory.length;
 
-  // ─── Sidebar Toggle ──────────────────────────────────────────────────────────
-  const handleToggleSidebar = () => {
-    setSidebarCollapsed(prev => !prev);
-  };
-
-  // ─── Form Handlers ───────────────────────────────────────────────────────────
+  // ─── Form Helpers ────────────────────────────────────────────────────────────
   const handleCakeChange = (e) => {
     const name = e.target.value;
     setSelectedCake(name);
@@ -88,17 +78,8 @@ const SellerSection = ({ onLogout }) => {
     setPackerMessage("");
   };
 
-  // Helper to open modals with a clean slate
-  const openModal = (setterFunc) => {
-    resetForm();
-    setterFunc(true);
-  };
-
-  // Helper to close modals and clean up
-  const closeModal = (setterFunc) => {
-    setterFunc(false);
-    resetForm();
-  };
+  const openModal  = (setterFunc) => { resetForm(); setterFunc(true); };
+  const closeModal = (setterFunc) => { setterFunc(false); resetForm(); };
 
   // ─── Delete Handlers ─────────────────────────────────────────────────────────
   const handleDeleteSale = (id) => {
@@ -122,7 +103,7 @@ const SellerSection = ({ onLogout }) => {
       cakeType: selectedCake,
       customer: customerName || "Walk-in Customer",
       qty: quantity,
-      amount: selectedPrice * quantity
+      amount: selectedPrice * quantity,
     };
     setSalesHistory([newSale, ...salesHistory]);
     closeModal(setIsModalOpen);
@@ -136,7 +117,7 @@ const SellerSection = ({ onLogout }) => {
       customer: customerName || "Guest",
       qty: quantity,
       amount: customPrice * quantity,
-      instructions: customInstructions
+      instructions: customInstructions,
     };
     setCustomOrdersList([newOrder, ...customOrdersList]);
     setSalesHistory([newOrder, ...salesHistory]);
@@ -158,7 +139,7 @@ const SellerSection = ({ onLogout }) => {
       pickupDate: formattedPickupDate,
       amount: selectedPrice * quantity,
       status: 'Pending',
-      isCompleted: false
+      isCompleted: false,
     };
     setReservationsHistory([newRes, ...reservationsHistory]);
     closeModal(setIsResModalOpen);
@@ -176,7 +157,7 @@ const SellerSection = ({ onLogout }) => {
               cakeType: res.cakeType,
               customer: res.customer,
               qty: res.qty,
-              amount: res.amount
+              amount: res.amount,
             };
             setSalesHistory(currentSales => {
               const exists = currentSales.find(s => s.id === `sale-${res.id}`);
@@ -198,90 +179,12 @@ const SellerSection = ({ onLogout }) => {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
-  
-  // ─── Render ──────────────────────────────────────────────────────────────────
-  return (
-    <div className="seller-dashboard-container">
 
-      {/* ── Sidebar ── */}
-      <aside className={`seller-sidebar ${sidebarCollapsed ? 'seller-collapsed' : ''}`}>
-
-        {/* Header */}
-        <div className="seller-sidebar-header">
-          {!sidebarCollapsed && (
-            <div className="seller-logo-group">
-              <div className="seller-sidebar-logo-container" onClick={handleToggleSidebar}>
-                <img src={logo} alt="Bakery Logo" className="seller-sidebar-logo-img" />
-              </div>
-              <div className="seller-logo-text">
-                <h2>Regis Cake Shop</h2>
-                <p>Main Branch</p>
-              </div>
-            </div>
-          )}
-          {sidebarCollapsed && (
-            <div className="seller-sidebar-logo-container" onClick={handleToggleSidebar}>
-              <img src={logo} alt="Bakery Logo" className="seller-sidebar-logo-img" />
-            </div>
-          )}
-        </div>
-
-        {!sidebarCollapsed && (
-          <div className="seller-user-info">
-            <h3>{fullName}</h3>
-            <p>Seller</p>
-          </div>
-        )}
-
-        <nav className="seller-sidebar-nav">
-          <button className={`seller-nav-item ${activeTab === 'dashboard' ? 'seller-active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            <LayoutDashboard size={20} />
-            {!sidebarCollapsed && <span>Dashboard</span>}
-          </button>
-          <button className={`seller-nav-item ${activeTab === 'sales' ? 'seller-active' : ''}`} onClick={() => setActiveTab('sales')}>
-            <ShoppingCart size={20} />
-            {!sidebarCollapsed && <span>Sales</span>}
-          </button>
-          <button className={`seller-nav-item ${activeTab === 'reservations' ? 'seller-active' : ''}`} onClick={() => setActiveTab('reservations')}>
-            <Calendar size={20} />
-            {!sidebarCollapsed && <span>Reservations</span>}
-          </button>
-          <button className={`seller-nav-item ${activeTab === 'custom' ? 'seller-active' : ''}`} onClick={() => setActiveTab('custom')}>
-            <Star size={20} />
-            {!sidebarCollapsed && <span>Custom Orders</span>}
-          </button>
-          <button className={`seller-nav-item ${activeTab === 'deliveries' ? 'seller-active' : ''}`} onClick={() => setActiveTab('deliveries')}>
-            <Truck size={20} />
-            {!sidebarCollapsed && <span>Deliveries</span>}
-          </button>
-          <button className={`seller-nav-item ${activeTab === 'inventory' ? 'seller-active' : ''}`} onClick={() => setActiveTab('inventory')}>
-            <Package size={20} />
-            {!sidebarCollapsed && <span>Inventory</span>}
-          </button>
-          <button className={`seller-nav-item ${activeTab === 'messages' ? 'seller-active' : ''}`} onClick={() => setActiveTab('messages')}>
-            <MessageSquare size={20} />
-            {!sidebarCollapsed && <span>Messages</span>}
-            {!sidebarCollapsed && <span className="seller-badge">0</span>}
-          </button>
-        </nav>
-
-        <div className="seller-sidebar-footer">
-          <button className={`seller-footer-nav-item ${activeTab === 'settings' ? 'seller-active' : ''}`} onClick={() => setActiveTab('settings')}>
-            <Settings size={20} />
-            {!sidebarCollapsed && <span>Settings</span>}
-          </button>
-          <button className="seller-footer-nav-item seller-logout" onClick={onLogout}>
-            <LogOut size={20} />
-            {!sidebarCollapsed && <span>Logout</span>}
-          </button>
-        </div>
-
-      </aside>
-
-      {/* ── Main Content ── */}
-      <main className="seller-main-content">
-
-        {activeTab === 'dashboard' && (
+  // ─── Page Renderer ───────────────────────────────────────────────────────────
+  const renderPage = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
           <>
             <div className="seller-stats-grid">
               <div className="seller-stat-card">
@@ -343,201 +246,212 @@ const SellerSection = ({ onLogout }) => {
               </div>
             </div>
           </>
-        )}
-
-        {activeTab === 'sales' && <SellerSales transactions={salesHistory} onDelete={handleDeleteSale} />}
-        {activeTab === 'inventory' && <h1>Inventory Content Coming Soon...</h1>}
-        {activeTab === 'deliveries' && <h1>Deliveries Content Coming Soon...</h1>}
-        {activeTab === 'custom' && <SellerCustom customOrders={customOrdersList} onDelete={handleDeleteCustomOrder} />}
-        {activeTab === 'messages' && <SellerMessages onOpenMessageModal={() => openModal(setIsMsgModalOpen)} />}
-        {activeTab === 'reservations' && (
+        );
+      case 'sales':
+        return <SellerSales transactions={salesHistory} onDelete={handleDeleteSale} />;
+      case 'reservations':
+        return (
           <SellerReservations
             reservations={reservationsHistory}
             onUpdateStatus={handleUpdateReservationStatus}
             onDelete={handleDeleteReservation}
           />
-        )}
-        {activeTab === 'settings' && (
-          <SellerSettings
-            currentName={fullName}
-            onSaveName={(newName) => setFullName(newName)}
-          />
-        )}
+        );
+      case 'custom':
+        return <SellerCustom customOrders={customOrdersList} onDelete={handleDeleteCustomOrder} />;
+      case 'deliveries':
+        return <SellerDeliveries />;
+      case 'inventory':
+        return <SellerInventory />;
+      case 'messages':
+        return <SellerMessages onOpenMessageModal={() => openModal(setIsMsgModalOpen)} />;
+      case 'settings':
+        return <SellerSettings currentName={fullName} onSaveName={onSaveName} />;
+      default:
+        return null;
+    }
+  };
 
-        {/* ── New Sale Modal ── */}
-        {isModalOpen && (
-          <div className="seller-modal-overlay">
-            <div className="seller-modal-box">
-              <div className="seller-modal-header">
-                <div>
-                  <h2 className="seller-modal-title">New Sale</h2>
-                  <p className="seller-modal-subtitle">Record a new sale transaction</p>
-                </div>
-                <button className="seller-close-x-btn" onClick={() => closeModal(setIsModalOpen)}><X size={20} /></button>
-              </div>
-              <div className="seller-modal-body">
-                <div className="seller-form-group">
-                  <label>Cake Type</label>
-                  <select className="seller-modal-input" value={selectedCake} onChange={handleCakeChange}>
-                    {Object.keys(cakePrices).map(cake => (
-                      <option key={cake} value={cake}>{cake} - ₱{cakePrices[cake]}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="seller-form-group">
-                  <label>Quantity</label>
-                  <input type="number" className="seller-modal-input" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} min="1" />
-                  <span className="seller-helper-text">Available: 18</span>
-                </div>
-                <div className="seller-form-group">
-                  <label>Customer Name</label>
-                  <input type="text" className="seller-modal-input" placeholder="Enter customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                </div>
-                <div className="seller-total-display">
-                  <span>Total Amount:</span>
-                  <span className="seller-amount-text">₱{(selectedPrice * quantity).toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="seller-modal-footer">
-                <button className="seller-record-sale-btn" onClick={handleRecordSale}>Record Sale</button>
-                <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsModalOpen)}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── New Reservation Modal ── */}
-        {isResModalOpen && (
-          <div className="seller-modal-overlay">
-            <div className="seller-modal-box">
-              <div className="seller-modal-header">
-                <div>
-                  <h2 className="seller-modal-title">New Reservation</h2>
-                  <p className="seller-modal-subtitle">Create a new cake reservation</p>
-                </div>
-                <button className="seller-close-x-btn" onClick={() => closeModal(setIsResModalOpen)}><X size={20} /></button>
-              </div>
-              <div className="seller-modal-body">
-                <div className="seller-form-group">
-                  <label>Cake Type</label>
-                  <select className="seller-modal-input" value={selectedCake} onChange={handleCakeChange}>
-                    {Object.keys(cakePrices).map(cake => (
-                      <option key={cake} value={cake}>{cake} - ₱{cakePrices[cake]}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="seller-form-group">
-                  <label>Quantity</label>
-                  <input type="number" className="seller-modal-input" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} min="1" />
-                </div>
-                <div className="seller-form-group">
-                  <label>Customer Name</label>
-                  <input type="text" className="seller-modal-input" placeholder="Enter customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                </div>
-                <div className="seller-form-group">
-                  <label>Pickup Date</label>
-                  <input type="date" className="seller-modal-input" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-                </div>
-                <div className="seller-total-display">
-                  <span>Total Amount:</span>
-                  <span className="seller-amount-text">₱{(selectedPrice * quantity).toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="seller-modal-footer">
-                <button className="seller-record-sale-btn" onClick={handleRecordReservation}>Create Reservation</button>
-                <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsResModalOpen)}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Message Packer Modal ── */}
-        {isMsgModalOpen && (
-          <div className="seller-modal-overlay">
-            <div className="seller-modal-box">
-              <div className="seller-modal-header">
-                <div>
-                  <h2 className="seller-modal-title">Message Packer</h2>
-                  <p className="seller-modal-subtitle">Send a message to request delivery</p>
-                </div>
-                <button className="seller-close-x-btn" onClick={() => closeModal(setIsMsgModalOpen)}><X size={20} /></button>
-              </div>
-              <div className="seller-modal-body">
-                <div className="seller-form-group">
-                  <label>Message</label>
-                  <textarea
-                    className="seller-modal-input"
-                    placeholder="Type your message..."
-                    rows="4"
-                    style={{ resize: 'none', padding: '12px', fontFamily: 'inherit' }}
-                    value={packerMessage}
-                    onChange={(e) => setPackerMessage(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="seller-modal-footer">
-                <button className="seller-record-sale-btn" onClick={handleSendMessage}>Send Message</button>
-                <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsMsgModalOpen)}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Custom Order Modal ── */}
-        {isCustomOrderModalOpen && (
-          <div className="seller-modal-overlay">
-            <div className="seller-modal-box seller-custom-order-modal">
-              <div className="seller-modal-header">
-                <div>
-                  <h2 className="seller-modal-title">New Custom Order</h2>
-                  <p className="seller-modal-subtitle">Create a new custom cake order</p>
-                </div>
-                <button className="seller-close-x-btn" onClick={() => closeModal(setIsCustomOrderModalOpen)}><X size={20} /></button>
-              </div>
-              <div className="seller-modal-body">
-                <div className="seller-form-group">
-                  <label>Cake Type</label>
-                  <input type="text" className="seller-modal-input" placeholder="Enter cake type" value={customCakeType} onChange={(e) => setCustomCakeType(e.target.value)} />
-                </div>
-                <div className="seller-form-row">
-                  <div className="seller-form-group">
-                    <label>Quantity</label>
-                    <input type="number" className="seller-modal-input" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} min="1" />
-                  </div>
-                  <div className="seller-form-group">
-                    <label>Price per Cake</label>
-                    <input type="number" className="seller-modal-input" value={customPrice} onChange={(e) => setCustomPrice(parseInt(e.target.value) || " ")} />
-                  </div>
-                </div>
-                <div className="seller-form-group">
-                  <label>Customer Name</label>
-                  <input type="text" className="seller-modal-input" placeholder="Enter customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-                </div>
-                <div className="seller-form-group">
-                  <label>Special Instructions</label>
-                  <textarea
-                    className="seller-modal-input"
-                    placeholder="Enter any special instructions"
-                    rows="2"
-                    style={{ resize: 'none', padding: '10px', fontFamily: 'inherit' }}
-                    value={customInstructions}
-                    onChange={(e) => setCustomInstructions(e.target.value)}
-                  />
-                </div>
-                <div className="seller-total-display seller-compact-total">
-                  <span>Total Amount:</span>
-                  <span className="seller-amount-text">₱{(customPrice * quantity).toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="seller-modal-footer">
-                <button className="seller-record-sale-btn" onClick={handleCreateCustomOrder}>Create Custom Order</button>
-                <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsCustomOrderModalOpen)}>Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-
+  // ─── Render ──────────────────────────────────────────────────────────────────
+  return (
+    <>
+      {/* ── Page Content ── */}
+      <main className="seller-main-content">
+        {renderPage()}
       </main>
+
+      {/* ── New Sale Modal ── */}
+      {isModalOpen && (
+        <div className="seller-modal-overlay">
+          <div className="seller-modal-box">
+            <div className="seller-modal-header">
+              <div>
+                <h2 className="seller-modal-title">New Sale</h2>
+                <p className="seller-modal-subtitle">Record a new sale transaction</p>
+              </div>
+              <button className="seller-close-x-btn" onClick={() => closeModal(setIsModalOpen)}><X size={20} /></button>
+            </div>
+            <div className="seller-modal-body">
+              <div className="seller-form-group">
+                <label>Cake Type</label>
+                <select className="seller-modal-input" value={selectedCake} onChange={handleCakeChange}>
+                  {Object.keys(cakePrices).map(cake => (
+                    <option key={cake} value={cake}>{cake} - ₱{cakePrices[cake]}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="seller-form-group">
+                <label>Quantity</label>
+                <input type="number" className="seller-modal-input" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} min="1" />
+                <span className="seller-helper-text">Available: 18</span>
+              </div>
+              <div className="seller-form-group">
+                <label>Customer Name</label>
+                <input type="text" className="seller-modal-input" placeholder="Enter customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              </div>
+              <div className="seller-total-display">
+                <span>Total Amount:</span>
+                <span className="seller-amount-text">₱{(selectedPrice * quantity).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="seller-modal-footer">
+              <button className="seller-record-sale-btn" onClick={handleRecordSale}>Record Sale</button>
+              <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsModalOpen)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── New Reservation Modal ── */}
+      {isResModalOpen && (
+        <div className="seller-modal-overlay">
+          <div className="seller-modal-box">
+            <div className="seller-modal-header">
+              <div>
+                <h2 className="seller-modal-title">New Reservation</h2>
+                <p className="seller-modal-subtitle">Create a new cake reservation</p>
+              </div>
+              <button className="seller-close-x-btn" onClick={() => closeModal(setIsResModalOpen)}><X size={20} /></button>
+            </div>
+            <div className="seller-modal-body">
+              <div className="seller-form-group">
+                <label>Cake Type</label>
+                <select className="seller-modal-input" value={selectedCake} onChange={handleCakeChange}>
+                  {Object.keys(cakePrices).map(cake => (
+                    <option key={cake} value={cake}>{cake} - ₱{cakePrices[cake]}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="seller-form-group">
+                <label>Quantity</label>
+                <input type="number" className="seller-modal-input" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} min="1" />
+              </div>
+              <div className="seller-form-group">
+                <label>Customer Name</label>
+                <input type="text" className="seller-modal-input" placeholder="Enter customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              </div>
+              <div className="seller-form-group">
+                <label>Pickup Date</label>
+                <input type="date" className="seller-modal-input" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+              </div>
+              <div className="seller-total-display">
+                <span>Total Amount:</span>
+                <span className="seller-amount-text">₱{(selectedPrice * quantity).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="seller-modal-footer">
+              <button className="seller-record-sale-btn" onClick={handleRecordReservation}>Create Reservation</button>
+              <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsResModalOpen)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Message Packer Modal ── */}
+      {isMsgModalOpen && (
+        <div className="seller-modal-overlay">
+          <div className="seller-modal-box">
+            <div className="seller-modal-header">
+              <div>
+                <h2 className="seller-modal-title">Message Packer</h2>
+                <p className="seller-modal-subtitle">Send a message to request delivery</p>
+              </div>
+              <button className="seller-close-x-btn" onClick={() => closeModal(setIsMsgModalOpen)}><X size={20} /></button>
+            </div>
+            <div className="seller-modal-body">
+              <div className="seller-form-group">
+                <label>Message</label>
+                <textarea
+                  className="seller-modal-input"
+                  placeholder="Type your message..."
+                  rows="4"
+                  style={{ resize: 'none', padding: '12px', fontFamily: 'inherit' }}
+                  value={packerMessage}
+                  onChange={(e) => setPackerMessage(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="seller-modal-footer">
+              <button className="seller-record-sale-btn" onClick={handleSendMessage}>Send Message</button>
+              <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsMsgModalOpen)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Custom Order Modal ── */}
+      {isCustomOrderModalOpen && (
+        <div className="seller-modal-overlay">
+          <div className="seller-modal-box seller-custom-order-modal">
+            <div className="seller-modal-header">
+              <div>
+                <h2 className="seller-modal-title">New Custom Order</h2>
+                <p className="seller-modal-subtitle">Create a new custom cake order</p>
+              </div>
+              <button className="seller-close-x-btn" onClick={() => closeModal(setIsCustomOrderModalOpen)}><X size={20} /></button>
+            </div>
+            <div className="seller-modal-body">
+              <div className="seller-form-group">
+                <label>Cake Type</label>
+                <input type="text" className="seller-modal-input" placeholder="Enter cake type" value={customCakeType} onChange={(e) => setCustomCakeType(e.target.value)} />
+              </div>
+              <div className="seller-form-row">
+                <div className="seller-form-group">
+                  <label>Quantity</label>
+                  <input type="number" className="seller-modal-input" value={quantity} onChange={(e) => setQuantity(e.target.value === '' ? '' : parseInt(e.target.value))} min="1" />
+                </div>
+                <div className="seller-form-group">
+                  <label>Price per Cake</label>
+                  <input type="number" className="seller-modal-input" value={customPrice} onChange={(e) => setCustomPrice(parseInt(e.target.value) || " ")} />
+                </div>
+              </div>
+              <div className="seller-form-group">
+                <label>Customer Name</label>
+                <input type="text" className="seller-modal-input" placeholder="Enter customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              </div>
+              <div className="seller-form-group">
+                <label>Special Instructions</label>
+                <textarea
+                  className="seller-modal-input"
+                  placeholder="Enter any special instructions"
+                  rows="2"
+                  style={{ resize: 'none', padding: '10px', fontFamily: 'inherit' }}
+                  value={customInstructions}
+                  onChange={(e) => setCustomInstructions(e.target.value)}
+                />
+              </div>
+              <div className="seller-total-display seller-compact-total">
+                <span>Total Amount:</span>
+                <span className="seller-amount-text">₱{(customPrice * quantity).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="seller-modal-footer">
+              <button className="seller-record-sale-btn" onClick={handleCreateCustomOrder}>Create Custom Order</button>
+              <button className="seller-cancel-sale-btn" onClick={() => closeModal(setIsCustomOrderModalOpen)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Toast Notification ── */}
       {showToast && (
@@ -556,9 +470,6 @@ const SellerSection = ({ onLogout }) => {
           </div>
         </div>
       )}
-
-    </div>
+    </>
   );
-};
-
-export default SellerSection;
+}

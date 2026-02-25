@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import LoginSection  from "./pages/login-section";
-import PackerSection from "./pages/packer/landing-page";
+import PackerSection from "./pages/packer/dashboard";
 import SellerSection from "./pages/seller/seller-section";
 import ManagerSection from "./pages/manager/landing-page";
 

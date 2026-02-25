@@ -1,18 +1,28 @@
+/* ─── Variables ───────────────────────────────────────────────────────────────*/
+/* Ensure these match your seller-section logic, using your packer color names */
+:root {
+  --sidebar-width: 260px;
+  --sidebar-width-sm: 80px;
+  --font-main: Georgia, serif;
+  --transition: 0.3s ease;
+}
+
+/* ─── Sidebar Base ────────────────────────────────────────────────────────────*/
 .packer-sidebar {
-  width: 260px;
+  width: 240px;
   height: 100vh;
   background: var(--pack-red);
   display: flex;
   flex-direction: column;
-  padding: 15px 0;
+  padding: 16px 0;
   flex-shrink: 0;
   z-index: 20;
   position: sticky;
   top: 0;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  overflow: hidden;
+  transition: width 0.25s ease;
 }
 
+/* ─── Header & Logo ───────────────────────────────────────────────────────────*/
 .packer-sidebar-header {
   display: flex;
   align-items: center;
@@ -22,30 +32,34 @@
   min-height: 60px;
 }
 
-.packer-logo-wrap {
-  width: 55px;
-  height: 55px;
-  display: flex;
+.packer-minimize-btn {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #8d6e11;
+  background: var(--pack-yellow);
+  color: #111111;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 8px;
-  transition: opacity 0.2s;
+}
+
+.packer-logo-wrap {
+  width: 44px;
+  height: 44px;
 }
 
 .packer-logo-group {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.packer-logo-wrap:hover {
-  opacity: 0.8;
+  gap: 10px;
 }
 
 .packer-logo-wrap-collapsed {
-  width: 55px;
-  height: 55px;
+  width: 50px;
+  height: 50px;
 }
 
 .packer-logo {
@@ -58,7 +72,7 @@
 
 .packer-logo-text h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--pack-yellow);
 }
 
@@ -68,6 +82,7 @@
   color: #ffffff;
 }
 
+/* ─── User Info ───────────────────────────────────────────────────────────────*/
 .packer-user-info {
   padding: 0 17px;
   margin-bottom: 20px;
@@ -75,76 +90,86 @@
 
 .packer-user-info h3 {
   margin: 0;
+  font-size: 0.90rem;
   color: var(--pack-yellow);
-  font-size: 0.95rem;
 }
 
 .packer-user-info p {
   margin: 0;
-  color: #ffffff;
   font-size: 0.8rem;
+  color: #ffffff;
 }
 
+/* ─── Navigation Items ────────────────────────────────────────────────────────*/
 .packer-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 12px;
   flex: 1;
+  gap: 10px;
+  padding: 0 15px;
 }
 
 .packer-nav-item,
 .packer-footer-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  border: none;
-  cursor: pointer;
-  padding: 11px 12px;
-  border-radius: 10px;
-  background: var(--pack-cream);
-  color: #000000;
-  font-family: inherit;
-  font-size: 0.95rem;
-  text-align: left;
   width: 100%;
+  gap: 12px;
+  padding: 12px 15px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--pack-cream); /* Mirroring var(--color-bg-main) */
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  color: #000000;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.packer-sidebar.collapsed .packer-nav-item,
+.packer-sidebar.collapsed .packer-footer-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.packer-nav-item:hover,
+.packer-footer-item:hover {
+  background-color: #ddd;
 }
 
 .packer-nav-item.active {
-  background: var(--pack-yellow);
-  font-weight: 700;
+  background-color: var(--pack-yellow) !important;
+  color: #000000 !important;
+  font-weight: bold;
 }
 
+/* ─── Badge & Footer ─────────────────────────────────────────────────────────*/
 .packer-badge {
   margin-left: auto;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #ffffff;
-  color: var(--pack-red);
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 0;
+  background-color: transparent;
+  color: #000000;
+  font-size: 0.95rem;
+  font-weight: bold;
 }
 
 .packer-sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;
+  gap: 8px;
+  padding: 0 12px;
 }
 
 .packer-sidebar.collapsed,
 .sidebar-minimized .packer-sidebar {
-  width: 80px;
+  width: 82px;
 }
 
 .packer-sidebar.collapsed .packer-sidebar-header,
 .sidebar-minimized .packer-sidebar .packer-sidebar-header {
+  flex-direction: column;
+  gap: 8px;
   justify-content: center;
   padding: 0;
 }
@@ -154,7 +179,14 @@
 .sidebar-minimized .packer-sidebar .packer-nav-item,
 .sidebar-minimized .packer-sidebar .packer-footer-item {
   justify-content: center;
-  padding: 12px 0;
+  padding: 10px 8px;
+}
+
+.packer-sidebar.collapsed .packer-minimize-btn,
+.sidebar-minimized .packer-sidebar .packer-minimize-btn {
+  margin-left: 0;
+  width: 30px;
+  height: 30px;
 }
 
 @media (max-width: 1024px) {
@@ -176,6 +208,10 @@
   .packer-user-info {
     margin: 0;
     padding: 0;
+  }
+
+  .packer-minimize-btn {
+    display: none;
   }
 
   .packer-nav {

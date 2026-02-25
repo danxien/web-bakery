@@ -14,6 +14,12 @@
 
 .co-page-container {
   animation: fadeIn 0.3s ease;
+  /* FIX #1: Ensure page container never overflows its content area,
+     allowing the table to flex and scroll correctly regardless of
+     whether the sidebar is expanded or collapsed. */
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ── Header — identical values to .inventory-header ── */
@@ -36,17 +42,17 @@
 
 /* =========================================================
    METRIC CARDS — identical to .metrics-row / .metric-card
-   metric-cards are <button> here (clickable) but every
-   visual property is copied from the inventory <div>.
    ========================================================= */
 .co-metrics-row {
   display: flex;                  /* == .metrics-row */
   gap: 16px;
   margin-bottom: 20px;
+  /* FIX #1: Allow cards to wrap on narrow viewports (e.g. sidebar open) */
+  flex-wrap: wrap;
 }
 
 .co-metric-card {
-  flex: 1;                        /* == .metric-card */
+  flex: 1 1 200px;                /* FIX #1: flex-shrink + basis so cards reflow when sidebar opens */
   background: #fff;
   padding: 18px 20px;
   border-radius: 12px;
@@ -54,19 +60,10 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  /* button resets — keep visual identical to div */
   border: none;
   text-align: left;
-  cursor: pointer;
-  transition: box-shadow 0.15s, transform 0.15s;
-}
-.co-metric-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
-  transform: translateY(-1px);
-}
-.co-metric-card.is-active {
-  outline: 2px solid #e5c800;
-  outline-offset: 2px;
+  min-width: 0;                   /* FIX #1: Prevent overflow in flex child */
+  /* Display-only — no cursor, no hover, no transition */
 }
 
 .co-card-top {
@@ -107,8 +104,6 @@
 
 /* =========================================================
    ALERTS — identical to .alerts-container / .alert-wrapper
-   alert rows are <button> here (clickable to filter table)
-   but every visual property is copied from inventory <div>.
    ========================================================= */
 .co-alerts-container {
   display: flex;                  /* == .alerts-container */
@@ -133,7 +128,6 @@
   font-size: 0.875rem;
   font-weight: 500;
   border-left: 4px solid transparent;
-  /* button resets */
   width: 100%;
   background: transparent;
   border-top: none;
@@ -173,21 +167,23 @@
 
 /* =========================================================
    TABLE CONTAINER — identical to .table-container
+   FIX #1: Use min-width: 0 so the container can shrink when
+   the sidebar expands, instead of overflowing the page.
    ========================================================= */
 .co-table-container {
   background: #fff;               /* == .table-container */
   border-radius: 12px;
-  /* overflow: visible so the filter dropdown can escape the container */
-  overflow: visible;
+  overflow: visible;              /* allow dropdown to escape */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  /* Clamp table container height to remaining viewport space. */
   max-height: calc(100vh - 60px);
+  min-width: 0;                   /* FIX #1: critical — lets flex child shrink */
+  width: 100%;                    /* FIX #1: always fill available content area */
+  box-sizing: border-box;
 }
 
-
-/* Toolbar — identical to .table-toolbar */
+/* Toolbar */
 .co-table-toolbar {
   display: flex;                  /* == .table-toolbar */
   justify-content: space-between;
@@ -196,7 +192,7 @@
   margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 8px;
-  flex-shrink: 0; /* toolbar never shrinks when container is height-constrained */
+  flex-shrink: 0;
 }
 
 .co-table-section-title {
@@ -206,7 +202,6 @@
   color: #222;
 }
 
-/* Table count pill — sits beside title, same row */
 .co-table-count-pill {
   font-size: 0.78rem;
   color: #999;
@@ -216,7 +211,6 @@
   margin-left: 8px;
 }
 
-/* Search inputs inside toolbar */
 .co-toolbar-search {
   padding: 6px 12px;
   border: 1px solid #ddd;
@@ -229,7 +223,6 @@
 }
 .co-toolbar-search:focus { border-color: #e5c800; }
 
-/* Filter button — identical to .filter-icon-btn */
 .co-filter-icon-btn {
   display: flex;                  /* == .filter-icon-btn */
   align-items: center;
@@ -246,18 +239,17 @@
 }
 .co-filter-icon-btn:hover,
 .co-filter-icon-btn.open {
-  background: #f7dd30;            /* == .filter-icon-btn:hover */
+  background: #f7dd30;
   border-color: #e5c800;
   color: #111;
 }
 
-/* Filter dropdown — identical to .filter-dropdown-wrapper / .filter-dropdown */
 .co-filter-dropdown-wrapper {
-  position: relative;             /* == .filter-dropdown-wrapper */
+  position: relative;
 }
 
 .co-filter-dropdown {
-  position: absolute;             /* == .filter-dropdown */
+  position: absolute;
   top: calc(100% + 6px);
   right: 0;
   background: #fff;
@@ -270,7 +262,7 @@
 }
 
 .co-dropdown-item {
-  display: block;                 /* == .dropdown-item */
+  display: block;
   width: 100%;
   padding: 9px 16px;
   text-align: left;
@@ -281,19 +273,21 @@
   color: #333;
   transition: background 0.12s;
 }
-.co-dropdown-item:hover    { background: #fcf6c4; }    /* == .dropdown-item:hover */
+.co-dropdown-item:hover    { background: #fcf6c4; }
 .co-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
 
 /* =========================================================
    TABLE SCROLL WRAPPER
-   Scrolls only the table body area; toolbar + pagination
-   remain fixed at top/bottom of the container.
+   FIX #1: The scroll wrapper is the sole element that scrolls.
+   It never forces the page to overflow — it simply clips and
+   scrolls internally. min-width: 0 is the key property that
+   allows it to shrink when the sidebar pushes it left.
    ========================================================= */
 .co-table-scroll-wrapper {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
-  /* Subtle scrollbar styling */
+  overflow-x: auto;               /* FIX #1: horizontal scroll stays inside wrapper */
+  min-width: 0;                   /* FIX #1: allows the wrapper itself to shrink */
   scrollbar-width: thin;
   scrollbar-color: #e5e7eb transparent;
 }
@@ -312,21 +306,24 @@
   background: #d1d5db;
 }
 
-/* ── Table — identical values to .inventory-table ── */
+/* ── Table ── */
 .co-orders-table {
-  width: 100%;                    /* == .inventory-table */
+  /* FIX #1: min-content width keeps columns at natural size;
+     the scroll wrapper handles overflow — table never bleeds out. */
+  width: 100%;
+  min-width: 860px;               /* FIX #1: forces scroll rather than column crush */
   border-collapse: collapse;
   text-align: left;
 }
 
 .co-orders-table thead th {
-  position: sticky;               /* Freeze header while table body scrolls */
+  position: sticky;
   top: 0;
   z-index: 2;
 }
 
 .co-orders-table th {
-  padding: 18px 20px;             /* == .inventory-table th */
+  padding: 18px 20px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
   font-weight: bold;
@@ -336,22 +333,22 @@
 }
 
 .co-orders-table td {
-  padding: 18px 20px;             /* == .inventory-table td */
+  padding: 18px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
 }
 
 .co-orders-table tbody tr:last-child td {
-  border-bottom: none;            /* == .inventory-table tbody tr:last-child td */
+  border-bottom: none;
 }
 
 .co-orders-table tbody tr:hover {
-  background-color: #fffde8;     /* == .inventory-table tbody tr:hover */
+  background-color: #fffde8;
 }
 
 /* ── Cell helpers ── */
-.co-cake-name-text { font-weight: 500; }   /* == .cake-name-text */
+.co-cake-name-text { font-weight: 500; }
 
 .co-order-id-text  { font-weight: 600; color: #6366f1; font-size: 0.85rem; }
 .co-price-text     { font-weight: 600; color: #22c55e; }
@@ -374,9 +371,9 @@
 .co-created-by-text { font-size: 0.8rem; color: #999; }
 .co-updated-text    { font-size: 0.8rem; color: #bbb; font-style: italic; }
 
-/* Status pills — identical structure to .status-pill */
+/* Status pills */
 .co-status-pill {
-  display: inline-block;          /* == .status-pill */
+  display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -392,9 +389,9 @@
 .co-status-pill.declined      { background: #f3f4f6; color: #6b7280; }
 .co-status-pill.overdue       { background: #fee2e2; color: #991b1b; }
 
-/* No data — identical to .no-data */
+/* No data */
 .co-no-data {
-  text-align: center;             /* == .no-data */
+  text-align: center;
   padding: 40px !important;
   color: #888;
 }
@@ -421,7 +418,7 @@
   color: #111;
 }
 
-/* ── Pagination — sits inside .co-table-container after table ── */
+/* ── Pagination ── */
 .co-pagination {
   display: flex;
   align-items: center;
@@ -430,7 +427,7 @@
   border-top: 1px solid #f0f0f0;
   flex-wrap: wrap;
   gap: 10px;
-  flex-shrink: 0; /* pagination never shrinks when container is height-constrained */
+  flex-shrink: 0;
 }
 
 .co-pagination-info {
@@ -459,7 +456,7 @@
 .co-page-btn.active    { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
 .co-page-btn:disabled  { opacity: 0.38; cursor: not-allowed; }
 
-/* ── Modal — order detail / timeline ── */
+/* ── Modal ── */
 .co-modal-overlay {
   position: fixed;
   inset: 0;
@@ -501,7 +498,7 @@
   font-size: 1.45rem;
   font-weight: bold;
   color: #000;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   line-height: 1.2;
 }
 
@@ -528,6 +525,7 @@
   gap: 24px;
 }
 
+/* FIX #2: Info grid — Status gets its own cell, properly labeled */
 .co-modal-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -569,10 +567,10 @@
 }
 
 /* =========================================================
-   RESPONSIVE — identical breakpoint to inventory
+   RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .co-metrics-row     { flex-direction: column; }   /* == .metrics-row @768px */
+  .co-metrics-row     { flex-direction: column; }
   .co-modal-info-grid { grid-template-columns: 1fr; }
   .co-info-item.full-width { grid-column: span 1; }
 }

@@ -1,30 +1,31 @@
 /* =============================================================
-   salesOverview.css
-   STRUCTURAL MIRROR of reservationOverview.css / customOrders.css
-   Every spacing, radius, shadow, font-size, and color value is
-   kept consistent with the manager page system.
-   New addition: .so-breakdown-row — revenue category cards.
+   deliveriesOverview.css
+   STRUCTURAL MIRROR of reservationOverview.css
+   Every spacing, radius, shadow, font-size, color value is
+   copied verbatim from reservationOverview.css.
+   Only class names (.do- prefix) and delivery-specific
+   status pills and date highlight colors differ.
    ============================================================= */
 
 /* ── Animation ── */
-@keyframes so-fadeIn {
+@keyframes do-fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.so-page-container {
-  animation: so-fadeIn 0.3s ease;
+.do-page-container {
+  animation: do-fadeIn 0.3s ease;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
 /* ── Header ── */
-.so-header {
+.do-header {
   margin-bottom: 30px;
 }
 
-.so-title {
+.do-title {
   font-family: Georgia, serif;
   font-size: 1.8rem;
   font-weight: bold;
@@ -32,22 +33,22 @@
   margin: 0;
 }
 
-.so-subtitle {
+.do-subtitle {
   color: #888;
   margin: 5px 0 0 0;
 }
 
 /* =========================================================
-   SUMMARY CARDS — 3 static display cards (not clickable)
+   METRIC CARDS — static display, NOT clickable
    ========================================================= */
-.so-metrics-row {
+.do-metrics-row {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
-.so-metric-card {
+.do-metric-card {
   flex: 1 1 200px;
   background: #fff;
   padding: 18px 20px;
@@ -56,33 +57,35 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border: none;
+  text-align: left;
   min-width: 0;
-  /* Static display — no cursor, no hover, no transition */
+  /* No cursor, no hover, no transition — cards are display-only */
 }
 
-.so-card-top {
+.do-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.so-metric-label {
+.do-metric-label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #333;
 }
 
-.so-blue-icon   { color: #6366f1; }
-.so-green-icon  { color: #22c55e; }
-.so-yellow-icon { color: #eab308; }
+.do-blue-icon   { color: #6366f1; }
+.do-green-icon  { color: #22c55e; }
+.do-yellow-icon { color: #eab308; }
 
-.so-card-bottom {
+.do-card-bottom {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.so-metric-value {
+.do-metric-value {
   font-family: Georgia, serif;
   font-size: 1.9rem;
   font-weight: bold;
@@ -90,82 +93,74 @@
   line-height: 1.1;
 }
 
-.so-metric-subtext {
+.do-metric-subtext {
   font-size: 0.78rem;
   color: #999;
 }
 
 /* =========================================================
-   REVENUE BREAKDOWN CARDS — clickable, filter table on click
-   Three cards: Delivery / Reservation / Custom Order
+   ALERTS — 3 rows: warning (yellow), info (blue), critical (red)
    ========================================================= */
-.so-breakdown-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.so-breakdown-card {
-  flex: 1 1 160px;
-  background: #fff;
-  padding: 16px 18px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+.do-alerts-container {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  /* Clickable — filters table */
-  border: 2px solid transparent;
-  text-align: left;
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
-}
-.so-breakdown-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
-  transform: translateY(-1px);
-}
-.so-breakdown-card.is-active {
-  border-color: #e5c800;
-  box-shadow: 0 6px 20px rgba(229, 200, 0, 0.18);
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.so-breakdown-top {
+.do-alert-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  padding: 10px 12px;
+}
+
+.do-alert-row {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-left: 4px solid transparent;
+  width: 100%;
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  text-align: left;
+  cursor: pointer;
+  transition: filter 0.13s;
+}
+.do-alert-row:hover     { filter: brightness(0.95); }
+.do-alert-row.is-active { filter: brightness(0.90); }
+
+/* Deliveries Today — yellow */
+.do-alert-row.warning {
+  background: #fef9c3;
+  color: #854d0e;
+  border-left-color: #eab308;
 }
 
-.so-breakdown-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #555;
+/* Pending Deliveries — blue */
+.do-alert-row.info {
+  background: #eff6ff;
+  color: #1e40af;
+  border-left-color: #3b82f6;
 }
 
-/* Breakdown icon colours — one per order type */
-.so-breakdown-icon          { flex-shrink: 0; }
-.so-icon-delivery           { color: #6366f1; }
-.so-icon-reservation        { color: #22c55e; }
-.so-icon-custom-order       { color: #f59e0b; }
-
-.so-breakdown-amount {
-  font-family: Georgia, serif;
-  font-size: 1.35rem;
-  font-weight: bold;
-  color: #111;
-  line-height: 1.1;
-}
-
-.so-breakdown-subtext {
-  font-size: 0.72rem;
-  color: #aaa;
+/* Overdue Deliveries — red/critical */
+.do-alert-row.critical {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-left-color: #ef4444;
 }
 
 /* =========================================================
    TABLE CONTAINER — sidebar-safe flex column
    ========================================================= */
-.so-table-container {
+.do-table-container {
   background: #fff;
   border-radius: 12px;
   overflow: visible;              /* allow dropdown to escape */
@@ -179,7 +174,7 @@
 }
 
 /* Toolbar */
-.so-table-toolbar {
+.do-table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -190,14 +185,14 @@
   flex-shrink: 0;
 }
 
-.so-table-section-title {
+.do-table-section-title {
   font-family: Georgia, serif;
   font-size: 1rem;
   font-weight: bold;
   color: #222;
 }
 
-.so-table-count-pill {
+.do-table-count-pill {
   font-size: 0.78rem;
   color: #999;
   background: #f5f5f5;
@@ -206,7 +201,7 @@
   margin-left: 8px;
 }
 
-.so-filter-icon-btn {
+.do-filter-icon-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -220,18 +215,18 @@
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
-.so-filter-icon-btn:hover,
-.so-filter-icon-btn.open {
+.do-filter-icon-btn:hover,
+.do-filter-icon-btn.open {
   background: #f7dd30;
   border-color: #e5c800;
   color: #111;
 }
 
-.so-filter-dropdown-wrapper {
+.do-filter-dropdown-wrapper {
   position: relative;
 }
 
-.so-filter-dropdown {
+.do-filter-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -244,7 +239,7 @@
   min-width: 168px;
 }
 
-.so-dropdown-item {
+.do-dropdown-item {
   display: block;
   width: 100%;
   padding: 9px 16px;
@@ -256,13 +251,13 @@
   color: #333;
   transition: background 0.12s;
 }
-.so-dropdown-item:hover    { background: #fcf6c4; }
-.so-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+.do-dropdown-item:hover    { background: #fcf6c4; }
+.do-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
 
 /* =========================================================
    TABLE SCROLL WRAPPER — sidebar-safe
    ========================================================= */
-.so-table-scroll-wrapper {
+.do-table-scroll-wrapper {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
@@ -270,29 +265,29 @@
   scrollbar-width: thin;
   scrollbar-color: #e5e7eb transparent;
 }
-.so-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
-.so-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
-.so-table-scroll-wrapper::-webkit-scrollbar-thumb {
+.do-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
+.do-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+.do-table-scroll-wrapper::-webkit-scrollbar-thumb {
   background: #e5e7eb;
   border-radius: 3px;
 }
-.so-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+.do-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
 /* ── Table ── */
-.so-sales-table {
+.do-deliveries-table {
   width: 100%;
-  min-width: 820px;               /* prevents column crush; wrapper handles scroll */
+  min-width: 980px;               /* prevents column crush; wrapper handles scroll */
   border-collapse: collapse;
   text-align: left;
 }
 
-.so-sales-table thead th {
+.do-deliveries-table thead th {
   position: sticky;
   top: 0;
   z-index: 2;
 }
 
-.so-sales-table th {
+.do-deliveries-table th {
   padding: 18px 20px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
@@ -302,22 +297,43 @@
   white-space: nowrap;
 }
 
-.so-sales-table td {
+.do-deliveries-table td {
   padding: 18px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
 }
 
-.so-sales-table tbody tr:last-child td { border-bottom: none; }
-.so-sales-table tbody tr:hover         { background-color: #fffde8; }
+.do-deliveries-table tbody tr:last-child td { border-bottom: none; }
+.do-deliveries-table tbody tr:hover         { background-color: #fffde8; }
 
 /* ── Cell helpers ── */
-.so-cake-name-text { font-weight: 500; }
-.so-amount-text    { font-weight: 600; color: #22c55e; }
+.do-cake-name-text {
+  font-weight: 500;
+  cursor: default; /* title attr provides hover tooltip for full list */
+}
 
-/* ── Order Type pills — one colour per source ── */
-.so-type-pill {
+.do-price-text   { font-weight: 600; color: #22c55e; }
+.do-contact-text { font-size: 0.82rem; color: #555; font-variant-numeric: tabular-nums; }
+
+.do-address-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: #666;
+  display: block;
+  cursor: default; /* title attr shows full address on hover */
+}
+
+/* Delivery Date highlight variants */
+.do-date-text            { font-weight: 600; font-size: 0.85rem; }
+.do-date-text.is-today   { color: #854d0e; }
+.do-date-text.is-overdue { color: #b91c1c; }
+
+/* ── Status pills ── */
+.do-status-pill {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
@@ -326,19 +342,21 @@
   white-space: nowrap;
 }
 
-.so-type-pill.delivery      { background: #e0e7ff; color: #3730a3; }
-.so-type-pill.reservation   { background: #d1fae5; color: #065f46; }
-.so-type-pill.custom-order  { background: #fef9c3; color: #854d0e; }
+.do-status-pill.pending          { background: #fef9c3; color: #854d0e; }
+.do-status-pill.out-for-delivery { background: #e0e7ff; color: #3730a3; }
+.do-status-pill.delivered        { background: #d1fae5; color: #065f46; }
+.do-status-pill.cancelled        { background: #f3f4f6; color: #6b7280; }
+.do-status-pill.overdue          { background: #fee2e2; color: #991b1b; }
 
 /* No data */
-.so-no-data {
+.do-no-data {
   text-align: center;
   padding: 40px !important;
   color: #888;
 }
 
 /* ── Pagination ── */
-.so-pagination {
+.do-pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -349,10 +367,10 @@
   flex-shrink: 0;
 }
 
-.so-pagination-info { font-size: 0.78rem; color: #999; }
-.so-pagination-btns { display: flex; gap: 4px; }
+.do-pagination-info { font-size: 0.78rem; color: #999; }
+.do-pagination-btns { display: flex; gap: 4px; }
 
-.so-page-btn {
+.do-page-btn {
   min-width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -367,14 +385,13 @@
   justify-content: center;
   padding: 0 8px;
 }
-.so-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
-.so-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
-.so-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.do-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
+.do-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.do-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .so-metrics-row   { flex-direction: column; }
-  .so-breakdown-row { flex-direction: column; }
+  .do-metrics-row { flex-direction: column; }
 }

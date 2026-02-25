@@ -11,10 +11,10 @@ import "../../styles/manager/sidebarmenu.css";
 const NAV_ITEMS = [
   { key: "dashboard",    label: "Dashboard",      icon: LayoutDashboard },
   { key: "inventory",    label: "Inventory",       icon: Package },
-  { key: "sales",        label: "Sales",           icon: BarChart3 },
-  { key: "customOrders", label: "Custom Orders",   icon: ClipboardList },
-  { key: "reservations", label: "Reservations",    icon: CalendarCheck },
   { key: "deliveries",   label: "Deliveries",      icon: Truck },
+  { key: "reservations", label: "Reservations",    icon: CalendarCheck },
+  { key: "customOrders", label: "Custom Orders",   icon: ClipboardList },
+  { key: "sales",        label: "Sales",           icon: BarChart3 },
   { key: "reports",      label: "Reports",         icon: FileText },
   { key: "messages",     label: "Messages",        icon: MessageSquare },
   { key: "users",        label: "User Management", icon: Users },

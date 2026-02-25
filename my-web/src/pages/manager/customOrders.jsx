@@ -224,7 +224,6 @@ function OrderDetailModal({ order, onClose }) {
         <div className="co-modal-header">
           <div>
             <h2 className="co-modal-cake-name">{order.cakeType}</h2>
-            <StatusPill order={order} />
           </div>
           <button className="co-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -234,22 +233,35 @@ function OrderDetailModal({ order, onClose }) {
           <div>
             <h3 className="co-modal-section-title">Order Information</h3>
             <div className="co-modal-info-grid">
+
+              {/* FIX #2: Status now has its own labeled field */}
+              <div className="co-info-item">
+                <span className="co-info-label">Status</span>
+                <span className="co-info-value">
+                  <StatusPill order={order} />
+                </span>
+              </div>
+
               <div className="co-info-item">
                 <span className="co-info-label">Customer</span>
                 <span className="co-info-value">{order.customer}</span>
               </div>
+
               <div className="co-info-item">
                 <span className="co-info-label">Total Price</span>
                 <span className="co-info-value price-val">₱{order.price.toLocaleString()}</span>
               </div>
+
               <div className="co-info-item">
                 <span className="co-info-label">Quantity</span>
                 <span className="co-info-value">{order.quantity} pc{order.quantity > 1 ? 's' : ''}</span>
               </div>
+
               <div className="co-info-item">
                 <span className="co-info-label">Order Date</span>
                 <span className="co-info-value">{formatDate(order.orderDate)}</span>
               </div>
+
               <div className="co-info-item">
                 <span className="co-info-label">Pick-Up Date</span>
                 <span className="co-info-value" style={{
@@ -257,14 +269,16 @@ function OrderDetailModal({ order, onClose }) {
                   fontWeight: (overdue || dueToday) ? 700 : undefined,
                 }}>
                   {formatDate(order.pickupDate)}
-                  {overdue  && '  Overdue'}
-                  {dueToday && '  Due Today'}
+                  {overdue  && '  ⚠ Overdue'}
+                  {dueToday && '  ⚠ Due Today'}
                 </span>
               </div>
+
               <div className="co-info-item full-width">
                 <span className="co-info-label">Special Instructions / Design Notes</span>
                 <span className="co-info-value instructions-val">{order.instructions}</span>
               </div>
+
             </div>
           </div>
 
@@ -277,9 +291,18 @@ function OrderDetailModal({ order, onClose }) {
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
-const STATUS_OPTIONS = ['All', 'Pending', 'Approved', 'In Production', 'Ready', 'Delivered', 'Declined', 'Overdue'];
-const PER_PAGE       = 6;
-const NO_QUICK       = 'all';
+
+// FIX #4: Updated filter options — Pending, Approved, Completed, Overdue, Declined only
+// "Completed" maps to Delivered + Ready statuses (fully fulfilled orders)
+const STATUS_OPTIONS = ['All', 'Pending', 'Approved', 'Completed', 'Overdue', 'Declined'];
+
+// Helper: "Completed" filter includes Ready + Delivered orders that are not overdue
+function isCompleted(o) {
+  return (o.status === 'Ready' || o.status === 'Delivered') && !isOverdue(o);
+}
+
+const PER_PAGE   = 6;
+const NO_QUICK   = 'all';
 
 const CustomOrders = () => {
 
@@ -302,7 +325,6 @@ const CustomOrders = () => {
   // -----------------------------------------------------------
   // DERIVED METRIC VALUES
   // 🔹 BACKEND: Replace INIT_ORDERS with ordersData from state
-  //    once API is connected — these calculations update automatically.
   // -----------------------------------------------------------
   const totalOrders   = INIT_ORDERS.length;
   const revenueTotal  = INIT_ORDERS
@@ -315,8 +337,7 @@ const CustomOrders = () => {
 
   // -----------------------------------------------------------
   // FILTER LOGIC
-  // 🔹 BACKEND (OPTIONAL): Move into useEffect and pass
-  //    statusFilter as a query param for server-side filtering.
+  // FIX #4: "Completed" filter covers Ready + Delivered
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
     let result = INIT_ORDERS; // 🔹 BACKEND: swap to ordersData
@@ -326,8 +347,9 @@ const CustomOrders = () => {
     else if (quickFilter === 'due-today') result = result.filter(isDueToday);
     else if (quickFilter === 'overdue')   result = result.filter(isOverdue);
     else {
-      if      (statusFilter === 'Overdue') result = result.filter(isOverdue);
-      else if (statusFilter !== 'All')     result = result.filter(o => o.status === statusFilter && !isOverdue(o));
+      if      (statusFilter === 'Overdue')   result = result.filter(isOverdue);
+      else if (statusFilter === 'Completed') result = result.filter(isCompleted);
+      else if (statusFilter !== 'All')       result = result.filter(o => o.status === statusFilter && !isOverdue(o));
     }
 
     return result;
@@ -346,11 +368,6 @@ const CustomOrders = () => {
   // useEffect — side effects
   // -----------------------------------------------------------
   useEffect(() => {
-    // 🔹 BACKEND: Fetch orders on mount (see InventoryOverview for pattern)
-    // const fetchOrders = async () => { ... };
-    // fetchOrders();
-
-    // Close dropdown on outside click (UI only — keep as-is)
     const handler = e => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target))
         setDropdownOpen(false);
@@ -371,7 +388,7 @@ const CustomOrders = () => {
       )}
 
       {/* =====================================================
-          1. HEADER — mirrors .inventory-header
+          1. HEADER
           ===================================================== */}
       <div className="co-header">
         <h1 className="co-title">Custom Orders</h1>
@@ -380,15 +397,12 @@ const CustomOrders = () => {
 
 
       {/* =====================================================
-          2. METRIC CARDS — mirrors .metrics-row / .metric-card
+          2. METRIC CARDS
           ===================================================== */}
       <div className="co-metrics-row">
 
         {/* Total Custom Orders */}
-        <button
-          className={`co-metric-card ${quickFilter === NO_QUICK && statusFilter === 'All' ? 'is-active' : ''}`}
-          onClick={() => { setQuickFilter(NO_QUICK); setStatusFilter('All'); setPage(1); }}
-        >
+        <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Total Custom Orders</span>
             <ShieldCheck className="co-blue-icon" size={20} />
@@ -397,13 +411,10 @@ const CustomOrders = () => {
             <span className="co-metric-value">{totalOrders}</span>
             <span className="co-metric-subtext">All orders on record</span>
           </div>
-        </button>
+        </div>
 
         {/* Revenue */}
-        <button
-          className={`co-metric-card ${quickFilter === 'revenue' ? 'is-active' : ''}`}
-          onClick={() => activateQuick('revenue')}
-        >
+        <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Custom Orders Revenue</span>
             <CircleDollarSign className="co-green-icon" size={20} />
@@ -412,32 +423,30 @@ const CustomOrders = () => {
             <span className="co-metric-value">₱{revenueTotal.toLocaleString()}</span>
             <span className="co-metric-subtext">Excl. Pending &amp; Declined</span>
           </div>
-        </button>
+        </div>
 
-        {/* Pending Approval */}
-        <button
-          className={`co-metric-card ${quickFilter === 'pending' ? 'is-active' : ''}`}
-          onClick={() => activateQuick('pending')}
-        >
+        {/* FIX #3: Pending Approval — updated subtext */}
+        <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Pending Approval</span>
             <ClipboardList className="co-yellow-icon" size={20} />
           </div>
           <div className="co-card-bottom">
             <span className="co-metric-value">{pendingCount}</span>
-            <span className="co-metric-subtext">Awaiting Manager review</span>
+            <span className="co-metric-subtext">
+              {pendingCount === 1 ? 'Pending cake order' : 'Pending cake orders'}
+            </span>
           </div>
-        </button>
+        </div>
 
       </div>
 
 
       {/* =====================================================
-          3. ALERTS — mirrors .alerts-container / .alert-wrapper
+          3. ALERTS
           ===================================================== */}
       <div className="co-alerts-container">
 
-        {/* Due Today — warning (yellow) */}
         <div className="co-alert-wrapper">
           <button
             className={`co-alert-row warning ${quickFilter === 'due-today' ? 'is-active' : ''}`}
@@ -451,7 +460,6 @@ const CustomOrders = () => {
           </button>
         </div>
 
-        {/* Overdue — critical (red) */}
         <div className="co-alert-wrapper">
           <button
             className={`co-alert-row critical ${quickFilter === 'overdue' ? 'is-active' : ''}`}
@@ -469,14 +477,15 @@ const CustomOrders = () => {
 
 
       {/* =====================================================
-          4. TABLE — mirrors .table-container / .table-toolbar
+          4. TABLE
+          FIX #1: Table scroll wrapper handles overflow so the
+          table is always fully visible regardless of sidebar state.
           ===================================================== */}
       <div className="co-table-container">
 
-        {/* Toolbar — mirrors .table-toolbar */}
+        {/* Toolbar */}
         <div className="co-table-toolbar">
 
-          {/* Left side: section title + count pill */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="co-table-section-title">Orders List</span>
             <span className="co-table-count-pill">
@@ -485,10 +494,9 @@ const CustomOrders = () => {
             </span>
           </div>
 
-          {/* Right side: filter dropdown only */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
 
-            {/* Status filter dropdown — mirrors .filter-dropdown-wrapper */}
+            {/* FIX #4: Updated STATUS_OPTIONS dropdown */}
             <div className="co-filter-dropdown-wrapper" ref={dropdownRef}>
               <button
                 className={`co-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
@@ -519,7 +527,6 @@ const CustomOrders = () => {
               )}
             </div>
 
-            {/* Clear quick filter — only shown when a card/alert is active */}
             {quickFilter !== NO_QUICK && (
               <button
                 className="co-filter-icon-btn"
@@ -532,7 +539,7 @@ const CustomOrders = () => {
           </div>
         </div>
 
-        {/* Scrollable table wrapper */}
+        {/* FIX #1: Scrollable table wrapper — handles sidebar expand/collapse gracefully */}
         <div className="co-table-scroll-wrapper">
           <table className="co-orders-table">
             <thead>
@@ -549,47 +556,27 @@ const CustomOrders = () => {
               </tr>
             </thead>
             <tbody>
-              {/*
-                🔹 BACKEND: Map from ordersData (API) instead of paged (mock).
-              */}
               {paged.length > 0 ? paged.map(order => {
                 const overdue  = isOverdue(order);
                 const dueToday = isDueToday(order);
                 return (
                   <tr key={order.id}>
-
-                    {/* 🔹 BACKEND: order.cakeType */}
                     <td><span className="co-cake-name-text">{order.cakeType}</span></td>
-
-                    {/* 🔹 BACKEND: order.quantity */}
                     <td>{order.quantity}</td>
-
-                    {/* 🔹 BACKEND: order.price */}
                     <td><span className="co-price-text">₱{order.price.toLocaleString()}</span></td>
-
-                    {/* 🔹 BACKEND: order.customer */}
                     <td>{order.customer}</td>
-
-                    {/* 🔹 BACKEND: order.instructions */}
                     <td>
                       <span className="co-instructions-text" title={order.instructions}>
                         {order.instructions}
                       </span>
                     </td>
-
-                    {/* 🔹 BACKEND: order.orderDate (YYYY-MM-DD) */}
                     <td>{formatDate(order.orderDate)}</td>
-
-                    {/* 🔹 BACKEND: order.pickupDate — highlights if overdue or due today */}
                     <td>
                       <span className={`co-pickup-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
                         {formatDate(order.pickupDate)}
                       </span>
                     </td>
-
-                    {/* 🔹 BACKEND: order.status — must match STATUS_OPTIONS values */}
                     <td><StatusPill order={order} /></td>
-
                     <td>
                       <button
                         className="co-view-btn"

@@ -1,0 +1,116 @@
+/* ─── Today's Deliveries Card Container ────────────────────────────────────── */
+
+.seller-dashboard-deliveries-card {
+  background: #fee2e2;
+  border: 1px solid #8806ce; 
+  border-radius: 15px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.seller-dashboard-deliveries-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.seller-dashboard-deliveries-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seller-dashboard-deliveries-title {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.seller-dashboard-deliveries-subtitle {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0.1px 0 0 0;
+}
+
+.seller-dashboard-deliveries-badge {
+  background-color: #8806ce;
+  color: #fff;
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+/* ─── Inner White Table Container ──────────────────────────────────────────── */
+
+.seller-dashboard-deliveries-inner {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+/* ─── Table Styling ────────────────────────────────────────────────────────── */
+
+.seller-dashboard-deliveries-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+  table-layout: auto; 
+}
+
+.seller-dashboard-deliveries-table th {
+  padding: 10px 20px;
+  background-color: #fff;
+  border-bottom: 2px solid #fcf6c4; 
+  font-weight: bold;
+  color: #000;
+  font-size: 0.85rem;
+  white-space: nowrap; 
+}
+
+.seller-dashboard-deliveries-table th:last-child,
+.seller-dashboard-deliveries-table td:last-child {
+  padding-right: 20px;
+  text-align: left;
+}
+
+.seller-dashboard-deliveries-table td {
+  padding: 8px 20px; 
+  border-bottom: 1px solid #eee;
+  color: #333;
+  font-size: 0.87rem;
+  font-weight: normal; 
+}
+
+.seller-dashboard-deliveries-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.seller-delivery-cake-name {
+  font-weight: normal; 
+  color: #000000;
+}
+
+.seller-delivery-qty-badge {
+  padding: 2px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  display: inline-block;
+  font-family: Georgia, serif;
+  background-color: #28a745;
+  color: white;
+}
+
+/* ─── Empty State ──────────────────────────────────────────────────────────── */
+
+.seller-delivery-empty {
+  text-align: center;
+  padding: 20px !important;
+  color: #888;
+  font-size: 0.85rem;
+}
