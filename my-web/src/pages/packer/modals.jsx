@@ -87,6 +87,22 @@ export function DeliveryModal({
             placeholder="e.g. Juan Dela Cruz"
           />
 
+          <label>Contact Number</label>
+          <input
+            type="text"
+            value={deliveryForm.contact}
+            onChange={(event) => onChangeField('contact', event.target.value)}
+            placeholder="e.g. 09171234567"
+          />
+
+          <label>Delivery Address</label>
+          <input
+            type="text"
+            value={deliveryForm.address}
+            onChange={(event) => onChangeField('address', event.target.value)}
+            placeholder="e.g. 123 Rizal St., Calamba"
+          />
+
           <label>Cake Type</label>
           <select value={deliveryForm.cake} onChange={(event) => onChangeField('cake', event.target.value)}>
             {stockItems.map((item) => (

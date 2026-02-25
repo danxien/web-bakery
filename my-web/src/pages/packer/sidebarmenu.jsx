@@ -7,8 +7,6 @@ import {
   Wallet,
   Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -27,6 +25,7 @@ export default function PackerSidebar({
   onLogout,
   isMinimized,
   onToggleMinimize,
+  packerName = 'Packer',
 }) {
   const sidebarClass = `packer-sidebar ${isMinimized ? 'collapsed' : ''}`;
 
@@ -35,7 +34,7 @@ export default function PackerSidebar({
       <div className="packer-sidebar-header">
         {!isMinimized && (
           <div className="packer-logo-group">
-            <div className="packer-logo-wrap">
+            <div className="packer-logo-wrap" onClick={onToggleMinimize}>
               <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
             </div>
             <div className="packer-logo-text">
@@ -45,19 +44,15 @@ export default function PackerSidebar({
           </div>
         )}
         {isMinimized && (
-          <div className="packer-logo-wrap packer-logo-wrap-collapsed">
+          <div className="packer-logo-wrap" onClick={onToggleMinimize}>
             <img src={logo} alt="Regis Cake Shop" className="packer-logo" />
           </div>
         )}
-
-        <button className="packer-minimize-btn" onClick={onToggleMinimize} aria-label="Toggle sidebar">
-          {isMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
       </div>
 
       {!isMinimized && (
         <div className="packer-user-info">
-          <h3>Packer</h3>
+          <h3>{packerName}</h3>
           <p>Production Team</p>
         </div>
       )}
@@ -88,7 +83,10 @@ export default function PackerSidebar({
       </nav>
 
       <div className="packer-sidebar-footer">
-        <button className="packer-footer-item">
+        <button
+          className={`packer-footer-item ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => onTabChange('settings')}
+        >
           <Settings size={20} />
           {!isMinimized && <span>Settings</span>}
         </button>

@@ -45,6 +45,7 @@ html, body {
   flex-direction: column;
 }
 
+
 .packer-main-content::-webkit-scrollbar {
   width: 10px;
 }
@@ -176,6 +177,7 @@ tbody tr:hover {
     padding: 20px;
     overflow: visible;
   }
+
 }
 
 @media (max-width: 600px) {
@@ -189,4 +191,3 @@ tbody tr:hover {
     justify-content: center;
   }
 }
-

@@ -1,108 +1,241 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Filter } from 'lucide-react';
 
-export default function DeliveriesOverview({
-  deliveryItems,
-  getBadgeClass,
-  onAdvanceStatus,
-  deliveryWarning,
-}) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
+const STATUS_OPTIONS = ['All', 'Pending', 'Out for Delivery', 'Delivered'];
+const PER_PAGE = 6;
 
-  const filteredItems = useMemo(() => {
-    return deliveryItems
-      .map((row, index) => ({ ...row, sourceIndex: index }))
-      .filter((row) => {
-        const normalizedSearch = searchTerm.toLowerCase();
-        const buyerName = (row.customer || '').toLowerCase();
-        const matchesSearch = row.cake.toLowerCase().includes(normalizedSearch) || buyerName.includes(normalizedSearch);
-        const matchesStatus = statusFilter === 'All' || row.status === statusFilter;
-        return matchesSearch && matchesStatus;
-      });
-  }, [deliveryItems, searchTerm, statusFilter]);
+const toDisplayStatus = (status) => (status === 'In Transit' ? 'Out for Delivery' : status);
 
-  const getActionLabel = (status) => {
-    if (status === 'Pending') return 'Mark In Transit';
-    if (status === 'In Transit') return 'Confirm Delivered';
-    return 'Completed';
+const toDateObject = (value) => {
+  if (!value || value === '-') return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatDate = (value) => {
+  const date = toDateObject(value);
+  if (!date) return '-';
+  return date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const isOverdueRow = (row) => {
+  const status = toDisplayStatus(row.status);
+  if (status === 'Delivered' || status === 'Cancelled') return false;
+  const deliveryDate = toDateObject(row.pickupDate);
+  if (!deliveryDate) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return deliveryDate < today;
+};
+
+const statusPillClass = (status) => {
+  const map = {
+    Pending: 'pending',
+    'Out for Delivery': 'out-for-delivery',
+    Delivered: 'delivered',
+    Cancelled: 'cancelled',
+    Overdue: 'overdue',
   };
+  return map[status] || 'pending';
+};
 
-  const isActionDisabled = (status) => status === 'Delivered';
+const getActionLabel = (status) => {
+  if (status === 'Pending') return 'Mark Out for Delivery';
+  if (status === 'Out for Delivery') return 'Mark Delivered';
+  return 'Completed';
+};
+
+const isActionDisabled = (status) => status === 'Delivered' || status === 'Cancelled';
+
+export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, deliveryWarning }) {
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [page, setPage] = useState(1);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const mappedRows = useMemo(
+    () =>
+      deliveryItems.map((row, sourceIndex) => {
+        const computedStatus = toDisplayStatus(row.status);
+        return {
+          ...row,
+          sourceIndex,
+          computedStatus,
+          totalPrice: Number(row.price || 0) * Number(row.qty || 0),
+          deliveryDate: row.pickupDate || row.orderDate || '-',
+        };
+      }),
+    [deliveryItems]
+  );
+
+  const filteredData = useMemo(() => {
+    if (statusFilter === 'All') return mappedRows;
+    return mappedRows.filter((row) => row.computedStatus === statusFilter);
+  }, [mappedRows, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
+  const paged = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  useEffect(() => {
+    const handler = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   return (
-    <section className="packer-panel-card">
-      <h3>Main Branch Deliveries (Today)</h3>
-      <p>Track delivery progress for Main Branch only.</p>
-      {deliveryWarning && <div className="delivery-warning-banner">{deliveryWarning}</div>}
+    <section className="pkdo-table-container">
+      {deliveryWarning && <div className="pkdo-warning-banner">{deliveryWarning}</div>}
 
-      <div className="deliveries-toolbar">
-        <input
-          type="text"
-          className="deliveries-search"
-          placeholder="Search buyer or cake name"
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-        />
-        <div className="deliveries-tabs">
-          {['All', 'Pending', 'In Transit', 'Delivered'].map((tab) => (
-            <button
-              type="button"
-              key={tab}
-              className={`deliveries-tab-btn ${statusFilter === tab ? 'active' : ''}`}
-              onClick={() => setStatusFilter(tab)}
-            >
-              {tab}
-            </button>
-          ))}
+      <div className="pkdo-table-toolbar">
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span className="pkdo-table-section-title">Deliveries List</span>
+          <span className="pkdo-table-count-pill">
+            {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
+          <button
+            className={`pkdo-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            title="Filter by status"
+            type="button"
+          >
+            <Filter size={14} />
+            <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
+          </button>
+
+          {dropdownOpen && (
+            <div className="pkdo-filter-dropdown">
+              {STATUS_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  className={`pkdo-dropdown-item ${statusFilter === option ? 'selected' : ''}`}
+                  onClick={() => {
+                    setStatusFilter(option);
+                    setDropdownOpen(false);
+                  }}
+                  type="button"
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="packer-table-wrap">
-        <table>
+      <div className="pkdo-table-scroll-wrapper">
+        <table className="pkdo-deliveries-table">
           <thead>
             <tr>
               <th>Cake Type</th>
               <th>Qty</th>
-              <th>Price</th>
+              <th>Total Price</th>
               <th>Customer Name</th>
-              <th>Special Instructions</th>
-              <th>Order Date</th>
-              <th>Pick-up Date</th>
+              <th>Contact</th>
+              <th>Delivery Address</th>
+              <th>Delivery Date</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {filteredItems.length === 0 && (
+            {paged.length > 0 ? (
+              paged.map((row, index) => {
+                const rowDate = toDateObject(row.deliveryDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const isToday = rowDate ? rowDate.getTime() === today.getTime() : false;
+                const isOverdue = row.computedStatus === 'Overdue';
+
+                return (
+                  <tr key={`${row.branch}-${row.cake}-${row.time}-${index}`}>
+                    <td>
+                      <span className="pkdo-cake-name-text">{row.cake}</span>
+                    </td>
+                    <td>{row.qty}</td>
+                    <td>
+                      <span className="pkdo-price-text">P{row.totalPrice.toLocaleString()}</span>
+                    </td>
+                    <td>{row.customer || 'Walk-in Customer'}</td>
+                    <td>
+                      <span className="pkdo-contact-text">{row.contact || '-'}</span>
+                    </td>
+                    <td>
+                      <span className="pkdo-address-text" title={row.address || '-'}>
+                        {row.address || '-'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`pkdo-date-text ${isOverdue ? 'is-overdue' : isToday ? 'is-today' : ''}`}>
+                        {formatDate(row.deliveryDate)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`pkdo-status-pill ${statusPillClass(row.computedStatus)}`}>
+                        {row.computedStatus}
+                      </span>
+                      <button
+                        type="button"
+                        className={`pkdo-status-action-btn ${isActionDisabled(row.computedStatus) ? 'disabled' : ''}`}
+                        onClick={() => onAdvanceStatus?.(row.sourceIndex)}
+                        disabled={isActionDisabled(row.computedStatus)}
+                      >
+                        {getActionLabel(row.computedStatus)}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
               <tr>
-                <td colSpan={8}>No matching deliveries</td>
-              </tr>
-            )}
-            {filteredItems.map((row) => (
-              <tr key={`${row.branch}-${row.cake}-${row.time}`}>
-                <td>{row.cake}</td>
-                <td>{row.qty}</td>
-                <td>PHP {row.price || 0}</td>
-                <td>{row.customer || 'Walk-in Customer'}</td>
-                <td>{row.specialInstructions || '-'}</td>
-                <td>{row.orderDate || '-'}</td>
-                <td>{row.pickupDate || '-'}</td>
-                <td>
-                  <div className="delivery-status-cell">
-                    <span className={`status-chip ${getBadgeClass(row.status)}`}>{row.status}</span>
-                    <button
-                      type="button"
-                      className={`delivery-action-btn ${isActionDisabled(row.status) ? 'disabled' : ''}`}
-                      onClick={() => onAdvanceStatus(row.sourceIndex)}
-                      disabled={isActionDisabled(row.status)}
-                    >
-                      {getActionLabel(row.status)}
-                    </button>
-                  </div>
+                <td colSpan={8} className="pkdo-no-data">
+                  No delivery orders match the current filter.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
+      </div>
+
+      <div className="pkdo-pagination">
+        <span className="pkdo-pagination-info">
+          {filteredData.length === 0
+            ? 'No results'
+            : `Showing ${(page - 1) * PER_PAGE + 1}-${Math.min(page * PER_PAGE, filteredData.length)} of ${filteredData.length}`}
+        </span>
+        <div className="pkdo-pagination-btns">
+          <button className="pkdo-page-btn" disabled={page === 1} onClick={() => setPage((prev) => prev - 1)} type="button">
+            {'<'}
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              className={`pkdo-page-btn ${page === p ? 'active' : ''}`}
+              onClick={() => setPage(p)}
+              type="button"
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            className="pkdo-page-btn"
+            disabled={page === totalPages}
+            onClick={() => setPage((prev) => prev + 1)}
+            type="button"
+          >
+            {'>'}
+          </button>
+        </div>
       </div>
     </section>
   );

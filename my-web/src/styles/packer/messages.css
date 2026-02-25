@@ -1,73 +1,233 @@
-.message-list {
-  display: grid;
-  gap: 12px;
-}
-
-.message-card {
+.pkmsg-page {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 14px;
-  background: #fffdf3;
-  border: 1px solid #e2ddc4;
-  border-radius: 12px;
-  padding: 14px;
+  flex-direction: column;
+  height: 85vh;
+  max-height: 100vh;
+  overflow: hidden;
+  animation: pkmsg-fade-in 0.3s ease;
 }
 
-.message-card > :first-child {
+@keyframes pkmsg-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pkmsg-header {
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.pkmsg-title {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.pkmsg-subtitle {
+  color: #888;
+  margin: 5px 0 0;
+}
+
+.pkmsg-panel {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+  background: #fff;
+  min-height: 0;
+}
+
+.pkmsg-contacts {
+  width: 250px;
+  flex-shrink: 0;
+  border-right: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fafafa;
+}
+
+.pkmsg-contacts-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa;
+  padding: 18px 18px 10px;
+}
+
+.pkmsg-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.pkmsg-contact-item:hover {
+  background: #f0f0f0;
+}
+
+.pkmsg-contact-item.active {
+  background: #fff8d0;
+  border-right: 3px solid #f7dd30;
+}
+
+.pkmsg-contact-info {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
 }
 
-.message-card.unread {
-  border-left: 5px solid var(--pack-red);
+.pkmsg-contact-name {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.message-card.urgent {
-  box-shadow: inset 0 0 0 1px #ffb5b5;
-  background: #fff5f5;
+.pkmsg-contact-role {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 1px;
 }
 
-.message-card h4 {
-  margin: 0 0 6px;
+.pkmsg-unread {
+  background: #f3071d;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.message-card p {
-  margin: 0;
-  color: #333333;
-}
-
-.message-meta {
+.pkmsg-chat {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  min-width: 152px;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.message-meta small {
-  color: var(--pack-muted);
+.pkmsg-chat-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.message-meta button {
-  display: inline-flex;
+.pkmsg-chat-name {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.pkmsg-chat-role {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.pkmsg-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pkmsg-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  border: none;
-  border-radius: 8px;
-  background: #202020;
-  color: #ffffff;
-  padding: 7px 10px;
-  cursor: pointer;
+  justify-content: center;
+  gap: 10px;
+  color: #ccc;
+  padding: 60px 0;
 }
 
-.message-actions {
+.pkmsg-row {
+  display: flex;
+}
+
+.pkmsg-row.in {
+  justify-content: flex-start;
+}
+
+.pkmsg-row.out {
+  justify-content: flex-end;
+}
+
+.pkmsg-bubble {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.pkmsg-bubble.in {
+  background: #f1f3f5;
+  color: #222;
+  border-bottom-left-radius: 4px;
+}
+
+.pkmsg-bubble.out {
+  background: #f7dd30;
+  color: #111;
+  border-bottom-right-radius: 4px;
+}
+
+.pkmsg-bubble.urgent {
+  box-shadow: inset 0 0 0 1px #ffb5b5;
+}
+
+.pkmsg-bubble p {
+  margin: 0;
+  word-break: break-word;
+}
+
+.pkmsg-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  color: #999;
+  text-align: right;
+}
+
+.pkmsg-tag {
+  display: inline-block;
+  margin-top: 8px;
+  background: #ecf5ff;
+  color: #225b8f;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pkmsg-actions {
   display: grid;
   gap: 6px;
-  width: 100%;
+  margin-top: 8px;
 }
 
-.message-actions button {
+.pkmsg-actions button {
   border: 1px solid #cccccc;
   border-radius: 7px;
   background: #ffffff;
@@ -75,32 +235,81 @@
   padding: 6px 9px;
   font-size: 0.78rem;
   cursor: pointer;
+  text-align: left;
 }
 
-.message-actions .urgent-btn {
-  border-color: #e2b1b1;
-  background: #fff1f1;
-  color: #8d1e1e;
+.pkmsg-actions button:hover {
+  background: #fff8d0;
 }
 
-.message-action-tag {
-  margin-top: 8px;
-  display: inline-block;
-  background: #ecf5ff;
-  color: #225b8f;
-  border-radius: 999px;
-  padding: 3px 9px;
-  font-size: 0.74rem;
-  font-weight: 700;
+.pkmsg-input-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.pkmsg-input {
+  flex: 1;
+  resize: none;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  color: #111;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.pkmsg-input:focus {
+  border-color: #f7dd30;
+  box-shadow: 0 0 0 2px rgba(247, 221, 48, 0.35);
+}
+
+.pkmsg-send-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #e5e7eb;
+  color: #aaa;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pkmsg-send-btn.active {
+  background: #f3071d;
+  color: #fff;
 }
 
 @media (max-width: 900px) {
-  .message-card {
-    flex-direction: column;
+  .pkmsg-page {
+    height: auto;
+    max-height: none;
   }
 
-  .message-meta {
-    align-items: flex-start;
-    min-width: 0;
+  .pkmsg-panel {
+    flex-direction: column;
+    min-height: 72vh;
+  }
+
+  .pkmsg-contacts {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .pkmsg-bubble {
+    max-width: 90%;
   }
 }

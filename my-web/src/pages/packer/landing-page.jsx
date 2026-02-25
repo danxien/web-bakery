@@ -5,6 +5,7 @@ import InventoryOverview from './inventoryOverview';
 import DeliveriesOverview from './deliveriesOverview';
 import PackerMessages from './messages';
 import CakePrices from './cakePrices';
+import PackerSettings from './packerSettings';
 import { AddCakeModal, DeliveryModal } from './modals';
 import {
   initialBranchStock,
@@ -25,6 +26,7 @@ import '../../styles/packer/cakePrices.css';
 
 export default function PackerLandingPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [packerName, setPackerName] = useState('Packer');
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [stockItems, setStockItems] = useState(initialBranchStock);
   const [deliveryItems, setDeliveryItems] = useState(initialDeliveryToday);
@@ -32,8 +34,8 @@ export default function PackerLandingPage({ onLogout }) {
     inboxMessages.map((msg, index) => ({
       ...msg,
       id: `msg-${index + 1}`,
-      urgent: false,
-      actionTaken: '',
+      urgent: msg.urgent || false,
+      actionTaken: msg.actionTaken || '',
     }))
   );
   const [isAddCakeOpen, setIsAddCakeOpen] = useState(false);
@@ -43,6 +45,8 @@ export default function PackerLandingPage({ onLogout }) {
   const [deliveryForm, setDeliveryForm] = useState({
     branch: 'Main Branch',
     customer: '',
+    contact: '',
+    address: '',
     cake: initialBranchStock[0]?.cake || '',
     price: initialBranchStock[0]?.price || 0,
     qty: '',
@@ -99,7 +103,9 @@ export default function PackerLandingPage({ onLogout }) {
   }, [stockItems, deliveryItems]);
 
   const unreadCount = messages.filter((msg) => msg.unread).length;
-  const pendingOrders = deliveryItems.filter((row) => row.status === 'Pending' || row.status === 'In Transit');
+  const pendingOrders = deliveryItems.filter(
+    (row) => row.status === 'Pending' || row.status === 'Out for Delivery' || row.status === 'In Transit'
+  );
 
   const handleAddCake = () => {
     const name = newCakeName.trim();
@@ -238,6 +244,8 @@ export default function PackerLandingPage({ onLogout }) {
       {
         branch: 'Main Branch',
         customer: deliveryForm.customer.trim() || 'Walk-in Customer',
+        contact: deliveryForm.contact.trim() || '-',
+        address: deliveryForm.address.trim() || '-',
         cake: deliveryForm.cake,
         price,
         qty,
@@ -254,6 +262,8 @@ export default function PackerLandingPage({ onLogout }) {
     setDeliveryForm({
       branch: 'Main Branch',
       customer: '',
+      contact: '',
+      address: '',
       cake: stockItems[0]?.cake || '',
       price: stockItems[0]?.price || 0,
       qty: '',
@@ -270,12 +280,12 @@ export default function PackerLandingPage({ onLogout }) {
     if (targetDelivery.status === 'Pending') {
       setDeliveryWarning('');
       setDeliveryItems((prev) =>
-        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'In Transit' } : row))
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Out for Delivery' } : row))
       );
       return;
     }
 
-    if (targetDelivery.status === 'In Transit') {
+    if (targetDelivery.status === 'Out for Delivery' || targetDelivery.status === 'In Transit') {
       const stockMatch = stockItems.find((item) => item.cake === targetDelivery.cake);
       const availableQty = stockMatch?.qty || 0;
 
@@ -320,20 +330,27 @@ export default function PackerLandingPage({ onLogout }) {
     const targetMessage = messages.find((msg) => msg.id === messageId);
     if (!targetMessage) return;
 
-    if (actionKey === 'convert-order' || actionKey === 'create-reservation') {
+    if (
+      actionKey === 'convert-order' ||
+      actionKey === 'create-reservation' ||
+      actionKey === 'add-order-delivery' ||
+      actionKey === 'add-custom-delivery'
+    ) {
       const detectedCake = getMessageCake(targetMessage.content);
       setDeliveryForm({
         branch: 'Main Branch',
         customer: targetMessage.from.replace('Seller - ', '').trim() || 'Reserved Customer',
+        contact: '',
+        address: '',
         cake: detectedCake,
         price: stockItems.find((item) => item.cake === detectedCake)?.price || 0,
         qty: getMessageQty(targetMessage.content),
         orderDate: new Date().toISOString().slice(0, 10),
         pickupDate: '',
         specialInstructions:
-          actionKey === 'convert-order'
+          actionKey === 'convert-order' || actionKey === 'add-order-delivery'
             ? `Converted from message: ${targetMessage.content}`
-            : `Reservation note: ${targetMessage.content}`,
+            : `Custom order note: ${targetMessage.content}`,
       });
       setIsDeliveryModalOpen(true);
     }
@@ -346,11 +363,42 @@ export default function PackerLandingPage({ onLogout }) {
               unread: false,
               urgent: actionKey === 'flag-urgent' ? true : msg.urgent,
               actionTaken:
-                actionKey === 'convert-order'
+                actionKey === 'convert-order' || actionKey === 'add-order-delivery'
                   ? 'Converted to order'
-                  : actionKey === 'create-reservation'
-                    ? 'Saved as reservation'
+                  : actionKey === 'create-reservation' || actionKey === 'add-custom-delivery'
+                    ? 'Saved as custom order delivery'
                     : 'Flagged as urgent',
+            }
+          : msg
+      )
+    );
+  };
+
+  const handleSendMessage = (thread, text) => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: `msg-${Date.now()}`,
+        thread,
+        fromRole: 'packer',
+        from: 'Packer - Main Branch',
+        content: text,
+        sentAt: timestamp,
+        unread: false,
+        urgent: false,
+        actionTaken: '',
+      },
+    ]);
+  };
+
+  const handleMarkThreadRead = (thread) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.thread === thread && msg.fromRole !== 'packer'
+          ? {
+              ...msg,
+              unread: false,
             }
           : msg
       )
@@ -389,7 +437,6 @@ export default function PackerLandingPage({ onLogout }) {
       return (
         <DeliveriesOverview
           deliveryItems={deliveryItems}
-          getBadgeClass={getBadgeClass}
           onAdvanceStatus={handleAdvanceDeliveryStatus}
           deliveryWarning={deliveryWarning}
         />
@@ -407,7 +454,18 @@ export default function PackerLandingPage({ onLogout }) {
       );
     }
 
-    return <PackerMessages inboxMessages={messages} onAction={handleMessageAction} />;
+    if (activeTab === 'settings') {
+      return <PackerSettings packerName={packerName} onSaveName={setPackerName} />;
+    }
+
+    return (
+      <PackerMessages
+        inboxMessages={messages}
+        onAction={handleMessageAction}
+        onSendMessage={handleSendMessage}
+        onMarkThreadRead={handleMarkThreadRead}
+      />
+    );
   };
 
   return (
@@ -419,6 +477,7 @@ export default function PackerLandingPage({ onLogout }) {
         onLogout={onLogout}
         isMinimized={isSidebarMinimized}
         onToggleMinimize={() => setIsSidebarMinimized((prev) => !prev)}
+        packerName={packerName}
       />
 
       <main className="packer-main-content">{renderActivePage()}</main>
