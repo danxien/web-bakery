@@ -59,6 +59,7 @@ export default function PackerLandingPage({ onLogout }) {
     cake: initialBranchStock[0]?.cake || '',
     qty: '',
     madeDate: new Date().toISOString().slice(0, 10),
+    madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     expiryDate: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
@@ -214,6 +215,9 @@ export default function PackerLandingPage({ onLogout }) {
     const qtyToAdd = Number(stockAddForm.qty);
     if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
 
+    const now = new Date();
+    const madeTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     setStockItems((prev) =>
       prev.map((item) =>
         item.cake === stockAddForm.cake
@@ -221,6 +225,7 @@ export default function PackerLandingPage({ onLogout }) {
               ...item,
               qty: item.qty + qtyToAdd,
               madeDate: stockAddForm.madeDate,
+              time: stockAddForm.madeTime || madeTime,
               expiryDate: stockAddForm.expiryDate,
             }
           : item
@@ -231,6 +236,7 @@ export default function PackerLandingPage({ onLogout }) {
       ...prev, 
       qty: '',
       madeDate: new Date().toISOString().slice(0, 10),
+      madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       expiryDate: '',
     }));
   };

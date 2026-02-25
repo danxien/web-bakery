@@ -36,6 +36,34 @@
   min-width: 120px;
 }
 
+.time-input-wrapper {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.time-input-wrapper .inventory-time-input {
+  flex: 0 0 110px;
+  min-width: 90px;
+}
+
+.time-now-btn {
+  border: 1px solid #d4c98a;
+  border-radius: 8px;
+  background: #e8f4ea;
+  color: #1a5c2e;
+  font-weight: 600;
+  padding: 8px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.time-now-btn:hover {
+  border-color: #2d8a4e;
+  background: #c9e8d3;
+}
+
 .inventory-filter {
   width: 170px;
 }

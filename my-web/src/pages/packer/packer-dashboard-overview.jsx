@@ -64,7 +64,7 @@ export default function DashboardOverview({
   return (
     <>
       <div className="packer-heading-block">
-        <h1>Inventory Overview</h1>
+        <h1>Dashboard</h1>
         <p>Monitor stock levels, expiry dates, and branch deliveries.</p>
       </div>
 

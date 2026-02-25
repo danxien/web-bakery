@@ -148,6 +148,8 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
               <th>Customer Name</th>
               <th>Contact</th>
               <th>Delivery Address</th>
+              <th>Date Made</th>
+              <th>Time</th>
               <th>Delivery Date</th>
               <th>Status</th>
               <th>Actions</th>
@@ -181,6 +183,14 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
                       </span>
                     </td>
                     <td>
+                      <span className="pkdo-date-text">
+                        {formatDate(row.orderDate)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="pkdo-time-text">{row.time || '-'}</span>
+                    </td>
+                    <td>
                       <span className={`pkdo-date-text ${isOverdue ? 'is-overdue' : isToday ? 'is-today' : ''}`}>
                         {formatDate(row.deliveryDate)}
                       </span>
@@ -212,7 +222,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
               })
             ) : (
               <tr>
-                <td colSpan={8} className="pkdo-no-data">
+                <td colSpan={11} className="pkdo-no-data">
                   No delivery orders match the current filter.
                 </td>
               </tr>

@@ -83,6 +83,28 @@ export default function InventoryOverview({
           onChange={(event) => onChangeStockAdd('madeDate', event.target.value)}
           className="inventory-search inventory-date-input"
         />
+        <div className="time-input-wrapper">
+          <input
+            type="time"
+            placeholder="Time"
+            value={stockAddForm.madeTime || ''}
+            onChange={(event) => onChangeStockAdd('madeTime', event.target.value)}
+            className="inventory-search inventory-time-input"
+          />
+          <button
+            type="button"
+            className="time-now-btn"
+            onClick={() => {
+              const now = new Date();
+              const hours = String(now.getHours()).padStart(2, '0');
+              const minutes = String(now.getMinutes()).padStart(2, '0');
+              onChangeStockAdd('madeTime', `${hours}:${minutes}`);
+            }}
+            title="Set to current time"
+          >
+            Now
+          </button>
+        </div>
         <input
           type="date"
           placeholder="Expiry Date"
@@ -118,6 +140,7 @@ export default function InventoryOverview({
               <th>Price</th>
               <th>Qty</th>
               <th>Made Date</th>
+              <th>Time</th>
               <th>Expiry</th>
               <th>Status</th>
             </tr>
@@ -125,7 +148,7 @@ export default function InventoryOverview({
           <tbody>
             {filteredStockItems.length === 0 && (
               <tr>
-                <td colSpan={6}>No matching inventory rows</td>
+                <td colSpan={7}>No matching inventory rows</td>
               </tr>
             )}
             {filteredStockItems.map((item) => (
@@ -134,6 +157,7 @@ export default function InventoryOverview({
                 <td>PHP {item.price}</td>
                 <td>{item.qty}</td>
                 <td>{item.madeDate}</td>
+                <td>{item.time || '-'}</td>
                 <td>{item.expiryDate}</td>
                 <td>
                   <span className={`status-chip ${getBadgeClass(item.status)}`}>{item.status}</span>
