@@ -31,6 +31,11 @@
   min-width: 120px;
 }
 
+.inventory-date-input {
+  flex: 0 0 160px;
+  min-width: 120px;
+}
+
 .inventory-filter {
   width: 170px;
 }

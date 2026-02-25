@@ -233,6 +233,12 @@
   font-weight: 700;
   padding: 6px 9px;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkdo-status-action-btn:hover:not(.disabled) {
+  background: #ffefad;
+  border-color: #c0a83a;
 }
 
 .pkdo-status-action-btn.disabled {
@@ -240,6 +246,25 @@
   background: #f2f2f2;
   color: #858585;
   cursor: not-allowed;
+}
+
+.pkdo-cancel-btn {
+  display: block;
+  margin-top: 6px;
+  border: 1px solid #ef4444;
+  border-radius: 7px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkdo-cancel-btn:hover {
+  background: #fecaca;
+  border-color: #dc2626;
 }
 
 .pkdo-status-pill.pending {

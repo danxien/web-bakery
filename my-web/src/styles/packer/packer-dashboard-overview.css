@@ -93,6 +93,32 @@
   margin-bottom: 14px;
 }
 
+.stock-search-box {
+  margin-bottom: 12px;
+}
+
+.stock-search-input {
+  width: 100%;
+  border: 1px solid #d2ccaa;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fffbe9;
+  color: #1f1f1f;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.stock-search-input::placeholder {
+  color: #8a856f;
+}
+
+.stock-search-input:focus {
+  outline: none;
+  border-color: #c8af3a;
+  box-shadow: 0 0 0 3px rgba(247, 221, 48, 0.1);
+}
+
 .stock-filter-panel {
   display: flex;
   flex-wrap: wrap;

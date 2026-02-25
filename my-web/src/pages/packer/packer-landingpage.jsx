@@ -58,6 +58,8 @@ export default function PackerLandingPage({ onLogout }) {
   const [stockAddForm, setStockAddForm] = useState({
     cake: initialBranchStock[0]?.cake || '',
     qty: '',
+    madeDate: new Date().toISOString().slice(0, 10),
+    expiryDate: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
 
@@ -95,12 +97,19 @@ export default function PackerLandingPage({ onLogout }) {
     const nearExpiryCount = stockItems
       .filter((row) => row.status === 'Near Expiry')
       .reduce((sum, row) => sum + row.qty, 0);
+    
+    const today = new Date().toISOString().slice(0, 10);
     const deliveredToday = deliveryItems
-      .filter((row) => row.status === 'Delivered')
+      .filter((row) => row.status === 'Delivered' && row.orderDate === today)
       .reduce((sum, row) => sum + row.qty, 0);
+    
+    const revenueToday = deliveryItems
+      .filter((row) => row.status === 'Delivered' && row.orderDate === today)
+      .reduce((sum, row) => sum + (row.price * row.qty), 0);
+    
     const customOrderCount = customOrders.length;
 
-    return { totalCakes, freshCount, nearExpiryCount, deliveredToday, customOrderCount };
+    return { totalCakes, freshCount, nearExpiryCount, deliveredToday, revenueToday, customOrderCount };
   }, [stockItems, deliveryItems]);
 
   const unreadCount = messages.filter((msg) => msg.unread).length;
@@ -203,7 +212,7 @@ export default function PackerLandingPage({ onLogout }) {
 
   const handleAddStockQty = () => {
     const qtyToAdd = Number(stockAddForm.qty);
-    if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0) return;
+    if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
 
     setStockItems((prev) =>
       prev.map((item) =>
@@ -211,12 +220,19 @@ export default function PackerLandingPage({ onLogout }) {
           ? {
               ...item,
               qty: item.qty + qtyToAdd,
+              madeDate: stockAddForm.madeDate,
+              expiryDate: stockAddForm.expiryDate,
             }
           : item
       )
     );
 
-    setStockAddForm((prev) => ({ ...prev, qty: '' }));
+    setStockAddForm((prev) => ({ 
+      ...prev, 
+      qty: '',
+      madeDate: new Date().toISOString().slice(0, 10),
+      expiryDate: '',
+    }));
   };
 
   const handleDeliveryInput = (key, value) => {
@@ -430,6 +446,9 @@ export default function PackerLandingPage({ onLogout }) {
           stockAddForm={stockAddForm}
           onChangeStockAdd={handleStockAddInput}
           onAddStock={handleAddStockQty}
+          totals={totals}
+          deliveryItems={deliveryItems}
+          customOrders={customOrders}
         />
       );
     }

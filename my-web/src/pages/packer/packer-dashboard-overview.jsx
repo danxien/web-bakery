@@ -22,15 +22,22 @@ export default function DashboardOverview({
   const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
   const [stockStatusFilter, setStockStatusFilter] = useState('All');
   const [stockSortBy, setStockSortBy] = useState('None');
+  const [stockSearchTerm, setStockSearchTerm] = useState('');
 
   const todayDate = new Date().toISOString().slice(0, 10);
   const isExpired = (item) => item.status === 'Expired' || item.expiryDate < todayDate;
 
   const filteredStockItems = useMemo(() => {
     const filtered = stockItems.filter((item) => {
-      if (stockStatusFilter === 'All') return true;
-      if (stockStatusFilter === 'Expired') return isExpired(item);
-      return item.status === stockStatusFilter;
+      const matchesSearch =
+        item.cake.toLowerCase().includes(stockSearchTerm.toLowerCase()) ||
+        String(item.price).includes(stockSearchTerm) ||
+        item.expiryDate.includes(stockSearchTerm) ||
+        item.madeDate.includes(stockSearchTerm);
+      
+      if (stockStatusFilter === 'All') return matchesSearch;
+      if (stockStatusFilter === 'Expired') return matchesSearch && isExpired(item);
+      return matchesSearch && item.status === stockStatusFilter;
     });
 
     const sorted = [...filtered];
@@ -45,7 +52,7 @@ export default function DashboardOverview({
     }
 
     return sorted;
-  }, [stockItems, stockSortBy, stockStatusFilter]);
+  }, [stockItems, stockSortBy, stockStatusFilter, stockSearchTerm]);
 
   const activeFilterCount = Number(stockStatusFilter !== 'All') + Number(stockSortBy !== 'None');
 
@@ -111,24 +118,7 @@ export default function DashboardOverview({
           <small>Needs fast dispatch</small>
         </article>
 
-        <article className="packer-stat-card">
-          <div className="packer-stat-row">
-            <span>Delivered Today</span>
-            <Truck size={18} />
-          </div>
-          <h2>{totals.deliveredToday}</h2>
-          <small>Units received by branches</small>
-        </article>
-
-        <article className="packer-stat-card">
-          <div className="packer-stat-row">
-            <span>Custom Orders</span>
-            <MessageSquare size={18} />
-          </div>
-          <h2>{totals.customOrderCount}</h2>
-          <small>Main Branch requests today</small>
-        </article>
-      </div>
+              </div>
 
       <div className="packer-alerts">
         <div className="alert danger">
@@ -144,10 +134,6 @@ export default function DashboardOverview({
       <section className="packer-table-card">
         <div className="packer-table-head">
           <h3>Main Branch Stock List</h3>
-          <button type="button" onClick={() => setIsStockFilterOpen((prev) => !prev)}>
-            <Filter size={14} />
-            <span>{activeFilterCount > 0 ? `Filter (${activeFilterCount})` : 'Filter'}</span>
-          </button>
         </div>
         {isStockFilterOpen && (
           <div className="stock-filter-panel">

@@ -6,6 +6,9 @@ export default function InventoryOverview({
   stockAddForm,
   onChangeStockAdd,
   onAddStock,
+  totals,
+  deliveryItems,
+  customOrders,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -22,11 +25,38 @@ export default function InventoryOverview({
   }, [searchTerm, statusFilter, stockItems]);
 
   return (
-    <section className="packer-panel-card">
-      <h3>Inventory (Main Branch)</h3>
-      <p>Update stock and expiry details for Main Branch.</p>
+    <>
+      <div className="packer-stats-grid">
+        <article className="packer-stat-card">
+          <div className="packer-stat-row">
+            <span>Delivered Today</span>
+          </div>
+          <h2>{totals?.deliveredToday || 0}</h2>
+          <small>Units delivered today</small>
+        </article>
 
-      <div className="inventory-add-stock">
+        <article className="packer-stat-card">
+          <div className="packer-stat-row">
+            <span>Revenue Today</span>
+          </div>
+          <h2>PHP {(totals?.revenueToday || 0).toLocaleString()}</h2>
+          <small>Total collected today</small>
+        </article>
+
+        <article className="packer-stat-card">
+          <div className="packer-stat-row">
+            <span>Custom Orders</span>
+          </div>
+          <h2>{customOrders?.length || 0}</h2>
+          <small>Main Branch requests today</small>
+        </article>
+      </div>
+
+      <section className="packer-panel-card">
+        <h3>Inventory (Main Branch)</h3>
+        <p>Update stock and expiry details for Main Branch.</p>
+
+        <div className="inventory-add-stock">
         <select
           value={stockAddForm.cake}
           onChange={(event) => onChangeStockAdd('cake', event.target.value)}
@@ -45,6 +75,20 @@ export default function InventoryOverview({
           value={stockAddForm.qty}
           onChange={(event) => onChangeStockAdd('qty', event.target.value)}
           className="inventory-search inventory-qty-input"
+        />
+        <input
+          type="date"
+          placeholder="Made Date"
+          value={stockAddForm.madeDate}
+          onChange={(event) => onChangeStockAdd('madeDate', event.target.value)}
+          className="inventory-search inventory-date-input"
+        />
+        <input
+          type="date"
+          placeholder="Expiry Date"
+          value={stockAddForm.expiryDate}
+          onChange={(event) => onChangeStockAdd('expiryDate', event.target.value)}
+          className="inventory-search inventory-date-input"
         />
         <button type="button" className="inventory-add-btn" onClick={onAddStock}>
           Add Stock
@@ -73,6 +117,7 @@ export default function InventoryOverview({
               <th>Cake</th>
               <th>Price</th>
               <th>Qty</th>
+              <th>Made Date</th>
               <th>Expiry</th>
               <th>Status</th>
             </tr>
@@ -80,7 +125,7 @@ export default function InventoryOverview({
           <tbody>
             {filteredStockItems.length === 0 && (
               <tr>
-                <td colSpan={5}>No matching inventory rows</td>
+                <td colSpan={6}>No matching inventory rows</td>
               </tr>
             )}
             {filteredStockItems.map((item) => (
@@ -88,6 +133,7 @@ export default function InventoryOverview({
                 <td>{item.cake}</td>
                 <td>PHP {item.price}</td>
                 <td>{item.qty}</td>
+                <td>{item.madeDate}</td>
                 <td>{item.expiryDate}</td>
                 <td>
                   <span className={`status-chip ${getBadgeClass(item.status)}`}>{item.status}</span>
@@ -97,6 +143,7 @@ export default function InventoryOverview({
           </tbody>
         </table>
       </div>
-    </section>
+      </section>
+    </>
   );
 }
