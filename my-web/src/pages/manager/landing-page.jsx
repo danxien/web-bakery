@@ -3,7 +3,6 @@ import { useState } from "react";
 // ─── Page Components ──────────────────────────────────────────────────────────
 import Sidebar              from "./sidebarmenu";
 import Dashboard            from "./dashboard";
-import Reports              from "./reports";
 import InventoryOverview    from "./inventoryOverview";
 import SalesOverview        from "./salesOverview";
 import CustomOrders         from "./customOrders";
@@ -23,9 +22,17 @@ export default function ManagerLandingPage({ onLogout, initialName = 'Manager' }
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Seeded from login username, editable via ManagerSettings
-  const [managerName, setManagerName] = useState(initialName);
+  const [managerName,    setManagerName]    = useState(initialName);
 
-  const handleNavigate      = (page) => setActivePage(page);
+  // TODO: Backend - Initialize to 0; real count is pushed by Messages via onUnreadChange
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  const handleNavigate = (page) => {
+    // Clear badge when the user opens the Messages page
+    if (page === "messages") setUnreadMessages(0);
+    setActivePage(page);
+  };
+
   const handleToggleSidebar = ()     => setSidebarCollapsed((prev) => !prev);
   const handleSaveName      = (name) => setManagerName(name);
 
@@ -33,8 +40,6 @@ export default function ManagerLandingPage({ onLogout, initialName = 'Manager' }
     switch (activePage) {
       case "dashboard":
         return <Dashboard setActivePage={setActivePage} />;
-      case "reports":
-        return <Reports />;
       case "inventory":
         return <InventoryOverview />;
       case "sales":
@@ -55,7 +60,9 @@ export default function ManagerLandingPage({ onLogout, initialName = 'Manager' }
       case "deliveries":
         return <DeliveryOverview />;
       case "messages":
-        return <Messages />;
+        // onUnreadChange — called by Messages whenever the unread count changes
+        // (e.g. new message arrives via polling or WebSocket)
+        return <Messages onUnreadChange={setUnreadMessages} />;
       default:
         return <Dashboard setActivePage={setActivePage} />;
     }
@@ -70,6 +77,7 @@ export default function ManagerLandingPage({ onLogout, initialName = 'Manager' }
         onToggle={handleToggleSidebar}
         onLogout={onLogout}
         managerName={managerName}
+        unreadMessages={unreadMessages}
       />
       <main className="main-content-area">
         <div className="content-inner">

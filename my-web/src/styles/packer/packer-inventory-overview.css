@@ -1,0 +1,100 @@
+.inventory-add-stock {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.inventory-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.inventory-search,
+.inventory-filter {
+  border: 1px solid #d2ccaa;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fffbe9;
+  color: #202020;
+  font-family: inherit;
+  font-size: 0.92rem;
+}
+
+.inventory-search {
+  flex: 1;
+  min-width: 220px;
+}
+
+.inventory-qty-input {
+  flex: 0 0 160px;
+  min-width: 120px;
+}
+
+.inventory-date-input {
+  flex: 0 0 160px;
+  min-width: 120px;
+}
+
+.time-input-wrapper {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.time-input-wrapper .inventory-time-input {
+  flex: 0 0 110px;
+  min-width: 90px;
+}
+
+.time-now-btn {
+  border: 1px solid #d4c98a;
+  border-radius: 8px;
+  background: #e8f4ea;
+  color: #1a5c2e;
+  font-weight: 600;
+  padding: 8px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.time-now-btn:hover {
+  border-color: #2d8a4e;
+  background: #c9e8d3;
+}
+
+.inventory-filter {
+  width: 170px;
+}
+
+.inventory-add-btn {
+  border: 1px solid #d4c98a;
+  border-radius: 8px;
+  background: #fff6c7;
+  color: #3f3200;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.inventory-add-btn:hover {
+  border-color: #c0a83a;
+  background: #ffefad;
+}
+
+@media (max-width: 700px) {
+  .inventory-add-stock,
+  .inventory-controls {
+    flex-direction: column;
+  }
+
+  .inventory-filter {
+    width: 100%;
+  }
+
+  .inventory-qty-input {
+    width: 100%;
+    min-width: 0;
+  }
+}

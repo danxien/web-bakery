@@ -1,0 +1,383 @@
+.packer-settings__page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background-color: #fcf6c4;
+  position: relative;
+}
+
+.packer-settings__header {
+  flex-shrink: 0;
+  margin-bottom: 30px;
+  background-color: #fcf6c4;
+}
+
+.packer-settings__title {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.packer-settings__subtitle {
+  color: #888;
+  font-size: 1rem;
+  margin: 5px 0 0 0;
+}
+
+.packer-settings__body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: ps-fade-in 0.3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: #e0d96a #fcf6c4;
+}
+
+.packer-settings__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.packer-settings__body::-webkit-scrollbar-track {
+  background: #fcf6c4;
+}
+
+.packer-settings__body::-webkit-scrollbar-thumb {
+  background-color: #d4c94a;
+  border-radius: 10px;
+}
+
+@keyframes ps-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ms-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  width: 100%;
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.ms-cards-row .ms-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.ms-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 26px 28px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ms-card--full {
+  width: 100%;
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.ms-card__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.ms-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.ms-icon--purple { background-color: #c026d3; }
+.ms-icon--blue { background-color: #0ea5e9; }
+
+.ms-card__title {
+  font-family: Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0 0 2px 0;
+}
+
+.ms-card__subtitle {
+  font-size: 0.825rem;
+  color: #888;
+  margin: 0;
+}
+
+.ms-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ms-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ms-input-group label {
+  font-weight: bold;
+  font-size: 0.875rem;
+  color: #000;
+}
+
+.ms-input-group input {
+  padding: 10px 13px;
+  border-radius: 8px;
+  border: none;
+  background-color: #f8f9fa;
+  font-size: 0.9rem;
+  color: #333;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: box-shadow 0.15s;
+}
+
+.ms-input-group input:focus {
+  box-shadow: 0 0 0 2px #f7dd30;
+}
+
+.ms-input--readonly {
+  color: #aaa !important;
+  cursor: default;
+}
+
+.ms-input-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ms-input-icon {
+  position: absolute;
+  left: 12px;
+  color: #aaa;
+  pointer-events: none;
+}
+
+.ms-input--with-icon {
+  padding-left: 30px !important;
+}
+
+.ms-input-hint {
+  font-size: 0.75rem;
+  color: #f3071d;
+  margin-top: 1px;
+}
+
+.ms-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: fit-content;
+  margin-left: auto;
+  margin-top: 4px;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.ms-btn:hover {
+  opacity: 0.88;
+}
+
+.ms-btn:active {
+  transform: scale(0.98);
+}
+
+.ms-btn--save {
+  background-color: #f3071d;
+  color: #fff;
+}
+
+.ms-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px;
+}
+
+.ms-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ms-info-row:last-child {
+  border-bottom: none;
+}
+
+.ms-info-row:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.ms-info-label {
+  color: #888;
+  font-size: 0.875rem;
+}
+
+.ms-info-value {
+  color: #000;
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.ms-info-value--mono {
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.ms-info-value--bold {
+  font-weight: bold;
+}
+
+.ms-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  animation: ps-slide-up 0.3s ease;
+}
+
+@keyframes ps-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ms-toast__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+  min-width: 280px;
+  border-left: 4px solid #f3071d;
+}
+
+.ms-toast__icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ms-toast--success { background-color: #22c55e; }
+.ms-toast--error { background-color: #f3071d; }
+
+.ms-toast__text {
+  flex: 1;
+}
+
+.ms-toast__main {
+  font-weight: bold;
+  font-size: 0.875rem;
+  color: #111;
+  margin: 0 0 2px 0;
+}
+
+.ms-toast__sub {
+  font-size: 0.78rem;
+  color: #666;
+  margin: 0;
+}
+
+.ms-toast__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.ms-toast__close:hover {
+  color: #333;
+}
+
+@media (max-width: 900px) {
+  .ms-cards-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ms-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ms-info-row:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .packer-settings__header,
+  .packer-settings__body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .ms-card {
+    padding: 20px 16px;
+  }
+
+  .ms-toast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .ms-toast__content {
+    min-width: unset;
+  }
+}
+.packer-settings--full .packer-settings__body {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.packer-settings--full .ms-card {
+  width: 100%;
+}
+
+.packer-settings--full .packer-settings__header {
+  padding-left: 44px;
+  padding-right: 44px;
+}
+
+@media (max-width: 768px) {
+  .packer-settings--full .packer-settings__header {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}

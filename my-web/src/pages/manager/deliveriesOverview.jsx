@@ -2,45 +2,22 @@
 // deliveriesOverview.jsx
 // -------------------------------------------------------------
 // PURPOSE: Manager monitoring view for customer delivery orders.
-//
-// STRUCTURE mirrors reservationOverview.jsx exactly:
-//   1. .do-page-container   → .ro-page-container
-//   2. .do-header           → .ro-header
-//   3. .do-metrics-row      → .ro-metrics-row  (3 cards)
-//   4. .do-alerts-container → .ro-alerts-container  (3 rows)
-//   5. .do-table-container  → .ro-table-container   (toolbar + table)
-//
-// BACKEND INTEGRATION CHECKLIST:
-//   [ ] Replace mock INIT_DELIVERIES with API response
-//   [ ] Replace hardcoded alert counts with dynamic values
-//   [ ] Add loading and error states after fetching
-//   [ ] Connect filter dropdown to backend query params (optional)
-//   [ ] All metric values are derived — recalculate after fetch
-//   [ ] On Delivered: sync Total Cakes Delivered + Sales Overview
-//   [ ] Rule 3: Auto-flag overdue if today > deliveryDate && status === 'Pending'
-//   [ ] Rule 4: Seller order creation auto-creates delivery record here
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Truck, CircleDollarSign, PackageCheck, AlertTriangle, Filter } from 'lucide-react';
 import '../../styles/manager/deliveriesOverview.css';
 
-/* ──────────────────────────────────────────────────────────────
-   MOCK "TODAY" — fixed for demo consistency.
-   🔹 BACKEND: Replace with: const TODAY = new Date();
-────────────────────────────────────────────────────────────── */
-const TODAY_STR = '2025-01-24';
-const TODAY     = new Date(TODAY_STR + 'T00:00:00');
+// TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
+const TODAY     = new Date();
+const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Helpers ─────────────────────────────────────────────── */
 
-/** Statuses included in Estimated Revenue — exclude Cancelled (Rule 1) */
+// Statuses included in Estimated Revenue — exclude Cancelled
 const REVENUE_STATUSES = ['Pending', 'Out for Delivery', 'Delivered'];
 
-/**
- * Rule 3: Overdue = deliveryDate < today AND status is not Delivered or Cancelled.
- * Computed automatically — no manual flag needed.
- */
+// Overdue: deliveryDate < today AND status is not Delivered or Cancelled
 function isOverdue(d) {
   return (
     new Date(d.deliveryDate + 'T00:00:00') < TODAY &&
@@ -49,7 +26,7 @@ function isOverdue(d) {
   );
 }
 
-/** Deliveries Today: deliveryDate === today AND not yet Delivered or Cancelled */
+// Deliveries Today: deliveryDate === today AND not yet Delivered or Cancelled
 function isDeliveryToday(d) {
   return (
     d.deliveryDate === TODAY_STR &&
@@ -58,7 +35,6 @@ function isDeliveryToday(d) {
   );
 }
 
-/** Pending: status === 'Pending', any date */
 function isPending(d) {
   return d.status === 'Pending';
 }
@@ -72,7 +48,7 @@ function formatDate(s) {
 /**
  * Cake Type column display:
  * Single item  → show name directly
- * Multiple     → "First Cake + N more"  (full list visible on hover via title attr)
+ * Multiple     → "First Cake + N more"
  */
 function formatCakeType(items) {
   if (!items || items.length === 0) return '—';
@@ -96,7 +72,6 @@ function statusPillClass(status) {
   return map[status] || 'pending';
 }
 
-/** Applies Rule 3: displays "Overdue" when conditions are met */
 function displayStatus(d) {
   return isOverdue(d) ? 'Overdue' : d.status;
 }
@@ -107,113 +82,108 @@ function StatusPill({ delivery }) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   MOCK DATA
-   🔹 BACKEND: Replace this entire array with an API call result.
-   Expected shape per delivery order:
+   TODO: Backend - Export deliveries data for salesOverview.jsx
+   Replace this empty array with the fetched API response.
+   Expected shape per delivery:
    {
-     id,
-     items: [{ name, qty }],     // array of cake line items per order
-     totalQty,                    // sum of all item qty
-     totalPrice,                  // total order price (not per-cake price)
-     customer,                    // full name
-     contact,                     // phone number
-     address,                     // complete delivery address
-     deliveryDate (YYYY-MM-DD),
-     status: 'Pending' | 'Out for Delivery' | 'Delivered' | 'Cancelled'
+     items:        [{ name: string, qty: number }]
+     totalQty:     number
+     totalPrice:   number
+     customer:     string
+     contact:      string
+     address:      string
+     deliveryDate: string  — YYYY-MM-DD
+     status:       'Pending' | 'Out for Delivery' | 'Delivered' | 'Cancelled'
    }
 ────────────────────────────────────────────────────────────── */
-const INIT_DELIVERIES = [
-  {
-    id: 'DEL-001',
-    items: [{ name: 'Chocolate Fudge Cake', qty: 2 }],
-    totalQty: 2, totalPrice: 1700,
-    customer: 'Ana Reyes', contact: '09171234567',
-    address: '123 Rizal St., Brgy. Sta. Cruz, Calamba, Laguna',
-    deliveryDate: TODAY_STR, status: 'Pending',
-  },
-  {
-    id: 'DEL-002',
-    items: [
-      { name: 'Ube Macapuno Cake', qty: 1 },
-      { name: 'Red Velvet Cake',   qty: 1 },
-      { name: 'Buko Pandan Cake',  qty: 1 },
-    ],
-    totalQty: 3, totalPrice: 2770,
-    customer: 'Jose Cruz', contact: '09189876543',
-    address: '45 Mabini Ave., Brgy. Halang, Calamba, Laguna',
-    deliveryDate: TODAY_STR, status: 'Out for Delivery',
-  },
-  {
-    id: 'DEL-003',
-    items: [{ name: 'Mango Float Cake', qty: 3 }],
-    totalQty: 3, totalPrice: 2340,
-    customer: 'Pedro Santos', contact: '09205551234',
-    address: '78 Luna St., Brgy. Real, Calamba, Laguna',
-    deliveryDate: '2025-01-22', status: 'Pending',
-  },
-  {
-    id: 'DEL-004',
-    items: [
-      { name: 'Caramel Custard Cake', qty: 2 },
-      { name: 'Mocha Crunch Cake',    qty: 1 },
-    ],
-    totalQty: 3, totalPrice: 2210,
-    customer: 'Maria Gomez', contact: '09321112233',
-    address: '9 Del Pilar Rd., Brgy. Uno, Calamba, Laguna',
-    deliveryDate: '2025-01-21', status: 'Pending',
-  },
-  {
-    id: 'DEL-005',
-    items: [{ name: 'Strawberry Shortcake', qty: 1 }],
-    totalQty: 1, totalPrice: 890,
-    customer: 'Rosa Villamor', contact: '09178884455',
-    address: '22 Bonifacio Blvd., Brgy. Dos, Calamba, Laguna',
-    deliveryDate: '2025-01-25', status: 'Pending',
-  },
-  {
-    id: 'DEL-006',
-    items: [{ name: 'Leche Flan Cake', qty: 1 }],
-    totalQty: 1, totalPrice: 1050,
-    customer: 'Mr. & Mrs. Santos', contact: '09096667788',
-    address: '3 Aguinaldo St., Brgy. Tres, Calamba, Laguna',
-    deliveryDate: '2025-01-21', status: 'Delivered',
-  },
-  {
-    id: 'DEL-007',
-    items: [
-      { name: 'Pandan Chiffon Cake', qty: 2 },
-      { name: 'Ube Cheese Cake',     qty: 2 },
-    ],
-    totalQty: 4, totalPrice: 3500,
-    customer: 'Reyes Family', contact: '09151239876',
-    address: '67 Quezon Ave., Brgy. Parian, Calamba, Laguna',
-    deliveryDate: '2025-01-27', status: 'Pending',
-  },
-  {
-    id: 'DEL-008',
-    items: [{ name: 'Chocolate Mousse Cake', qty: 1 }],
-    totalQty: 1, totalPrice: 1200,
-    customer: 'Lara Diaz', contact: '09273334455',
-    address: '11 Burgos St., Brgy. Siete, Calamba, Laguna',
-    deliveryDate: '2025-01-20', status: 'Delivered',
-  },
-  {
-    id: 'DEL-009',
-    items: [{ name: 'Buko Pandan Cake', qty: 2 }],
-    totalQty: 2, totalPrice: 1440,
-    customer: 'Barangay Fiesta Org.', contact: '09504441122',
-    address: '100 Fiesta Rd., Brgy. Sawa, Calamba, Laguna',
-    deliveryDate: '2025-01-19', status: 'Cancelled',
-  },
-  {
-    id: 'DEL-010',
-    items: [{ name: 'Red Velvet Cake', qty: 1 }],
-    totalQty: 1, totalPrice: 1100,
-    customer: 'Walk-in Delivery', contact: '09881230000',
-    address: '55 Magsaysay Blvd., Brgy. Uno, Calamba, Laguna',
-    deliveryDate: '2025-01-28', status: 'Pending',
-  },
-];
+export let INIT_DELIVERIES = [];
+
+/* ──────────────────────────────────────────────────────────────
+   DELIVERY DETAIL MODAL
+────────────────────────────────────────────────────────────── */
+function DeliveryDetailModal({ delivery, onClose }) {
+  const overdue  = isOverdue(delivery);
+  const dueToday = isDeliveryToday(delivery);
+
+  return (
+    <div className="do-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="do-modal">
+
+        <div className="do-modal-header">
+          <div>
+            <h2 className="do-modal-title">{formatCakeType(delivery.items)}</h2>
+          </div>
+          <button className="do-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        <div className="do-modal-body">
+          <div>
+            <h3 className="do-modal-section-title">Delivery Information</h3>
+            <div className="do-modal-info-grid">
+
+              <div className="do-info-item">
+                <span className="do-info-label">Status</span>
+                <span className="do-info-value">
+                  <StatusPill delivery={delivery} />
+                </span>
+              </div>
+
+              <div className="do-info-item">
+                <span className="do-info-label">Customer</span>
+                <span className="do-info-value">{delivery.customer}</span>
+              </div>
+
+              <div className="do-info-item">
+                <span className="do-info-label">Total Price</span>
+                <span className="do-info-value do-price-val">₱{delivery.totalPrice.toLocaleString()}</span>
+              </div>
+
+              <div className="do-info-item">
+                <span className="do-info-label">Total Quantity</span>
+                <span className="do-info-value">{delivery.totalQty} pc{delivery.totalQty > 1 ? 's' : ''}</span>
+              </div>
+
+              <div className="do-info-item">
+                <span className="do-info-label">Contact Number</span>
+                <span className="do-info-value">{delivery.contact}</span>
+              </div>
+
+              <div className="do-info-item">
+                <span className="do-info-label">Delivery Date</span>
+                <span className="do-info-value" style={{
+                  color:      overdue  ? '#b91c1c' : dueToday ? '#854d0e' : undefined,
+                  fontWeight: (overdue || dueToday) ? 700 : undefined,
+                }}>
+                  {formatDate(delivery.deliveryDate)}
+                  {overdue  && '  ⚠ Overdue'}
+                  {dueToday && '  ⚠ Due Today'}
+                </span>
+              </div>
+
+              <div className="do-info-item full-width">
+                <span className="do-info-label">Delivery Address</span>
+                <span className="do-info-value do-address-val">{delivery.address}</span>
+              </div>
+
+              <div className="do-info-item full-width">
+                <span className="do-info-label">Order Items</span>
+                <div className="do-items-list">
+                  {delivery.items.map((item, idx) => (
+                    <div key={idx} className="do-item-row">
+                      <span className="do-item-name">{item.name}</span>
+                      <span className="do-item-qty">×{item.qty}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
@@ -227,49 +197,45 @@ const NO_QUICK = 'all';
 const DeliveryOverview = () => {
 
   // -----------------------------------------------------------
-  // UI STATE
+  // STATE
+  // TODO: Backend - Replace empty array with fetched deliveries data
   // -----------------------------------------------------------
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [quickFilter,  setQuickFilter]  = useState(NO_QUICK);
-  const [page,         setPage]         = useState(1);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [deliveriesData, setDeliveriesData] = useState([]);
+  const [loading,        setLoading]        = useState(true);
+  const [error,          setError]          = useState(null);
 
-  // 🔹 BACKEND: Add state for fetched data, loading, error
-  // const [deliveriesData, setDeliveriesData] = useState([]);
-  // const [loading,        setLoading]        = useState(true);
-  // const [error,          setError]          = useState(null);
+  const [statusFilter,  setStatusFilter]  = useState('All');
+  const [quickFilter,   setQuickFilter]   = useState(NO_QUICK);
+  const [page,          setPage]          = useState(1);
+  const [modalDelivery, setModalDelivery] = useState(null);
+  const [dropdownOpen,  setDropdownOpen]  = useState(false);
+  const dropdownRef = useRef(null);
 
 
   // -----------------------------------------------------------
   // DERIVED METRIC VALUES
-  // 🔹 BACKEND: Replace INIT_DELIVERIES with deliveriesData
+  // TODO: Backend - All values are derived from deliveriesData
   // -----------------------------------------------------------
+  const totalDeliveryOrders = deliveriesData.length;
 
-  // Card 1: Total Delivery Orders — count of ALL orders (no exclusions)
-  const totalDeliveryOrders = INIT_DELIVERIES.length;
-
-  // Card 2: Estimated Revenue — sum of totalPrice, exclude Cancelled (Rule 1)
-  const estimatedRevenue = INIT_DELIVERIES
+  const estimatedRevenue = deliveriesData
     .filter(d => REVENUE_STATUSES.includes(d.status))
     .reduce((sum, d) => sum + d.totalPrice, 0);
 
-  // Card 3: Total Cakes Delivered — sum of totalQty where status === 'Delivered' ONLY (Rule 1)
-  const totalCakesDelivered = INIT_DELIVERIES
+  const totalCakesDelivered = deliveriesData
     .filter(d => d.status === 'Delivered')
     .reduce((sum, d) => sum + d.totalQty, 0);
 
-  // Alert counts
-  const deliveriesTodayCount = INIT_DELIVERIES.filter(isDeliveryToday).length;
-  const pendingCount         = INIT_DELIVERIES.filter(isPending).length;
-  const overdueCount         = INIT_DELIVERIES.filter(isOverdue).length;
+  const deliveriesTodayCount = deliveriesData.filter(isDeliveryToday).length;
+  const pendingCount         = deliveriesData.filter(isPending).length;
+  const overdueCount         = deliveriesData.filter(isOverdue).length;
 
 
   // -----------------------------------------------------------
   // FILTER LOGIC
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = INIT_DELIVERIES; // 🔹 BACKEND: swap to deliveriesData
+    let result = deliveriesData;
 
     if      (quickFilter === 'today')   result = result.filter(isDeliveryToday);
     else if (quickFilter === 'pending') result = result.filter(isPending);
@@ -280,7 +246,7 @@ const DeliveryOverview = () => {
     }
 
     return result;
-  }, [quickFilter, statusFilter]);
+  }, [quickFilter, statusFilter, deliveriesData]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -292,12 +258,26 @@ const DeliveryOverview = () => {
 
 
   // -----------------------------------------------------------
-  // useEffect
+  // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // 🔹 BACKEND: Fetch deliveries on mount
-    // const fetchDeliveries = async () => { ... };
+    // TODO: Backend - Fetch deliveries on mount
+    // Example:
+    // const fetchDeliveries = async () => {
+    //   try {
+    //     setLoading(true);
+    //     const response = await fetch('/api/deliveries');
+    //     const data = await response.json();
+    //     setDeliveriesData(data.deliveries);
+    //     INIT_DELIVERIES = data.deliveries; // Keep export in sync for salesOverview
+    //   } catch (err) {
+    //     setError('Failed to load delivery data.');
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
     // fetchDeliveries();
+    setLoading(false);
 
     const handler = e => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target))
@@ -311,8 +291,15 @@ const DeliveryOverview = () => {
   // -----------------------------------------------------------
   // RENDER
   // -----------------------------------------------------------
+  if (loading) return <div className="do-page-container"><p>Loading deliveries...</p></div>;
+  if (error)   return <div className="do-page-container"><p>{error}</p></div>;
+
   return (
     <div className="do-page-container">
+
+      {modalDelivery && (
+        <DeliveryDetailModal delivery={modalDelivery} onClose={() => setModalDelivery(null)} />
+      )}
 
       {/* =====================================================
           1. HEADER
@@ -324,11 +311,10 @@ const DeliveryOverview = () => {
 
 
       {/* =====================================================
-          2. METRIC CARDS — 3 static display cards (not clickable)
+          2. METRIC CARDS
           ===================================================== */}
       <div className="do-metrics-row">
 
-        {/* Card 1: Total Delivery Orders */}
         <div className="do-metric-card">
           <div className="do-card-top">
             <span className="do-metric-label">Total Delivery Orders</span>
@@ -340,7 +326,6 @@ const DeliveryOverview = () => {
           </div>
         </div>
 
-        {/* Card 2: Estimated Revenue */}
         <div className="do-metric-card">
           <div className="do-card-top">
             <span className="do-metric-label">Estimated Revenue</span>
@@ -352,7 +337,6 @@ const DeliveryOverview = () => {
           </div>
         </div>
 
-        {/* Card 3: Total Cakes Delivered */}
         <div className="do-metric-card">
           <div className="do-card-top">
             <span className="do-metric-label">Total Cakes Delivered</span>
@@ -370,11 +354,10 @@ const DeliveryOverview = () => {
 
 
       {/* =====================================================
-          3. ALERTS — Today / Pending / Overdue
+          3. ALERTS
           ===================================================== */}
       <div className="do-alerts-container">
 
-        {/* Deliveries Today — warning (yellow) */}
         <div className="do-alert-wrapper">
           <button
             className={`do-alert-row warning ${quickFilter === 'today' ? 'is-active' : ''}`}
@@ -388,7 +371,6 @@ const DeliveryOverview = () => {
           </button>
         </div>
 
-        {/* Pending Deliveries — info (blue) */}
         <div className="do-alert-wrapper">
           <button
             className={`do-alert-row info ${quickFilter === 'pending' ? 'is-active' : ''}`}
@@ -402,7 +384,6 @@ const DeliveryOverview = () => {
           </button>
         </div>
 
-        {/* Overdue Deliveries — critical (red) */}
         <div className="do-alert-wrapper">
           <button
             className={`do-alert-row critical ${quickFilter === 'overdue' ? 'is-active' : ''}`}
@@ -424,7 +405,6 @@ const DeliveryOverview = () => {
           ===================================================== */}
       <div className="do-table-container">
 
-        {/* Toolbar */}
         <div className="do-table-toolbar">
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -479,7 +459,6 @@ const DeliveryOverview = () => {
           </div>
         </div>
 
-        {/* Scrollable table */}
         <div className="do-table-scroll-wrapper">
           <table className="do-deliveries-table">
             <thead>
@@ -492,56 +471,48 @@ const DeliveryOverview = () => {
                 <th>Delivery Address</th>
                 <th>Delivery Date</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {paged.length > 0 ? paged.map(d => {
+              {paged.length > 0 ? paged.map((d, idx) => {
                 const overdue  = isOverdue(d);
                 const dueToday = isDeliveryToday(d);
                 return (
-                  <tr key={d.id}>
-
-                    {/* 🔹 BACKEND: d.items — single name or "X + N more" */}
+                  <tr key={idx}>
                     <td>
                       <span className="do-cake-name-text" title={fullCakeList(d.items)}>
                         {formatCakeType(d.items)}
                       </span>
                     </td>
-
-                    {/* 🔹 BACKEND: d.totalQty */}
                     <td>{d.totalQty}</td>
-
-                    {/* 🔹 BACKEND: d.totalPrice */}
                     <td><span className="do-price-text">₱{d.totalPrice.toLocaleString()}</span></td>
-
-                    {/* 🔹 BACKEND: d.customer */}
                     <td>{d.customer}</td>
-
-                    {/* 🔹 BACKEND: d.contact */}
                     <td><span className="do-contact-text">{d.contact}</span></td>
-
-                    {/* 🔹 BACKEND: d.address — truncated in table, full on hover */}
                     <td>
                       <span className="do-address-text" title={d.address}>
                         {d.address}
                       </span>
                     </td>
-
-                    {/* 🔹 BACKEND: d.deliveryDate — highlights if overdue or due today */}
                     <td>
                       <span className={`do-date-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
                         {formatDate(d.deliveryDate)}
                       </span>
                     </td>
-
-                    {/* 🔹 BACKEND: d.status — Rule 3 auto-overdue display */}
                     <td><StatusPill delivery={d} /></td>
-
+                    <td>
+                      <button
+                        className="do-view-btn"
+                        onClick={e => { e.stopPropagation(); setModalDelivery(d); }}
+                      >
+                        View
+                      </button>
+                    </td>
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan={8} className="do-no-data">
+                  <td colSpan={9} className="do-no-data">
                     No delivery orders match the current filter.
                   </td>
                 </tr>
@@ -550,7 +521,6 @@ const DeliveryOverview = () => {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="do-pagination">
           <span className="do-pagination-info">
             {filteredData.length === 0

@@ -46,7 +46,7 @@
   gap: 12px;
   padding: 0 15px;
   margin-bottom: 15px;
-  min-height: 60px;
+  min-height: 55px;
 }
 
 .logo-group {
@@ -101,7 +101,7 @@
 /* USER INFO */
 .user-info {
   padding: 0 17px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .user-info h3 {
@@ -124,7 +124,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 8px 15px 12px 15px;
-  overflow-y: auto;
+  overflow-y: hidden;
   min-height: 0;
   scroll-behavior: smooth;
   scrollbar-width: thin;
@@ -153,7 +153,7 @@
   align-items: center;
   width: 100%;
   gap: 12px;
-  padding: 12px 15px;
+  padding: 11.5px 15px;
   border: none;
   border-radius: 8px;
   background-color: #fcf6c4;
@@ -163,6 +163,22 @@
   text-align: left;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+}
+
+.msg-nav-badge {
+  margin-left: auto;
+  color: #000;
+  font-size: 0.98rem;
+  font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  line-height: 1;
 }
 
 .nav-item svg {
@@ -173,6 +189,13 @@
 .sidebar.collapsed .nav-item {
   justify-content: center;
   padding: 12px 0;
+}
+
+.sidebar.collapsed .msg-nav-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin-left: 0;
 }
 
 .nav-item:hover {

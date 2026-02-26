@@ -152,19 +152,6 @@
   border-left-color: #eab308;
 }
 
-.co-alert-count {
-  font-family: Georgia, serif;
-  font-weight: bold;
-  font-size: 1rem;
-  margin-right: 2px;
-}
-
-.co-alert-arrow {
-  margin-left: auto;
-  font-size: 0.85rem;
-  opacity: 0.45;
-}
-
 /* =========================================================
    TABLE CONTAINER — identical to .table-container
    FIX #1: Use min-width: 0 so the container can shrink when
@@ -210,18 +197,6 @@
   border-radius: 20px;
   margin-left: 8px;
 }
-
-.co-toolbar-search {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  color: #333;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.co-toolbar-search:focus { border-color: #e5c800; }
 
 .co-filter-icon-btn {
   display: flex;                  /* == .filter-icon-btn */
@@ -323,7 +298,7 @@
 }
 
 .co-orders-table th {
-  padding: 18px 20px;
+  padding: 18px 11.5px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
   font-weight: bold;
@@ -333,10 +308,19 @@
 }
 
 .co-orders-table td {
-  padding: 18px 20px;
+  padding: 18px 11.5px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
+}
+
+.co-orders-table th:first-child,
+.co-orders-table td:first-child {
+  padding-left: 20px;
+}
+
+.co-orders-table td:last-child {
+  padding-right: 15px;
 }
 
 .co-orders-table tbody tr:last-child td {
@@ -350,7 +334,6 @@
 /* ── Cell helpers ── */
 .co-cake-name-text { font-weight: 500; }
 
-.co-order-id-text  { font-weight: 600; color: #6366f1; font-size: 0.85rem; }
 .co-price-text     { font-weight: 600; color: #22c55e; }
 
 .co-instructions-text {
@@ -368,10 +351,11 @@
 .co-pickup-text.is-today   { color: #854d0e; }
 .co-pickup-text.is-overdue { color: #b91c1c; }
 
-.co-created-by-text { font-size: 0.8rem; color: #999; }
-.co-updated-text    { font-size: 0.8rem; color: #bbb; font-style: italic; }
-
-/* Status pills */
+/* =========================================================
+   STATUS PILLS
+   Statuses: Pending | Ready | Picked Up | Overdue | Cancelled
+   Removed: In Production, Delivered (old model)
+   ========================================================= */
 .co-status-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -381,13 +365,20 @@
   white-space: nowrap;
 }
 
+/* Pending — yellow: cake not yet prepared */
 .co-status-pill.pending       { background: #fef9c3; color: #854d0e; }
-.co-status-pill.approved      { background: #e0e7ff; color: #3730a3; }
-.co-status-pill.in-production { background: #f3e8ff; color: #6b21a8; }
-.co-status-pill.ready         { background: #dcfce7; color: #166534; }
-.co-status-pill.delivered     { background: #d1fae5; color: #065f46; }
-.co-status-pill.declined      { background: #f3f4f6; color: #6b7280; }
+
+/* Ready — blue/purple: cake done, awaiting pickup */
+.co-status-pill.ready         { background: #ede9fe; color: #5b21b6; }
+
+/* Picked Up — green: customer received cake, order complete */
+.co-status-pill.picked-up     { background: #d1fae5; color: #065f46; }
+
+/* Overdue — red: Ready but pickup date has passed */
 .co-status-pill.overdue       { background: #fee2e2; color: #991b1b; }
+
+/* Cancelled — grey: final state */
+.co-status-pill.cancelled     { background: #f3f4f6; color: #6b7280; }
 
 /* No data */
 .co-no-data {

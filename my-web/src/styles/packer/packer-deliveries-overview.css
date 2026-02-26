@@ -1,0 +1,353 @@
+.pkdo-table-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow: visible;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pkdo-warning-banner {
+  margin: 14px 20px 0;
+  border: 1px solid #efb3b3;
+  border-radius: 8px;
+  background: #fff0f0;
+  color: #8b1c1c;
+  padding: 9px 11px;
+  font-size: 0.85rem;
+}
+
+.pkdo-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pkdo-table-section-title {
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #222;
+}
+
+.pkdo-table-count-pill {
+  font-size: 0.78rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+
+.pkdo-filter-dropdown-wrapper {
+  position: relative;
+}
+
+.pkdo-filter-icon-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkdo-filter-icon-btn:hover,
+.pkdo-filter-icon-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.pkdo-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 168px;
+}
+
+.pkdo-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+
+.pkdo-dropdown-item:hover {
+  background: #fcf6c4;
+}
+
+.pkdo-dropdown-item.selected {
+  background: #f7dd30;
+  font-weight: 600;
+  color: #111;
+}
+
+.pkdo-table-scroll-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
+.pkdo-deliveries-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.pkdo-deliveries-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.pkdo-deliveries-table th {
+  padding: 18px 20px;
+  background-color: #fff;
+  border-bottom: 2px solid #fcf6c4;
+  font-weight: bold;
+  font-family: Georgia, serif;
+  color: #000;
+  white-space: nowrap;
+}
+
+.pkdo-deliveries-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  vertical-align: middle;
+}
+
+.pkdo-deliveries-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pkdo-deliveries-table tbody tr:hover {
+  background-color: #fffde8;
+}
+
+.pkdo-cake-name-text {
+  font-weight: 500;
+}
+
+.pkdo-price-text {
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.pkdo-contact-text {
+  font-size: 0.82rem;
+  color: #555;
+  font-variant-numeric: tabular-nums;
+}
+
+.pkdo-address-text {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: #666;
+  display: block;
+}
+
+.pkdo-date-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.pkdo-date-text.is-today {
+  color: #854d0e;
+}
+
+.pkdo-date-text.is-overdue {
+  color: #b91c1c;
+}
+
+.pkdo-status-pill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pkdo-status-action-btn {
+  display: block;
+  margin-top: 8px;
+  border: 1px solid #c3b871;
+  border-radius: 7px;
+  background: #fff6c7;
+  color: #3d3000;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkdo-status-action-btn:hover:not(.disabled) {
+  background: #ffefad;
+  border-color: #c0a83a;
+}
+
+.pkdo-status-action-btn.disabled {
+  border-color: #d8d8d8;
+  background: #f2f2f2;
+  color: #858585;
+  cursor: not-allowed;
+}
+
+.pkdo-cancel-btn {
+  display: block;
+  margin-top: 6px;
+  border: 1px solid #ef4444;
+  border-radius: 7px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 9px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkdo-cancel-btn:hover {
+  background: #fecaca;
+  border-color: #dc2626;
+}
+
+.pkdo-status-pill.pending {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.pkdo-status-pill.out-for-delivery {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.pkdo-status-pill.delivered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.pkdo-status-pill.cancelled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.pkdo-status-pill.overdue {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pkdo-no-data {
+  text-align: center;
+  padding: 40px !important;
+  color: #888;
+}
+
+.pkdo-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pkdo-pagination-info {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.pkdo-pagination-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.pkdo-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+.pkdo-page-btn:hover {
+  background: #fcf6c4;
+  border-color: #e5c800;
+}
+
+.pkdo-page-btn.active {
+  background: #f7dd30;
+  border-color: #e5c800;
+  font-weight: 700;
+  color: #111;
+}
+
+.pkdo-page-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}

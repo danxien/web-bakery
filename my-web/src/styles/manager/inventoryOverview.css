@@ -356,6 +356,50 @@
 }
 
 /* =========================================================
+   PAGINATION — mirrors .ro-pagination from reservationOverview.css
+   ========================================================= */
+.inventory-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.inventory-pagination-info {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.inventory-pagination-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.inventory-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+
+.inventory-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
+.inventory-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.inventory-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {

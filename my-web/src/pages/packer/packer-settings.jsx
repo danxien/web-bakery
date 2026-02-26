@@ -1,69 +1,37 @@
-// =============================================================
-// ManagerSettings.jsx
-// FILE: pages/manager/ManagerSettings.jsx
-// -------------------------------------------------------------
-// Props:
-//   managerName  {string}    — current display name, owned by landing-page.jsx
-//   onSaveName   {function}  — callback(newName) → updates landing-page state
-//                              → flows to SidebarMenu automatically
-//
-// State flow (no Context needed):
-//   LoginSection ──onLogin(role, username)──▶ landing-page.jsx
-//     managerName state ──▶ SidebarMenu  (shows in sidebar)
-//     managerName state ──▶ ManagerSettings (pre-fills Display Name)
-//     onSaveName(name)  ◀── ManagerSettings (on Save Changes click)
-//
-// TODO: Backend - Replace onSaveName with PUT /api/manager/profile
-// TODO: Backend - Replace managerName prop with GET /api/manager/profile on mount
-// =============================================================
+import React, { useEffect, useState } from 'react';
+import { AtSign, CheckCircle, Lock, Save, User, X } from 'lucide-react';
+import '../../styles/packer/packer-settings.css';
 
-import React, { useState, useEffect } from 'react';
-import { User, Save, Lock, CheckCircle, X, AtSign } from 'lucide-react';
-import '../../styles/manager/managerSettings.css';
-
-const ManagerSettings = ({
-  managerName = 'Manager',  // TODO: Backend - seed from GET /api/manager/profile
-  onSaveName  = () => {},   // TODO: Backend - replace with PUT /api/manager/profile
-}) => {
-
-  // ── Local form state ────────────────────────────────────────
-  const [displayName, setDisplayName] = useState(managerName);
-
-  // Username is independent — never auto-generated from displayName
-  const [username,    setUsername]    = useState('');
-
-  const [currentPw,   setCurrentPw]  = useState('');
-  const [newPw,       setNewPw]      = useState('');
-  const [confirmPw,   setConfirmPw]  = useState('');
-
-  // Sync displayName if managerName prop changes (e.g. parent re-renders after API load)
-  // Username is intentionally excluded — it must remain user-controlled
-  useEffect(() => {
-    setDisplayName(managerName);
-  }, [managerName]);
-
-  // ── Toast state ─────────────────────────────────────────────
+export default function PackerSettings({
+  packerName = 'Packer',
+  onSaveName = () => {},
+}) {
+  const [displayName, setDisplayName] = useState(packerName);
+  const [username, setUsername] = useState(packerName.toLowerCase().replace(/\s+/g, ''));
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
   const [toast, setToast] = useState({ show: false, type: 'success', msg: '' });
+
+  useEffect(() => {
+    setDisplayName(packerName);
+    setUsername(packerName.toLowerCase().replace(/\s+/g, ''));
+  }, [packerName]);
 
   const showToast = (type, msg) => {
     setToast({ show: true, type, msg });
-    setTimeout(() => setToast(t => ({ ...t, show: false })), 3000);
+    setTimeout(() => setToast((prev) => ({ ...prev, show: false })), 3000);
   };
 
-  // ── Save profile ─────────────────────────────────────────────
-  // Calls onSaveName → landing-page updates managerName state
-  // → SidebarMenu receives new prop and re-renders with new name
   const handleSaveProfile = () => {
     if (!displayName.trim()) {
       showToast('error', 'Name cannot be empty.');
       return;
     }
-    // TODO: Backend - await axios.put('/api/manager/profile', { displayName, username });
     onSaveName(displayName.trim());
-    showToast('success', 'Profile updated. Sidebar name has been refreshed.');
+    showToast('success', 'Packer profile updated successfully.');
   };
 
-  // ── Change password ──────────────────────────────────────────
   const handleChangePassword = () => {
     if (!currentPw || !newPw || !confirmPw) {
       showToast('error', 'Please fill in all password fields.');
@@ -77,28 +45,22 @@ const ManagerSettings = ({
       showToast('error', 'Password must be at least 6 characters.');
       return;
     }
-    // TODO: Backend - await axios.put('/api/manager/password', { currentPw, newPw });
-    setCurrentPw(''); setNewPw(''); setConfirmPw('');
+
+    setCurrentPw('');
+    setNewPw('');
+    setConfirmPw('');
     showToast('success', 'Password changed successfully.');
   };
 
-  // ── Render ───────────────────────────────────────────────────
   return (
-    <div className="manager-settings__page">
-
-      {/* ── Fixed Header ── */}
-      <div className="manager-settings__header">
-        <h1 className="manager-settings__title">Settings</h1>
-        <p className="manager-settings__subtitle">Manage your account settings</p>
+    <div className="packer-settings__page">
+      <div className="packer-settings__header">
+        <h1 className="packer-settings__title">Settings</h1>
+        <p className="packer-settings__subtitle">Manage your packer account settings</p>
       </div>
 
-      {/* ── Scrollable Body ─────────────────────────────────────── */}
-      <div className="manager-settings__body">
-
-        {/* Row 1: Profile + Password side by side, full width */}
+      <div className="packer-settings__body">
         <div className="ms-cards-row">
-
-          {/* ── Card: Profile Information ───────────────────── */}
           <div className="ms-card">
             <div className="ms-card__header">
               <div className="ms-icon-wrap ms-icon--purple">
@@ -111,10 +73,8 @@ const ManagerSettings = ({
             </div>
 
             <div className="ms-form">
-              {/* Display Name — shown in sidebar after save; independent of Username */}
               <div className="ms-input-group">
                 <label>Display Name</label>
-                {/* TODO: Backend - seed with profile.displayName */}
                 <input
                   type="text"
                   value={displayName}
@@ -123,34 +83,28 @@ const ManagerSettings = ({
                 />
               </div>
 
-              {/* Username — fully manual, never auto-generated from Display Name */}
               <div className="ms-input-group">
                 <label>Username</label>
-                {/* TODO: Backend - seed with profile.username from GET /api/manager/profile */}
-                {/* TODO: Backend - save to PUT /api/manager/profile */}
                 <div className="ms-input-icon-wrap">
                   <AtSign size={14} className="ms-input-icon" />
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
-                    placeholder="Enter username"
+                    placeholder="username"
                     className="ms-input--with-icon"
                   />
                 </div>
                 <span className="ms-input-hint">Changing this will affect your next login.</span>
               </div>
 
-              {/* Read-only fields */}
               <div className="ms-input-group">
                 <label>Role</label>
-                {/* TODO: Backend - replace with profile.role */}
-                <input type="text" value="Manager" readOnly className="ms-input--readonly" />
+                <input type="text" value="Packer" readOnly className="ms-input--readonly" />
               </div>
 
               <div className="ms-input-group">
                 <label>Branch</label>
-                {/* TODO: Backend - replace with profile.branch */}
                 <input type="text" value="Main Branch" readOnly className="ms-input--readonly" />
               </div>
 
@@ -161,7 +115,6 @@ const ManagerSettings = ({
             </div>
           </div>
 
-          {/* ── Card: Change Password ───────────────────────── */}
           <div className="ms-card">
             <div className="ms-card__header">
               <div className="ms-icon-wrap ms-icon--blue">
@@ -176,7 +129,6 @@ const ManagerSettings = ({
             <div className="ms-form">
               <div className="ms-input-group">
                 <label>Current Password</label>
-                {/* TODO: Backend - validated server-side against hashed password */}
                 <input
                   type="password"
                   value={currentPw}
@@ -209,10 +161,8 @@ const ManagerSettings = ({
               </button>
             </div>
           </div>
+        </div>
 
-        </div>{/* end .ms-cards-row */}
-
-        {/* ── Card: System Information (full width) ──────────── */}
         <div className="ms-card ms-card--full">
           <div className="ms-card__header">
             <h2 className="ms-card__title">System Information</h2>
@@ -221,17 +171,19 @@ const ManagerSettings = ({
           <div className="ms-info-grid">
             <div className="ms-info-row">
               <span className="ms-info-label">Display Name</span>
-              {/* Live — reflects edits before save */}
               <span className="ms-info-value ms-info-value--mono">{displayName}</span>
             </div>
             <div className="ms-info-row">
               <span className="ms-info-label">Username</span>
-              {/* TODO: Backend - replace with profile.username */}
-              <span className="ms-info-value ms-info-value--mono">{username || '—'}</span>
+              <span className="ms-info-value ms-info-value--mono">@{username}</span>
             </div>
             <div className="ms-info-row">
               <span className="ms-info-label">Role</span>
-              <span className="ms-info-value ms-info-value--bold">Manager</span>
+              <span className="ms-info-value ms-info-value--bold">Packer</span>
+            </div>
+            <div className="ms-info-row">
+              <span className="ms-info-label">Access Level</span>
+              <span className="ms-info-value">Level 1 - Production Staff</span>
             </div>
             <div className="ms-info-row">
               <span className="ms-info-label">System Version</span>
@@ -239,10 +191,8 @@ const ManagerSettings = ({
             </div>
           </div>
         </div>
+      </div>
 
-      </div>{/* end .manager-settings__body */}
-
-      {/* ── Toast Notification ──────────────────────────────────── */}
       {toast.show && (
         <div className="ms-toast">
           <div className="ms-toast__content">
@@ -253,15 +203,12 @@ const ManagerSettings = ({
               <p className="ms-toast__main">{toast.type === 'success' ? 'Saved' : 'Error'}</p>
               <p className="ms-toast__sub">{toast.msg}</p>
             </div>
-            <button className="ms-toast__close" onClick={() => setToast(t => ({ ...t, show: false }))}>
+            <button className="ms-toast__close" onClick={() => setToast((prev) => ({ ...prev, show: false }))}>
               <X size={12} />
             </button>
           </div>
         </div>
       )}
-
     </div>
   );
-};
-
-export default ManagerSettings;
+}

@@ -5,44 +5,36 @@
 //          Aggregates confirmed revenue from Deliveries,
 //          Reservations, and Custom Orders.
 //
-// STRUCTURE mirrors reservationOverview.jsx exactly:
-//   1. .so-page-container   → .ro-page-container
-//   2. .so-header           → .ro-header
-//   3. .so-metrics-row      → .ro-metrics-row  (3 cards)
-//   4. .so-breakdown-row    → new: revenue-by-category cards
-//   5. .so-table-container  → .ro-table-container (toolbar + table)
-//
 // SALES DEFINITION:
 //   Delivery     → Status = 'Delivered'
 //   Reservation  → Status = 'Picked Up'
-//   Custom Order → Status = 'Completed'
+//   Custom Order → Status = 'Picked Up'
 //
-//   ❌ Never include: Pending, Cancelled, Overdue, Not Picked Up
-//
-// BACKEND INTEGRATION CHECKLIST:
-//   [ ] Replace mock INIT_SALES with aggregated API response
-//   [ ] Each confirmed status change in other modules triggers
-//       an automatic sales record here (Rule 4 pattern)
-//   [ ] Add date range filter connected to backend query params
-//   [ ] Add loading and error states after fetching
-//   [ ] All metric values are derived — recalculate after fetch
+//   Never include: Pending, Cancelled, Overdue, Ready,
+//                  Out for Delivery, Not Picked Up
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  CircleDollarSign, ShoppingCart, PackageCheck, AlertTriangle, Filter,
+  CircleDollarSign, ShoppingCart, PackageCheck, Filter,
   Truck, CalendarCheck, ClipboardList,
 } from 'lucide-react';
 import '../../styles/manager/salesOverview.css';
 
+// TODO: Backend - Replace these imports with a unified API call
+// These exported arrays are populated after fetching in each module.
+// Alternatively, use a single endpoint: GET /api/sales?status=completed
+import { INIT_DELIVERIES }   from './deliveriesOverview';
+import { INIT_RESERVATIONS } from './reservationOverview';
+import { INIT_ORDERS }       from './customOrders';
+
 /* ──────────────────────────────────────────────────────────────
    ORDER TYPE CONFIG
-   Maps each sale source to its display label, CSS key, and icon.
 ────────────────────────────────────────────────────────────── */
 const ORDER_TYPES = {
-  Delivery:      { label: 'Delivery',      css: 'delivery',     Icon: Truck },
-  Reservation:   { label: 'Reservation',   css: 'reservation',  Icon: CalendarCheck },
-  'Custom Order':{ label: 'Custom Order',  css: 'custom-order', Icon: ClipboardList },
+  Delivery:       { label: 'Delivery',     css: 'delivery',     Icon: Truck },
+  Reservation:    { label: 'Reservation',  css: 'reservation',  Icon: CalendarCheck },
+  'Custom Order': { label: 'Custom Order', css: 'custom-order', Icon: ClipboardList },
 };
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -57,87 +49,66 @@ function orderTypePillClass(type) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   MOCK DATA
-   🔹 BACKEND: Replace this entire array with an aggregated API
-   response. Each record represents ONE completed sale transaction.
+   AGGREGATED SALES DATA
+   TODO: Backend - Replace this derived array with a direct API call
+   Endpoint: GET /api/sales?status=completed
+   Each record should already be in the unified shape below.
 
-   Expected shape per sale record:
+   Unified shape per record:
    {
-     id,
-     orderType: 'Delivery' | 'Reservation' | 'Custom Order',
-     cakeType:  string,      // cake name (or "X + N more" for multi-item)
-     qty:       number,      // total quantity sold in this transaction
-     amount:    number,      // total paid amount (₱)
-     customer:  string,      // customer full name
-     completionDate: string, // YYYY-MM-DD
-                             //   Delivery      → delivery date
-                             //   Reservation   → pick-up date
-                             //   Custom Order  → completion date
+     orderType:      'Delivery' | 'Reservation' | 'Custom Order'
+     cakeType:       string   — cake name
+     qty:            number   — total quantity sold
+     amount:         number   — total paid amount (₱)
+     customer:       string
+     completionDate: string   — YYYY-MM-DD when finalized
    }
-
-   AUTO-POPULATION RULE:
-   When status changes to Delivered / Picked Up / Completed in
-   the respective module, a record is automatically created here.
 ────────────────────────────────────────────────────────────── */
-const INIT_SALES = [
-  // ── Deliveries (status = Delivered) ──────────────────────
-  {
-    id: 'SAL-001', orderType: 'Delivery',
-    cakeType: 'Leche Flan Cake', qty: 1, amount: 1050,
-    customer: 'Mr. & Mrs. Santos', completionDate: '2025-01-21',
-  },
-  {
-    id: 'SAL-002', orderType: 'Delivery',
-    cakeType: 'Chocolate Mousse Cake', qty: 1, amount: 1200,
-    customer: 'Lara Diaz', completionDate: '2025-01-20',
-  },
-  {
-    id: 'SAL-003', orderType: 'Delivery',
-    cakeType: 'Ube Macapuno Cake + 2 more', qty: 3, amount: 2770,
-    customer: 'Jose Cruz', completionDate: '2025-01-24',
-  },
+const buildSalesData = () => [
 
-  // ── Reservations (status = Picked Up) ────────────────────
-  {
-    id: 'SAL-004', orderType: 'Reservation',
-    cakeType: 'Red Velvet Cake', qty: 1, amount: 1100,
-    customer: 'Maria Gomez', completionDate: '2025-01-21',
-  },
-  {
-    id: 'SAL-005', orderType: 'Reservation',
-    cakeType: 'Leche Flan Cake', qty: 1, amount: 1050,
-    customer: 'Mr. & Mrs. Santos', completionDate: '2025-01-23',
-  },
+  // Deliveries: only status === 'Delivered'
+  ...INIT_DELIVERIES
+    .filter(d => d.status === 'Delivered')
+    .map(d => ({
+      orderType:      'Delivery',
+      cakeType:       d.items.length === 1
+                        ? d.items[0].name
+                        : `${d.items[0].name} + ${d.items.length - 1} more`,
+      qty:            d.totalQty,
+      amount:         d.totalPrice,
+      customer:       d.customer,
+      completionDate: d.deliveryDate,
+    })),
 
-  // ── Custom Orders (status = Completed / Delivered) ────────
-  {
-    id: 'SAL-006', orderType: 'Custom Order',
-    cakeType: 'Strawberry Anniversary Cake', qty: 1, amount: 1200,
-    customer: 'Mr. & Mrs. Santos', completionDate: '2025-01-22',
-  },
-  {
-    id: 'SAL-007', orderType: 'Custom Order',
-    cakeType: 'Wedding Vanilla Cake', qty: 1, amount: 8000,
-    customer: 'Jose & Maria Cruz', completionDate: '2025-01-24',
-  },
-  {
-    id: 'SAL-008', orderType: 'Custom Order',
-    cakeType: 'Red Velvet Baby Shower Cake', qty: 1, amount: 2200,
-    customer: 'Lara Diaz', completionDate: '2025-01-20',
-  },
-  {
-    id: 'SAL-012', orderType: 'Custom Order',
-    cakeType: 'Ube Dedication Cake', qty: 2, amount: 1800,
-    customer: 'Pedro Santos', completionDate: '2025-01-22',
-  },
+  // Reservations: only status === 'Picked Up'
+  ...INIT_RESERVATIONS
+    .filter(r => r.status === 'Picked Up')
+    .map(r => ({
+      orderType:      'Reservation',
+      cakeType:       r.cakeType,
+      qty:            r.quantity,
+      amount:         r.quantity * r.price,
+      customer:       r.customer,
+      completionDate: r.pickupDate,
+    })),
+
+  // Custom Orders: only status === 'Picked Up'
+  ...INIT_ORDERS
+    .filter(o => o.status === 'Picked Up')
+    .map(o => ({
+      orderType:      'Custom Order',
+      cakeType:       o.cakeType,
+      qty:            o.quantity,
+      amount:         o.price,
+      customer:       o.customer,
+      completionDate: o.pickupDate,
+    })),
 ];
 
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-// Filter options — Order Type filter only (no status filter needed;
-// Sales only ever contains completed transactions)
 const TYPE_OPTIONS = ['All', 'Delivery', 'Reservation', 'Custom Order'];
 
 const PER_PAGE = 7;
@@ -146,58 +117,46 @@ const NO_QUICK = 'all';
 const SalesOverview = () => {
 
   // -----------------------------------------------------------
-  // UI STATE
+  // STATE
+  // TODO: Backend - Replace with fetched sales data
+  // On mount: fetch from /api/sales, setSalesData(response.data)
   // -----------------------------------------------------------
+  const [salesData,    setSalesData]    = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+
   const [typeFilter,   setTypeFilter]   = useState('All');
   const [quickFilter,  setQuickFilter]  = useState(NO_QUICK);
   const [page,         setPage]         = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // 🔹 BACKEND: Add state for fetched data, loading, error
-  // const [salesData, setSalesData] = useState([]);
-  // const [loading,   setLoading]   = useState(true);
-  // const [error,     setError]     = useState(null);
-
 
   // -----------------------------------------------------------
   // DERIVED METRIC VALUES
-  // 🔹 BACKEND: Replace INIT_SALES with salesData from state
+  // TODO: Backend - All values are derived from salesData
   // -----------------------------------------------------------
+  const totalRevenue      = salesData.reduce((sum, s) => sum + s.amount, 0);
+  const totalTransactions = salesData.length;
+  const totalCakesSold    = salesData.reduce((sum, s) => sum + s.qty, 0);
 
-  // Card 1: Total Sales Revenue — sum of all completed amounts
-  const totalRevenue = useMemo(() =>
-    INIT_SALES.reduce((sum, s) => sum + s.amount, 0),
-  []);
-
-  // Card 2: Total Transactions — count of completed records
-  const totalTransactions = INIT_SALES.length;
-
-  // Card 3: Total Cakes Sold — sum of all completed quantities
-  const totalCakesSold = useMemo(() =>
-    INIT_SALES.reduce((sum, s) => sum + s.qty, 0),
-  []);
-
-  // Revenue Breakdown — per order type
-  const breakdown = useMemo(() => {
+  const breakdown = (() => {
     const result = {};
     Object.keys(ORDER_TYPES).forEach(type => {
-      result[type] = INIT_SALES
+      result[type] = salesData
         .filter(s => s.orderType === type)
         .reduce((sum, s) => sum + s.amount, 0);
     });
     return result;
-  }, []);
+  })();
 
 
   // -----------------------------------------------------------
   // FILTER LOGIC
-  // quickFilter (breakdown card click) takes priority over dropdown
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = INIT_SALES; // 🔹 BACKEND: swap to salesData
+    let result = salesData;
 
-    // Quick filter from breakdown card click
     if (quickFilter !== NO_QUICK) {
       result = result.filter(s => s.orderType === quickFilter);
     } else if (typeFilter !== 'All') {
@@ -205,7 +164,7 @@ const SalesOverview = () => {
     }
 
     return result;
-  }, [quickFilter, typeFilter]);
+  }, [quickFilter, typeFilter, salesData]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -217,12 +176,29 @@ const SalesOverview = () => {
 
 
   // -----------------------------------------------------------
-  // useEffect
+  // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // 🔹 BACKEND: Fetch sales on mount
-    // const fetchSales = async () => { ... };
+    // TODO: Backend - Fetch sales data on mount
+    // Option A: Aggregate from module exports (current approach)
+    //   setSalesData(buildSalesData());
+    //
+    // Option B: Direct API call (recommended for production)
+    // Example:
+    // const fetchSales = async () => {
+    //   try {
+    //     setLoading(true);
+    //     const response = await fetch('/api/sales?status=completed');
+    //     const data = await response.json();
+    //     setSalesData(data.sales);
+    //   } catch (err) {
+    //     setError('Failed to load sales data.');
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
     // fetchSales();
+    setLoading(false);
 
     const handler = e => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target))
@@ -236,6 +212,9 @@ const SalesOverview = () => {
   // -----------------------------------------------------------
   // RENDER
   // -----------------------------------------------------------
+  if (loading) return <div className="so-page-container"><p>Loading sales data...</p></div>;
+  if (error)   return <div className="so-page-container"><p>{error}</p></div>;
+
   return (
     <div className="so-page-container">
 
@@ -244,49 +223,43 @@ const SalesOverview = () => {
           ===================================================== */}
       <div className="so-header">
         <h1 className="so-title">Sales Overview</h1>
-        <p className="so-subtitle">Completed transactions only — Delivered, Picked Up, and Custom Order completions</p>
+        <p className="so-subtitle">Completed transactions only — Delivered and Picked Up orders</p>
       </div>
 
 
       {/* =====================================================
-          2. SUMMARY CARDS — 3 static display cards
+          2. SUMMARY CARDS
           ===================================================== */}
       <div className="so-metrics-row">
 
-        {/* Card 1: Total Sales Revenue */}
         <div className="so-metric-card">
           <div className="so-card-top">
             <span className="so-metric-label">Total Sales Revenue</span>
             <CircleDollarSign className="so-green-icon" size={20} />
           </div>
           <div className="so-card-bottom">
-            {/* 🔹 BACKEND: salesData.reduce((sum, s) => sum + s.amount, 0) */}
             <span className="so-metric-value">₱{totalRevenue.toLocaleString()}</span>
             <span className="so-metric-subtext">All confirmed revenue</span>
           </div>
         </div>
 
-        {/* Card 2: Total Transactions */}
         <div className="so-metric-card">
           <div className="so-card-top">
             <span className="so-metric-label">Total Transactions</span>
             <ShoppingCart className="so-blue-icon" size={20} />
           </div>
           <div className="so-card-bottom">
-            {/* 🔹 BACKEND: salesData.length */}
             <span className="so-metric-value">{totalTransactions}</span>
             <span className="so-metric-subtext">Completed orders</span>
           </div>
         </div>
 
-        {/* Card 3: Total Cakes Sold */}
         <div className="so-metric-card">
           <div className="so-card-top">
             <span className="so-metric-label">Total Cakes Sold</span>
             <PackageCheck className="so-yellow-icon" size={20} />
           </div>
           <div className="so-card-bottom">
-            {/* 🔹 BACKEND: salesData.reduce((sum, s) => sum + s.qty, 0) */}
             <span className="so-metric-value">{totalCakesSold}</span>
             <span className="so-metric-subtext">
               {totalCakesSold === 1 ? 'Cake sold' : 'Cakes sold across all types'}
@@ -299,7 +272,6 @@ const SalesOverview = () => {
 
       {/* =====================================================
           3. REVENUE BREAKDOWN — clickable category cards
-          Each card filters the main table when clicked.
           ===================================================== */}
       <div className="so-breakdown-row">
         {Object.entries(ORDER_TYPES).map(([type, { label, css, Icon }]) => (
@@ -316,7 +288,7 @@ const SalesOverview = () => {
               ₱{(breakdown[type] || 0).toLocaleString()}
             </span>
             <span className="so-breakdown-subtext">
-              {INIT_SALES.filter(s => s.orderType === type).length} transaction{INIT_SALES.filter(s => s.orderType === type).length !== 1 ? 's' : ''}
+              {salesData.filter(s => s.orderType === type).length} transaction{salesData.filter(s => s.orderType === type).length !== 1 ? 's' : ''}
             </span>
           </button>
         ))}
@@ -324,11 +296,10 @@ const SalesOverview = () => {
 
 
       {/* =====================================================
-          4. SALES TABLE — completed records only
+          4. SALES TABLE
           ===================================================== */}
       <div className="so-table-container">
 
-        {/* Toolbar */}
         <div className="so-table-toolbar">
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -371,7 +342,6 @@ const SalesOverview = () => {
               )}
             </div>
 
-            {/* Clear quick filter */}
             {quickFilter !== NO_QUICK && (
               <button
                 className="so-filter-icon-btn"
@@ -384,7 +354,6 @@ const SalesOverview = () => {
           </div>
         </div>
 
-        {/* Scrollable table */}
         <div className="so-table-scroll-wrapper">
           <table className="so-sales-table">
             <thead>
@@ -398,34 +367,18 @@ const SalesOverview = () => {
               </tr>
             </thead>
             <tbody>
-              {paged.length > 0 ? paged.map(s => (
-                <tr key={s.id}>
-
-                  {/* 🔹 BACKEND: s.orderType */}
+              {paged.length > 0 ? paged.map((s, idx) => (
+                <tr key={idx}>
                   <td>
                     <span className={`so-type-pill ${orderTypePillClass(s.orderType)}`}>
                       {s.orderType}
                     </span>
                   </td>
-
-                  {/* 🔹 BACKEND: s.cakeType */}
                   <td><span className="so-cake-name-text">{s.cakeType}</span></td>
-
-                  {/* 🔹 BACKEND: s.qty */}
                   <td>{s.qty}</td>
-
-                  {/* 🔹 BACKEND: s.amount */}
                   <td><span className="so-amount-text">₱{s.amount.toLocaleString()}</span></td>
-
-                  {/* 🔹 BACKEND: s.customer */}
                   <td>{s.customer}</td>
-
-                  {/* 🔹 BACKEND: s.completionDate
-                      Delivery → delivery date
-                      Reservation → pick-up date
-                      Custom Order → completion date */}
                   <td>{formatDate(s.completionDate)}</td>
-
                 </tr>
               )) : (
                 <tr>
@@ -438,7 +391,6 @@ const SalesOverview = () => {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="so-pagination">
           <span className="so-pagination-info">
             {filteredData.length === 0

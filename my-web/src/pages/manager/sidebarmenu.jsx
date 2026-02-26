@@ -1,7 +1,7 @@
 // ─── Imports ──────────────────────────────────────────────────────────────────
 import {
   LayoutDashboard, Package, BarChart3, ClipboardList,
-  Users, Truck, MessageSquare, Settings, LogOut, FileText, CalendarCheck
+  Users, Truck, MessageSquare, Settings, LogOut, CalendarCheck
 } from "lucide-react";
 
 import logo from "../../assets/logo.png";
@@ -15,7 +15,6 @@ const NAV_ITEMS = [
   { key: "reservations", label: "Reservations",    icon: CalendarCheck },
   { key: "customOrders", label: "Custom Orders",   icon: ClipboardList },
   { key: "sales",        label: "Sales",           icon: BarChart3 },
-  { key: "reports",      label: "Reports",         icon: FileText },
   { key: "messages",     label: "Messages",        icon: MessageSquare },
   { key: "users",        label: "User Management", icon: Users },
 ];
@@ -29,6 +28,7 @@ export default function SidebarMenu({
   onToggle,
   onLogout,
   managerName = 'Manager',   // replaces hardcoded "Dadi Rob"
+  unreadMessages = 0,
 }) {
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
@@ -65,6 +65,7 @@ export default function SidebarMenu({
       <nav className="sidebar-nav">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
+          const isMessages = item.key === "messages";
           return (
             <button
               key={item.key}
@@ -73,6 +74,9 @@ export default function SidebarMenu({
             >
               <Icon size={20} />
               {!collapsed && <span>{item.label}</span>}
+              {isMessages && unreadMessages > 0 && (
+                <span className="msg-nav-badge">{unreadMessages}</span>
+              )}
             </button>
           );
         })}
