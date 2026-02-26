@@ -1,0 +1,38 @@
+.seller-sales-table th,
+.seller-sales-table td {
+  width: 20%;
+}
+
+/* ─── Delivery Status Badges ─────────────────────────────────────────────────── */
+
+.seller-delivery-status-badge {
+  display: inline-block;
+  padding: 3px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.seller-status-fresh {
+  background-color: #d4f5e2;
+  color: #1a7a3f;
+  border: 1px solid #a3e4be;
+}
+
+.seller-status-near-expiry {
+  background-color: #fef9e0;
+  color: #7a6000;
+  border: 1px solid #f0d96a;
+}
+
+.seller-status-expired {
+  background-color: #fde8e8;
+  color: #b91c1c;
+  border: 1px solid #f5a6a6;
+}
+
+/* ─── Delivery History Card ──────────────────────────────────────────────────── */
+
+.seller-delivery-history-card {
+ margin-top: 20px;
+}

@@ -1,18 +1,25 @@
-/* ─── Today's Deliveries Card Container ────────────────────────────────────── */
+/* ─── Wrapper ───────────────────────────────────────────────────────────────── */
+
+.seller-dashboard-deliveries-wrapper {
+  margin-top: 20px;
+}
+
+/* ─── Main Card Container ───────────────────────────────────────────────────── */
 
 .seller-dashboard-deliveries-card {
   background: #fee2e2;
-  border: 1px solid #8806ce; 
+  border: 1px solid #8806ce;
   border-radius: 15px;
   padding: 20px;
-  margin-top: 20px;
 }
+
+/* ─── Header ────────────────────────────────────────────────────────────────── */
 
 .seller-dashboard-deliveries-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 16px;
 }
 
 .seller-dashboard-deliveries-header-left {
@@ -43,56 +50,42 @@
   font-weight: bold;
 }
 
-/* ─── Inner White Table Container ──────────────────────────────────────────── */
+/* ─── Cards Row ─────────────────────────────────────────────────────────────── */
 
-.seller-dashboard-deliveries-inner {
+.seller-delivery-cards-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+/* ─── Individual Item Card ──────────────────────────────────────────────────── */
+
+.seller-delivery-item-card {
   background: #fff;
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: none;
+  padding: 14px 16px;
+  width: calc(33.333% - 8px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/* ─── Table Styling ────────────────────────────────────────────────────────── */
+/* ─── Card Top Row (Cake Name + Badge) ──────────────────────────────────────── */
 
-.seller-dashboard-deliveries-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-family: Georgia, 'Times New Roman', Times, serif;
-  table-layout: auto; 
+.seller-delivery-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.seller-dashboard-deliveries-table th {
-  padding: 10px 20px;
-  background-color: #fff;
-  border-bottom: 2px solid #fcf6c4; 
+.seller-delivery-item-cake {
+  font-size: 0.88rem;
   font-weight: bold;
   color: #000;
-  font-size: 0.85rem;
-  white-space: nowrap; 
-}
-
-.seller-dashboard-deliveries-table th:last-child,
-.seller-dashboard-deliveries-table td:last-child {
-  padding-right: 20px;
-  text-align: left;
-}
-
-.seller-dashboard-deliveries-table td {
-  padding: 8px 20px; 
-  border-bottom: 1px solid #eee;
-  color: #333;
-  font-size: 0.87rem;
-  font-weight: normal; 
-}
-
-.seller-dashboard-deliveries-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.seller-delivery-cake-name {
-  font-weight: normal; 
-  color: #000000;
+  margin: 0;
 }
 
 .seller-delivery-qty-badge {
@@ -101,16 +94,41 @@
   font-size: 0.75rem;
   font-weight: bold;
   display: inline-block;
-  font-family: Georgia, serif;
   background-color: #28a745;
   color: white;
 }
 
-/* ─── Empty State ──────────────────────────────────────────────────────────── */
+/* ─── Detail Rows ───────────────────────────────────────────────────────────── */
+
+.seller-delivery-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.seller-delivery-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.seller-delivery-item-label {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.seller-delivery-item-value {
+  font-size: 0.78rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* ─── Empty State ───────────────────────────────────────────────────────────── */
 
 .seller-delivery-empty {
   text-align: center;
-  padding: 20px !important;
+  padding: 20px;
   color: #888;
   font-size: 0.85rem;
 }

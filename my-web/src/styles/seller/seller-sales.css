@@ -76,6 +76,8 @@
   font-weight: bold;
   display: inline-block;
   font-family: Georgia, serif;
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .seller-status-badge.pending        { background-color: #f1f3f5; color: #495057; }

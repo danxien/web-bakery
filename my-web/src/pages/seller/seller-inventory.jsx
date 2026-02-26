@@ -1,7 +1,28 @@
 import React from 'react';
 import '../../styles/seller/seller-sales.css';
+import '../../styles/seller/seller-deliveries.css';
 
-const SellerInventory = ({ inventory = [] }) => {
+const getExpiryStatus = (expiresStr) => {
+  const today  = new Date();
+  const expiry = new Date(expiresStr);
+  today.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0)  return { label: 'Expired',     className: 'status-expired'     };
+  if (diffDays <= 3) return { label: 'Near Expiry', className: 'status-near-expiry' };
+  return               { label: 'Fresh',           className: 'status-fresh'       };
+};
+
+// ADD the { inventoryData } prop here to receive the live "minus" updates
+const SellerInventory = ({ inventoryData = [] }) => {
+  
+  // Filter out expired items so they don't show in active inventory
+  const inventoryItems = inventoryData.filter(item => {
+    const status = getExpiryStatus(item.expires);
+    return status.label !== 'Expired'; 
+  });
+
   return (
     <div className="seller-sales-container">
       <div className="seller-sales-header">
@@ -21,16 +42,24 @@ const SellerInventory = ({ inventory = [] }) => {
             </tr>
           </thead>
           <tbody>
-            {inventory.length > 0 ? (
-              inventory.map((item) => (
-                <tr key={item.id}>
-                  <td style={{ fontWeight: 'bold', color: '#000' }}>{item.cakeType}</td>
-                  <td>{item.quantity}</td>
-                  <td>{item.productionDate}</td>
-                  <td>{item.expiryDate}</td>
-                  <td>{item.status}</td>
-                </tr>
-              ))
+            {inventoryItems.length > 0 ? (
+              inventoryItems.map((item) => {
+                const status = getExpiryStatus(item.expires);
+                return (
+                  <tr key={item.id}>
+                    <td style={{ fontWeight: 'normal', color: '#333' }}>{item.cakeType}</td>
+                    {/* This Qty will now decrease immediately after a sale */}
+                    <td style={{ fontWeight: 'bold' }}>{item.qty}</td>
+                    <td>{item.delivered}</td>
+                    <td>{item.expires}</td>
+                    <td>
+                      <span className={`delivery-status-badge ${status.className}`}>
+                        {status.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan="5" className="seller-empty-row">No items in inventory.</td>
