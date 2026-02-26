@@ -33,7 +33,7 @@ const SellerDeliveries = () => {
       <tr key={delivery.id}>
         <td>{delivery.delivered}</td>
         <td>{delivery.cakeType}</td>
-        <td>{delivery.qty}</td>
+        <td style={{ fontWeight: 'bold' }}>{delivery.qty}</td>
         <td>{delivery.expires}</td>
         <td>
           <span className={`seller-delivery-status-badge ${status.className}`}>
