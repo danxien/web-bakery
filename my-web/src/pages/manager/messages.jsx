@@ -2,70 +2,101 @@
 // messages.jsx — Manager Messaging
 // FILE: pages/manager/messages.jsx
 // -------------------------------------------------------------
-// 🔹 BACKEND: Replace mock `initialConversations` with
-//    GET /api/messages?role=manager
-// 🔹 BACKEND: Replace handleSend with
-//    POST /api/messages { to, content }
-// 🔹 BACKEND: Poll or use WebSocket for real-time updates
+// PURPOSE: Manager communication view with Seller and Packer.
 // =============================================================
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, MessageSquare } from 'lucide-react';
 import '../../styles/manager/messages.css';
 
-// ── Contact display names ─────────────────────────────────────
-// 🔹 BACKEND: Replace these with real names fetched from your API.
-//    e.g. GET /api/users?role=seller  →  sellerName = response.data.name
-//         GET /api/users?role=packer  →  packerName = response.data.name
-const SELLER_NAME = 'Juan dela Cruz';   // 🔹 BACKEND: replace with API seller name
-const PACKER_NAME = 'Maria Santos';     // 🔹 BACKEND: replace with API packer name
+// TODO: Backend - Fetch contact names from API
+// Example: GET /api/users?role=seller  → sellerName = response.data.name
+//          GET /api/users?role=packer  → packerName = response.data.name
+const SELLER_NAME = '';
+const PACKER_NAME = '';
 
-// ── Mock conversation data ────────────────────────────────────
-// 🔹 BACKEND: Replace with GET /api/messages?role=manager response
-const initialConversations = {
-  seller: {
-    contact: SELLER_NAME,
-    role:    'Sales Staff',
-    unread:  2,
-    messages: [
-      { id: 1, from: 'seller',  content: 'Good morning! We are running low on Red Velvet today.', time: '8:02 AM' },
-      { id: 2, from: 'manager', content: 'Thanks for the heads up. I will check inventory now.', time: '8:05 AM' },
-      { id: 3, from: 'seller',  content: 'Also, a customer is asking about custom cake orders for next week.', time: '8:10 AM' },
-      { id: 4, from: 'seller',  content: 'Should I direct them to the custom order form?', time: '8:11 AM' },
-    ],
-  },
-  packer: {
-    contact: PACKER_NAME,
-    role:    'Packaging Staff',
-    unread:  0,
-    messages: [
-      { id: 1, from: 'manager', content: 'Please make sure all Mango Chiffon orders are packed by 11 AM.', time: 'Yesterday' },
-      { id: 2, from: 'packer',  content: 'Understood! We are on it.', time: 'Yesterday' },
-      { id: 3, from: 'packer',  content: 'All done — 12 boxes packed and labelled.', time: '9:45 AM' },
-    ],
-  },
-};
-
-// ── Format current time ───────────────────────────────────────
+// Format current time for outgoing messages
 const nowTime = () =>
   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-// ── Component ─────────────────────────────────────────────────
-const Messages = () => {
-  const [conversations, setConversations] = useState(initialConversations);
-  const [activeKey,     setActiveKey]     = useState('seller');
-  const [draft,         setDraft]         = useState('');
+/* ──────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+────────────────────────────────────────────────────────────── */
+const Messages = ({ onUnreadChange = () => {} }) => {
+
+  // -----------------------------------------------------------
+  // STATE
+  // TODO: Backend - Replace empty conversations with fetched messages
+  // Endpoint: GET /api/messages?role=manager
+  // Expected shape:
+  // {
+  //   seller: {
+  //     contact: string,
+  //     role:    string,
+  //     unread:  number,
+  //     messages: [{ id, from: 'seller' | 'manager', content, time }]
+  //   },
+  //   packer: { ... same shape ... }
+  // }
+  // -----------------------------------------------------------
+  const [conversations, setConversations] = useState({
+    seller: {
+      contact:  SELLER_NAME || 'Seller',
+      role:     'Sales Staff',
+      unread:   0,
+      messages: [],
+    },
+    packer: {
+      contact:  PACKER_NAME || 'Packer',
+      role:     'Packaging Staff',
+      unread:   0,
+      messages: [],
+    },
+  });
+
+  const [activeKey, setActiveKey] = useState('seller');
+  const [draft,     setDraft]     = useState('');
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
   const active = conversations[activeKey];
+
+  // Report total unread count to parent whenever conversations change
+  useEffect(() => {
+    const total = Object.values(conversations).reduce(
+      (sum, conv) => sum + conv.unread, 0
+    );
+    onUnreadChange(total);
+  }, [conversations]);
 
   // Auto-scroll to latest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeKey, conversations]);
 
-  // Switch contact + clear unread badge
+
+  // -----------------------------------------------------------
+  // EFFECTS
+  // -----------------------------------------------------------
+  useEffect(() => {
+    // TODO: Backend - Fetch messages and contact names on mount
+    // Example:
+    // const fetchMessages = async () => {
+    //   const response = await fetch('/api/messages?role=manager');
+    //   const data = await response.json();
+    //   setConversations(data.conversations);
+    // };
+    // fetchMessages();
+    //
+    // TODO: Backend - Subscribe to real-time updates
+    // Option A: Polling — setInterval(fetchMessages, 5000)
+    // Option B: WebSocket — ws.onmessage = (e) => { ... updateConversations }
+  }, []);
+
+
+  // -----------------------------------------------------------
+  // HANDLERS
+  // -----------------------------------------------------------
   const handleSelectContact = (key) => {
     setActiveKey(key);
     setConversations(prev => ({
@@ -75,12 +106,12 @@ const Messages = () => {
     inputRef.current?.focus();
   };
 
-  // Send message
   const handleSend = () => {
     const text = draft.trim();
     if (!text) return;
 
-    // 🔹 BACKEND: POST /api/messages { to: activeKey, content: text }
+    // TODO: Backend - Send message via API
+    // Endpoint: POST /api/messages { to: activeKey, content: text }
     const newMsg = {
       id:      Date.now(),
       from:    'manager',
@@ -106,6 +137,10 @@ const Messages = () => {
     }
   };
 
+
+  // -----------------------------------------------------------
+  // RENDER
+  // -----------------------------------------------------------
   return (
     <div className="msg-page">
 
@@ -128,7 +163,6 @@ const Messages = () => {
               className={`msg-contact-item ${activeKey === key ? 'active' : ''}`}
               onClick={() => handleSelectContact(key)}
             >
-              {/* Avatar circles removed — names shown directly */}
               <div className="msg-contact-info">
                 <span className="msg-contact-name">{conv.contact}</span>
                 <span className="msg-contact-role">{conv.role}</span>
@@ -143,7 +177,6 @@ const Messages = () => {
         {/* ── Chat area ───────────────────────────────────── */}
         <div className="msg-chat">
 
-          {/* Chat header — name only, no avatar circle */}
           <div className="msg-chat__header">
             <div>
               <p className="msg-chat__name">{active.contact}</p>
@@ -151,7 +184,6 @@ const Messages = () => {
             </div>
           </div>
 
-          {/* Message thread */}
           <div className="msg-thread">
             {active.messages.length === 0 ? (
               <div className="msg-empty">
@@ -166,7 +198,6 @@ const Messages = () => {
                     key={msg.id}
                     className={`msg-bubble-wrap ${isManager ? 'msg-bubble-wrap--out' : 'msg-bubble-wrap--in'}`}
                   >
-                    {/* Avatar circles removed from bubbles */}
                     <div className={`msg-bubble ${isManager ? 'msg-bubble--out' : 'msg-bubble--in'}`}>
                       <p>{msg.content}</p>
                       <span className="msg-time">{msg.time}</span>
@@ -178,7 +209,6 @@ const Messages = () => {
             <div ref={bottomRef} />
           </div>
 
-          {/* Input bar */}
           <div className="msg-input-bar">
             <textarea
               ref={inputRef}
@@ -189,7 +219,6 @@ const Messages = () => {
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-            {/* Send button — Lucide Send icon + label */}
             <button
               className={`msg-send-btn ${draft.trim() ? 'active' : ''}`}
               onClick={handleSend}
@@ -200,8 +229,8 @@ const Messages = () => {
             </button>
           </div>
 
-        </div>{/* end .msg-chat */}
-      </div>{/* end .msg-panel */}
+        </div>
+      </div>
 
     </div>
   );

@@ -122,9 +122,8 @@
 }
 
 .msg-unread-badge {
-  background: #f3071d;
-  color: #fff;
-  font-size: 0.7rem;
+  color: #000;
+  font-size: 0.98rem;
   font-weight: 700;
   width: 20px;
   height: 20px;

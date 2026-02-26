@@ -280,22 +280,20 @@
   animation: ms-slideUp 0.3s ease;
 }
 
-@keyframes ms-slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 .ms-toast__content {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #fff;
+  background: #1a1a1a;
   border-radius: 12px;
   padding: 14px 18px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   min-width: 280px;
-  border-left: 4px solid #f3071d;
+  border-left: 4px solid #22c55e;   /* ← green accent line (seller style) */
 }
+
+.ms-toast--success { background-color: #22c55e; }  /* green icon bg */
+.ms-toast--error   { background-color: #ef4444; }  /* red icon bg — matches seller */
 
 .ms-toast__icon-wrap {
   width: 30px;
@@ -315,13 +313,13 @@
 .ms-toast__main {
   font-weight: bold;
   font-size: 0.875rem;
-  color: #111;
+  color: #fff;
   margin: 0 0 2px 0;
 }
 
 .ms-toast__sub {
   font-size: 0.78rem;
-  color: #666;
+  color: #aaa;
   margin: 0;
 }
 
@@ -329,7 +327,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #aaa;
+  color: #666;
   padding: 2px;
   display: flex;
   align-items: center;

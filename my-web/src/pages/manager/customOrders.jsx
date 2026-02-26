@@ -3,48 +3,44 @@
 // -------------------------------------------------------------
 // PURPOSE: Manager monitoring view for custom cake orders.
 //
-// STRUCTURE mirrors InventoryOverview.jsx exactly:
-//   1. .co-page-container   → .inventory-page-container
-//   2. .co-header           → .inventory-header
-//   3. .co-metrics-row      → .metrics-row  (3 cards)
-//   4. .co-alerts-container → .alerts-container  (2 rows)
-//   5. .co-table-container  → .table-container   (toolbar + table)
+// STATUS LOGIC (Operational-Based):
+//   Pending   → Cake not yet prepared (waiting for action)
+//   Ready     → Cake finished, awaiting customer pickup
+//   Picked Up → Customer received cake, order complete
+//   Overdue   → Auto: Today > PickupDate AND status === 'Ready'
+//   Cancelled → Final state
 //
-// BACKEND INTEGRATION CHECKLIST:
-//   [ ] Replace mock INIT_ORDERS with API response
-//   [ ] Replace hardcoded alert counts with dynamic values
-//   [ ] Add loading and error states after fetching
-//   [ ] Connect filter dropdown to backend query params (optional)
-//   [ ] All metric values are derived — recalculate after fetch
+// WORKFLOW:
+//   Pending → Ready → Picked Up
+//   Pending → Cancelled
+//   Ready   → Overdue → Picked Up | Cancelled
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ShieldCheck, CircleDollarSign, ClipboardList, AlertTriangle, Filter } from 'lucide-react';
 import '../../styles/manager/customOrders.css';
 
-/* ──────────────────────────────────────────────────────────────
-   MOCK "TODAY" — fixed for demo consistency.
-   🔹 BACKEND: Replace with: const TODAY = new Date();
-────────────────────────────────────────────────────────────── */
-const TODAY_STR = '2025-01-24';
-const TODAY     = new Date(TODAY_STR);
+// TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
+const TODAY     = new Date();
+const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Helpers ─────────────────────────────────────────────── */
-const REVENUE_STATUSES = ['Approved', 'In Production', 'Ready', 'Delivered'];
 
+// Revenue is counted only when order is Picked Up
+const REVENUE_STATUSES = ['Picked Up'];
+
+// Overdue: past pickup date AND status is still 'Ready'
 function isOverdue(o) {
   return (
-    new Date(o.pickupDate) < TODAY &&
-    o.status !== 'Delivered' &&
-    o.status !== 'Declined'
+    new Date(o.pickupDate + 'T00:00:00') < TODAY &&
+    o.status === 'Ready'
   );
 }
 
 function isDueToday(o) {
   return (
     o.pickupDate === TODAY_STR &&
-    o.status !== 'Delivered' &&
-    o.status !== 'Declined'
+    o.status === 'Ready'
   );
 }
 
@@ -60,8 +56,11 @@ function formatDate(s) {
 
 function statusPillClass(ds) {
   const map = {
-    Pending: 'pending', Approved: 'approved', 'In Production': 'in-production',
-    Ready: 'ready', Delivered: 'delivered', Declined: 'declined', Overdue: 'overdue',
+    Pending:    'pending',
+    Ready:      'ready',
+    'Picked Up': 'picked-up',
+    Cancelled:  'cancelled',
+    Overdue:    'overdue',
   };
   return map[ds] || 'pending';
 }
@@ -72,143 +71,24 @@ function StatusPill({ order }) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   MOCK DATA
-   🔹 BACKEND: Replace this entire array with an API call result.
-   Expected shape per order:
+   TODO: Backend - Export orders data for salesOverview.jsx
+   Replace this empty array with the fetched API response.
+   Expected shape per custom order:
    {
-     id, cakeType, instructions, quantity, price, customer,
-     orderDate (YYYY-MM-DD), pickupDate (YYYY-MM-DD), status,
-     createdBy, lastUpdated, timeline: [{ event, time, state }]
+     cakeType:     string  — cake product name
+     instructions: string  — special design notes
+     quantity:     number
+     price:        number  — total order price (₱)
+     customer:     string
+     orderDate:    string  — YYYY-MM-DD
+     pickupDate:   string  — YYYY-MM-DD
+     status:       'Pending' | 'Ready' | 'Picked Up' | 'Cancelled'
+     createdBy:    string  — seller who created the order
+     lastUpdated:  string  — timestamp string
+     timeline:     [{ event: string, time: string, state: 'done' | 'current' | 'pending' }]
    }
 ────────────────────────────────────────────────────────────── */
-const INIT_ORDERS = [
-  {
-    id: 'ORD-001', cakeType: 'Birthday Chocolate Cake',
-    instructions: '3-tier fondant flowers, blue and gold theme. Photo of couple on top tier.',
-    quantity: 1, price: 2500, customer: 'Ana Reyes',
-    orderDate: '2025-01-18', pickupDate: TODAY_STR, status: 'Pending',
-    createdBy: 'Seller Ana Reyes', lastUpdated: '2025-01-18 09:12 AM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 18 – 09:12 AM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Awaiting approval',  state: 'current' },
-      { event: 'Production Started',    time: 'Not yet started',    state: 'pending' },
-      { event: 'Ready for Pick-Up',     time: 'Pending',            state: 'pending' },
-      { event: 'Delivered / Picked Up', time: 'Pending',            state: 'pending' },
-    ],
-  },
-  {
-    id: 'ORD-002', cakeType: 'Wedding Vanilla Cake',
-    instructions: '5-tier white elegance, sugar rose cascade, "J & M 2025" monogram.',
-    quantity: 1, price: 8000, customer: 'Jose & Maria Cruz',
-    orderDate: '2025-01-17', pickupDate: TODAY_STR, status: 'Approved',
-    createdBy: 'Seller Lara Diaz', lastUpdated: '2025-01-19 02:30 PM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 17 – 10:00 AM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Jan 19 – 02:30 PM', state: 'done' },
-      { event: 'Production Started',    time: 'Awaiting packer',   state: 'current' },
-      { event: 'Ready for Pick-Up',     time: 'Pending',           state: 'pending' },
-      { event: 'Delivered / Picked Up', time: 'Pending',           state: 'pending' },
-    ],
-  },
-  {
-    id: 'ORD-003', cakeType: 'Ube Dedication Cake',
-    instructions: 'Square 2-layer, printed photo on top, purple frosting.',
-    quantity: 2, price: 1800, customer: 'Pedro Santos',
-    orderDate: '2025-01-19', pickupDate: '2025-01-22', status: 'In Production',
-    createdBy: 'Seller Ana Reyes', lastUpdated: '2025-01-21 08:00 AM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 19 – 03:45 PM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Jan 20 – 09:00 AM', state: 'done' },
-      { event: 'Production Started',    time: 'Jan 21 – 08:00 AM', state: 'done' },
-      { event: 'Ready for Pick-Up',     time: 'Overdue – Jan 22',  state: 'current' },
-      { event: 'Delivered / Picked Up', time: 'Pending',           state: 'pending' },
-    ],
-  },
-  {
-    id: 'ORD-004', cakeType: 'Red Velvet Baby Shower Cake',
-    instructions: 'Round, pink and white decor, "Baby Girl" topper.',
-    quantity: 1, price: 2200, customer: 'Lara Diaz',
-    orderDate: '2025-01-16', pickupDate: '2025-01-20', status: 'Ready',
-    createdBy: 'Seller Pedro Gomez', lastUpdated: '2025-01-23 11:00 AM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 16 – 01:00 PM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Jan 17 – 10:30 AM', state: 'done' },
-      { event: 'Production Started',    time: 'Jan 18 – 08:00 AM', state: 'done' },
-      { event: 'Ready for Pick-Up',     time: 'Jan 23 – 11:00 AM', state: 'done' },
-      { event: 'Delivered / Picked Up', time: 'Awaiting pickup',   state: 'current' },
-    ],
-  },
-  {
-    id: 'ORD-005', cakeType: 'Mango Float Reunion Cake',
-    instructions: 'Sheet cake, tropical design, 30 slices minimum.',
-    quantity: 3, price: 3600, customer: 'Reyes Family',
-    orderDate: '2025-01-21', pickupDate: '2025-01-28', status: 'Pending',
-    createdBy: 'Seller Ana Reyes', lastUpdated: '2025-01-21 04:10 PM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 21 – 04:10 PM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Awaiting approval',  state: 'current' },
-      { event: 'Production Started',    time: 'Not yet started',    state: 'pending' },
-      { event: 'Ready for Pick-Up',     time: 'Pending',            state: 'pending' },
-      { event: 'Delivered / Picked Up', time: 'Pending',            state: 'pending' },
-    ],
-  },
-  {
-    id: 'ORD-006', cakeType: 'Chocolate Mousse Celebration',
-    instructions: 'Round, 2-layer, dark chocolate ganache, sprinkles on sides.',
-    quantity: 1, price: 1950, customer: 'Walk-in Request',
-    orderDate: '2025-01-20', pickupDate: '2025-01-30', status: 'Approved',
-    createdBy: 'Seller Lara Diaz', lastUpdated: '2025-01-22 09:45 AM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 20 – 02:00 PM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Jan 22 – 09:45 AM', state: 'done' },
-      { event: 'Production Started',    time: 'Scheduled Jan 27',   state: 'current' },
-      { event: 'Ready for Pick-Up',     time: 'Pending',            state: 'pending' },
-      { event: 'Delivered / Picked Up', time: 'Pending',            state: 'pending' },
-    ],
-  },
-  {
-    id: 'ORD-007', cakeType: 'Strawberry Anniversary Cake',
-    instructions: 'Heart shape, 2 tiers, fresh strawberries, "10 Years" topping.',
-    quantity: 1, price: 1200, customer: 'Mr. & Mrs. Santos',
-    orderDate: '2025-01-15', pickupDate: '2025-01-22', status: 'Delivered',
-    createdBy: 'Seller Ana Reyes', lastUpdated: '2025-01-22 10:30 AM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 15 – 11:00 AM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Jan 16 – 08:30 AM', state: 'done' },
-      { event: 'Production Started',    time: 'Jan 20 – 07:00 AM', state: 'done' },
-      { event: 'Ready for Pick-Up',     time: 'Jan 22 – 08:00 AM', state: 'done' },
-      { event: 'Delivered / Picked Up', time: 'Jan 22 – 10:30 AM', state: 'done' },
-    ],
-  },
-  {
-    id: 'ORD-008', cakeType: 'Buko Pandan Custom Cake',
-    instructions: 'Bundt shape, pandan-infused, macapuno topping.',
-    quantity: 2, price: 1400, customer: 'Rosa Villamor',
-    orderDate: '2025-01-14', pickupDate: '2025-01-19', status: 'Declined',
-    createdBy: 'Seller Pedro Gomez', lastUpdated: '2025-01-15 03:00 PM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 14 – 02:00 PM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Declined Jan 15',    state: 'current' },
-      { event: 'Production Started',    time: 'N/A – Declined',     state: 'pending' },
-      { event: 'Ready for Pick-Up',     time: 'N/A',                state: 'pending' },
-      { event: 'Delivered / Picked Up', time: 'N/A',                state: 'pending' },
-    ],
-  },
-  {
-    id: 'ORD-009', cakeType: 'Ube Cheese Pandesal Tower',
-    instructions: 'Tiered display, 4 tiers, ube-flavored, cream cheese frosting.',
-    quantity: 5, price: 4800, customer: 'Barangay Fiesta Org.',
-    orderDate: '2025-01-22', pickupDate: '2025-02-02', status: 'In Production',
-    createdBy: 'Seller Lara Diaz', lastUpdated: '2025-01-24 07:30 AM',
-    timeline: [
-      { event: 'Order Created',         time: 'Jan 22 – 09:00 AM', state: 'done' },
-      { event: 'Approved by Manager',   time: 'Jan 23 – 11:00 AM', state: 'done' },
-      { event: 'Production Started',    time: 'Jan 24 – 07:30 AM', state: 'done' },
-      { event: 'Ready for Pick-Up',     time: 'Expected Feb 1',     state: 'current' },
-      { event: 'Delivered / Picked Up', time: 'Pending',            state: 'pending' },
-    ],
-  },
-];
+export let INIT_ORDERS = [];
 
 /* ──────────────────────────────────────────────────────────────
    ORDER DETAIL MODAL
@@ -229,12 +109,10 @@ function OrderDetailModal({ order, onClose }) {
         </div>
 
         <div className="co-modal-body">
-
           <div>
             <h3 className="co-modal-section-title">Order Information</h3>
             <div className="co-modal-info-grid">
 
-              {/* FIX #2: Status now has its own labeled field */}
               <div className="co-info-item">
                 <span className="co-info-label">Status</span>
                 <span className="co-info-value">
@@ -281,7 +159,6 @@ function OrderDetailModal({ order, onClose }) {
 
             </div>
           </div>
-
         </div>
       </div>
     </div>
@@ -292,23 +169,21 @@ function OrderDetailModal({ order, onClose }) {
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-// FIX #4: Updated filter options — Pending, Approved, Completed, Overdue, Declined only
-// "Completed" maps to Delivered + Ready statuses (fully fulfilled orders)
-const STATUS_OPTIONS = ['All', 'Pending', 'Approved', 'Completed', 'Overdue', 'Declined'];
+const STATUS_OPTIONS = ['All', 'Pending', 'Ready', 'Picked Up', 'Overdue', 'Cancelled'];
 
-// Helper: "Completed" filter includes Ready + Delivered orders that are not overdue
-function isCompleted(o) {
-  return (o.status === 'Ready' || o.status === 'Delivered') && !isOverdue(o);
-}
-
-const PER_PAGE   = 6;
-const NO_QUICK   = 'all';
+const PER_PAGE = 6;
+const NO_QUICK = 'all';
 
 const CustomOrders = () => {
 
   // -----------------------------------------------------------
-  // UI STATE
+  // STATE
+  // TODO: Backend - Replace empty array with fetched orders data
   // -----------------------------------------------------------
+  const [ordersData, setOrdersData] = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
+
   const [statusFilter, setStatusFilter] = useState('All');
   const [quickFilter,  setQuickFilter]  = useState(NO_QUICK);
   const [page,         setPage]         = useState(1);
@@ -316,44 +191,44 @@ const CustomOrders = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // 🔹 BACKEND: Add state for fetched data, loading, error
-  // const [ordersData, setOrdersData] = useState([]);
-  // const [loading,    setLoading]    = useState(true);
-  // const [error,      setError]      = useState(null);
-
 
   // -----------------------------------------------------------
   // DERIVED METRIC VALUES
-  // 🔹 BACKEND: Replace INIT_ORDERS with ordersData from state
+  // TODO: Backend - All values are derived from ordersData
   // -----------------------------------------------------------
-  const totalOrders   = INIT_ORDERS.length;
-  const revenueTotal  = INIT_ORDERS
+  const totalOrders   = ordersData.length;
+
+  const revenueTotal  = ordersData
     .filter(o => REVENUE_STATUSES.includes(o.status))
     .reduce((sum, o) => sum + o.price, 0);
-  const pendingCount  = INIT_ORDERS.filter(o => o.status === 'Pending').length;
-  const dueTodayCount = INIT_ORDERS.filter(isDueToday).length;
-  const overdueCount  = INIT_ORDERS.filter(isOverdue).length;
+
+  const pendingCount  = ordersData.filter(o => o.status === 'Pending').length;
+  const dueTodayCount = ordersData.filter(isDueToday).length;
+  const overdueCount  = ordersData.filter(isOverdue).length;
 
 
   // -----------------------------------------------------------
   // FILTER LOGIC
-  // FIX #4: "Completed" filter covers Ready + Delivered
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = INIT_ORDERS; // 🔹 BACKEND: swap to ordersData
+    let result = ordersData;
 
-    if      (quickFilter === 'pending')   result = result.filter(o => o.status === 'Pending');
-    else if (quickFilter === 'revenue')   result = result.filter(o => REVENUE_STATUSES.includes(o.status));
-    else if (quickFilter === 'due-today') result = result.filter(isDueToday);
-    else if (quickFilter === 'overdue')   result = result.filter(isOverdue);
-    else {
-      if      (statusFilter === 'Overdue')   result = result.filter(isOverdue);
-      else if (statusFilter === 'Completed') result = result.filter(isCompleted);
-      else if (statusFilter !== 'All')       result = result.filter(o => o.status === statusFilter && !isOverdue(o));
+    if (quickFilter === 'due-today') {
+      result = result.filter(isDueToday);
+    } else if (quickFilter === 'overdue') {
+      result = result.filter(isOverdue);
+    } else {
+      if (statusFilter === 'Overdue') {
+        result = result.filter(isOverdue);
+      } else if (statusFilter === 'Ready') {
+        result = result.filter(o => o.status === 'Ready' && !isOverdue(o));
+      } else if (statusFilter !== 'All') {
+        result = result.filter(o => o.status === statusFilter);
+      }
     }
 
     return result;
-  }, [quickFilter, statusFilter]);
+  }, [quickFilter, statusFilter, ordersData]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -365,9 +240,27 @@ const CustomOrders = () => {
 
 
   // -----------------------------------------------------------
-  // useEffect — side effects
+  // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
+    // TODO: Backend - Fetch custom orders on mount
+    // Example:
+    // const fetchOrders = async () => {
+    //   try {
+    //     setLoading(true);
+    //     const response = await fetch('/api/custom-orders');
+    //     const data = await response.json();
+    //     setOrdersData(data.orders);
+    //     INIT_ORDERS = data.orders; // Keep export in sync for salesOverview
+    //   } catch (err) {
+    //     setError('Failed to load custom orders.');
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+    // fetchOrders();
+    setLoading(false);
+
     const handler = e => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target))
         setDropdownOpen(false);
@@ -380,6 +273,9 @@ const CustomOrders = () => {
   // -----------------------------------------------------------
   // RENDER
   // -----------------------------------------------------------
+  if (loading) return <div className="co-page-container"><p>Loading custom orders...</p></div>;
+  if (error)   return <div className="co-page-container"><p>{error}</p></div>;
+
   return (
     <div className="co-page-container">
 
@@ -401,7 +297,6 @@ const CustomOrders = () => {
           ===================================================== */}
       <div className="co-metrics-row">
 
-        {/* Total Custom Orders */}
         <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Total Custom Orders</span>
@@ -413,7 +308,6 @@ const CustomOrders = () => {
           </div>
         </div>
 
-        {/* Revenue */}
         <div className="co-metric-card">
           <div className="co-card-top">
             <span className="co-metric-label">Custom Orders Revenue</span>
@@ -421,21 +315,18 @@ const CustomOrders = () => {
           </div>
           <div className="co-card-bottom">
             <span className="co-metric-value">₱{revenueTotal.toLocaleString()}</span>
-            <span className="co-metric-subtext">Excl. Pending &amp; Declined</span>
+            <span className="co-metric-subtext">Picked Up orders only</span>
           </div>
         </div>
 
-        {/* FIX #3: Pending Approval — updated subtext */}
         <div className="co-metric-card">
           <div className="co-card-top">
-            <span className="co-metric-label">Pending Approval</span>
+            <span className="co-metric-label">Pending Orders</span>
             <ClipboardList className="co-yellow-icon" size={20} />
           </div>
           <div className="co-card-bottom">
             <span className="co-metric-value">{pendingCount}</span>
-            <span className="co-metric-subtext">
-              {pendingCount === 1 ? 'Pending cake order' : 'Pending cake orders'}
-            </span>
+            <span className="co-metric-subtext">Awaiting preparation</span>
           </div>
         </div>
 
@@ -455,7 +346,7 @@ const CustomOrders = () => {
             <AlertTriangle size={16} />
             <span>
               <strong>{dueTodayCount}</strong>
-              {' '}order{dueTodayCount !== 1 ? 's' : ''} due for pick-up today — excludes Delivered &amp; Declined
+              {' '}order{dueTodayCount !== 1 ? 's' : ''} due for pick-up today — Ready &amp; awaiting customer
             </span>
           </button>
         </div>
@@ -468,7 +359,7 @@ const CustomOrders = () => {
             <AlertTriangle size={16} />
             <span>
               <strong>{overdueCount}</strong>
-              {' '}overdue order{overdueCount !== 1 ? 's' : ''} — pick-up date passed without delivery
+              {' '}overdue order{overdueCount !== 1 ? 's' : ''} — Ready but pick-up date has passed
             </span>
           </button>
         </div>
@@ -478,12 +369,9 @@ const CustomOrders = () => {
 
       {/* =====================================================
           4. TABLE
-          FIX #1: Table scroll wrapper handles overflow so the
-          table is always fully visible regardless of sidebar state.
           ===================================================== */}
       <div className="co-table-container">
 
-        {/* Toolbar */}
         <div className="co-table-toolbar">
 
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -496,7 +384,6 @@ const CustomOrders = () => {
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
 
-            {/* FIX #4: Updated STATUS_OPTIONS dropdown */}
             <div className="co-filter-dropdown-wrapper" ref={dropdownRef}>
               <button
                 className={`co-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
@@ -539,7 +426,6 @@ const CustomOrders = () => {
           </div>
         </div>
 
-        {/* FIX #1: Scrollable table wrapper — handles sidebar expand/collapse gracefully */}
         <div className="co-table-scroll-wrapper">
           <table className="co-orders-table">
             <thead>
@@ -556,11 +442,11 @@ const CustomOrders = () => {
               </tr>
             </thead>
             <tbody>
-              {paged.length > 0 ? paged.map(order => {
+              {paged.length > 0 ? paged.map((order, idx) => {
                 const overdue  = isOverdue(order);
                 const dueToday = isDueToday(order);
                 return (
-                  <tr key={order.id}>
+                  <tr key={idx}>
                     <td><span className="co-cake-name-text">{order.cakeType}</span></td>
                     <td>{order.quantity}</td>
                     <td><span className="co-price-text">₱{order.price.toLocaleString()}</span></td>
@@ -598,7 +484,6 @@ const CustomOrders = () => {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="co-pagination">
           <span className="co-pagination-info">
             {filteredData.length === 0
