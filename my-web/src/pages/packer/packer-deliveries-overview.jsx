@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Filter } from 'lucide-react';
+import { AlertTriangle, CircleDollarSign, Filter, Package, Truck } from 'lucide-react';
 
 const STATUS_OPTIONS = ['All', 'Pending', 'Out for Delivery', 'Delivered', 'Cancelled', 'Overdue'];
 const PER_PAGE = 6;
@@ -78,6 +78,41 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
     return mappedRows.filter((row) => row.computedStatus === statusFilter);
   }, [mappedRows, statusFilter]);
 
+  const summary = useMemo(() => {
+    const totalOrders = mappedRows.length;
+    const estimatedRevenue = mappedRows
+      .filter((row) => row.computedStatus !== 'Cancelled')
+      .reduce((sum, row) => sum + row.totalPrice, 0);
+    const deliveredCakes = mappedRows
+      .filter((row) => row.computedStatus === 'Delivered')
+      .reduce((sum, row) => sum + Number(row.qty || 0), 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const scheduledTodayNotDone = mappedRows.filter((row) => {
+      const deliveryDate = toDateObject(row.deliveryDate);
+      if (!deliveryDate) return false;
+      const notDone = row.computedStatus !== 'Delivered' && row.computedStatus !== 'Cancelled';
+      return notDone && deliveryDate.getTime() === today.getTime();
+    }).length;
+
+    const pendingDispatch = mappedRows.filter(
+      (row) => row.computedStatus === 'Pending' || row.computedStatus === 'Out for Delivery'
+    ).length;
+
+    const overdueCount = mappedRows.filter((row) => row.computedStatus === 'Overdue').length;
+
+    return {
+      totalOrders,
+      estimatedRevenue,
+      deliveredCakes,
+      scheduledTodayNotDone,
+      pendingDispatch,
+      overdueCount,
+    };
+  }, [mappedRows]);
+
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
@@ -91,176 +126,238 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [statusFilter]);
-
   return (
-    <section className="pkdo-table-container">
-      {deliveryWarning && <div className="pkdo-warning-banner">{deliveryWarning}</div>}
+    <div className="pkdo-page-container">
+      <header className="pkdo-header">
+        <h1 className="pkdo-title">Customer Deliveries</h1>
+        <p className="pkdo-subtitle">Monitor all delivery orders, status updates, and overdue alerts</p>
+      </header>
 
-      <div className="pkdo-table-toolbar">
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span className="pkdo-table-section-title">Deliveries List</span>
-          <span className="pkdo-table-count-pill">
-            {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
-          </span>
+      <div className="pkdo-metrics-row">
+        <article className="pkdo-metric-card">
+          <div className="pkdo-card-top">
+            <span className="pkdo-metric-label">Total Delivery Orders</span>
+            <Truck size={18} className="pkdo-blue-icon" />
+          </div>
+          <div className="pkdo-card-bottom">
+            <span className="pkdo-metric-value">{summary.totalOrders}</span>
+            <span className="pkdo-metric-subtext">All delivery transactions</span>
+          </div>
+        </article>
+
+        <article className="pkdo-metric-card">
+          <div className="pkdo-card-top">
+            <span className="pkdo-metric-label">Estimated Revenue</span>
+            <CircleDollarSign size={18} className="pkdo-green-icon" />
+          </div>
+          <div className="pkdo-card-bottom">
+            <span className="pkdo-metric-value">P{summary.estimatedRevenue.toLocaleString()}</span>
+            <span className="pkdo-metric-subtext">Excl. Cancelled orders</span>
+          </div>
+        </article>
+
+        <article className="pkdo-metric-card">
+          <div className="pkdo-card-top">
+            <span className="pkdo-metric-label">Total Cakes Delivered</span>
+            <Package size={18} className="pkdo-yellow-icon" />
+          </div>
+          <div className="pkdo-card-bottom">
+            <span className="pkdo-metric-value">{summary.deliveredCakes}</span>
+            <span className="pkdo-metric-subtext">Cakes successfully delivered</span>
+          </div>
+        </article>
+      </div>
+
+      <div className="pkdo-alerts-container">
+        <div className="pkdo-alert-wrapper">
+          <div className="pkdo-alert-row warning">
+            <AlertTriangle size={18} />
+            <span>{summary.scheduledTodayNotDone} deliveries scheduled for today - not yet completed</span>
+          </div>
         </div>
-
-        <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
-          <button
-            className={`pkdo-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-            onClick={() => setDropdownOpen((prev) => !prev)}
-            title="Filter by status"
-            type="button"
-          >
-            <Filter size={14} />
-            <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
-          </button>
-
-          {dropdownOpen && (
-            <div className="pkdo-filter-dropdown">
-              {STATUS_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  className={`pkdo-dropdown-item ${statusFilter === option ? 'selected' : ''}`}
-                  onClick={() => {
-                    setStatusFilter(option);
-                    setDropdownOpen(false);
-                  }}
-                  type="button"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="pkdo-alert-wrapper">
+          <div className="pkdo-alert-row info">
+            <AlertTriangle size={18} />
+            <span>{summary.pendingDispatch} pending deliveries - awaiting dispatch</span>
+          </div>
+        </div>
+        <div className="pkdo-alert-wrapper">
+          <div className="pkdo-alert-row critical">
+            <AlertTriangle size={18} />
+            <span>{summary.overdueCount} overdue deliveries - delivery date passed, manager action needed</span>
+          </div>
         </div>
       </div>
 
-      <div className="pkdo-table-scroll-wrapper">
-        <table className="pkdo-deliveries-table">
-          <thead>
-            <tr>
-              <th>Cake Type</th>
-              <th>Qty</th>
-              <th>Total Price</th>
-              <th>Customer Name</th>
-              <th>Contact</th>
-              <th>Delivery Address</th>
-              <th>Date Made</th>
-              <th>Time</th>
-              <th>Delivery Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paged.length > 0 ? (
-              paged.map((row, index) => {
-                const rowDate = toDateObject(row.deliveryDate);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const isToday = rowDate ? rowDate.getTime() === today.getTime() : false;
-                const isOverdue = row.computedStatus === 'Overdue';
+      <section className="pkdo-table-container">
+        {deliveryWarning && <div className="pkdo-warning-banner">{deliveryWarning}</div>}
 
-                return (
-                  <tr key={`${row.branch}-${row.cake}-${row.time}-${index}`}>
-                    <td>
-                      <span className="pkdo-cake-name-text">{row.cake}</span>
-                    </td>
-                    <td>{row.qty}</td>
-                    <td>
-                      <span className="pkdo-price-text">P{row.totalPrice.toLocaleString()}</span>
-                    </td>
-                    <td>{row.customer || 'Walk-in Customer'}</td>
-                    <td>
-                      <span className="pkdo-contact-text">{row.contact || '-'}</span>
-                    </td>
-                    <td>
-                      <span className="pkdo-address-text" title={row.address || '-'}>
-                        {row.address || '-'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="pkdo-date-text">
-                        {formatDate(row.orderDate)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="pkdo-time-text">{row.time || '-'}</span>
-                    </td>
-                    <td>
-                      <span className={`pkdo-date-text ${isOverdue ? 'is-overdue' : isToday ? 'is-today' : ''}`}>
-                        {formatDate(row.deliveryDate)}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`pkdo-status-pill ${statusPillClass(row.computedStatus)}`}>
-                        {row.computedStatus}
-                      </span>
-                      <button
-                        type="button"
-                        className={`pkdo-status-action-btn ${isActionDisabled(row.computedStatus) ? 'disabled' : ''}`}
-                        onClick={() => onAdvanceStatus?.(row.sourceIndex)}
-                        disabled={isActionDisabled(row.computedStatus)}
-                      >
-                        {getActionLabel(row.computedStatus)}
-                      </button>
-                      {canCancel(row.computedStatus) && (
-                        <button
-                          type="button"
-                          className="pkdo-cancel-btn"
-                          onClick={() => onCancelStatus?.(row.sourceIndex)}
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={11} className="pkdo-no-data">
-                  No delivery orders match the current filter.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+        <div className="pkdo-table-toolbar">
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <span className="pkdo-table-section-title">Deliveries List</span>
+            <span className="pkdo-table-count-pill">
+              {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
+            </span>
+          </div>
 
-      <div className="pkdo-pagination">
-        <span className="pkdo-pagination-info">
-          {filteredData.length === 0
-            ? 'No results'
-            : `Showing ${(page - 1) * PER_PAGE + 1}-${Math.min(page * PER_PAGE, filteredData.length)} of ${filteredData.length}`}
-        </span>
-        <div className="pkdo-pagination-btns">
-          <button className="pkdo-page-btn" disabled={page === 1} onClick={() => setPage((prev) => prev - 1)} type="button">
-            {'<'}
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
             <button
-              key={p}
-              className={`pkdo-page-btn ${page === p ? 'active' : ''}`}
-              onClick={() => setPage(p)}
+              className={`pkdo-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
+              onClick={() => setDropdownOpen((prev) => !prev)}
+              title="Filter by status"
               type="button"
             >
-              {p}
+              <Filter size={14} />
+              <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
             </button>
-          ))}
-          <button
-            className="pkdo-page-btn"
-            disabled={page === totalPages}
-            onClick={() => setPage((prev) => prev + 1)}
-            type="button"
-          >
-            {'>'}
-          </button>
+
+            {dropdownOpen && (
+              <div className="pkdo-filter-dropdown">
+                {STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={option}
+                    className={`pkdo-dropdown-item ${statusFilter === option ? 'selected' : ''}`}
+                    onClick={() => {
+                      setStatusFilter(option);
+                      setPage(1);
+                      setDropdownOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </section>
+
+        <div className="pkdo-table-scroll-wrapper">
+          <table className="pkdo-deliveries-table">
+            <thead>
+              <tr>
+                <th>Cake Type</th>
+                <th>Qty</th>
+                <th>Total Price</th>
+                <th>Customer Name</th>
+                <th>Contact</th>
+                <th>Delivery Address</th>
+                <th>Date Made</th>
+                <th>Time</th>
+                <th>Delivery Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.length > 0 ? (
+                paged.map((row, index) => {
+                  const rowDate = toDateObject(row.deliveryDate);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isToday = rowDate ? rowDate.getTime() === today.getTime() : false;
+                  const isOverdue = row.computedStatus === 'Overdue';
+
+                  return (
+                    <tr key={`${row.branch}-${row.cake}-${row.time}-${index}`}>
+                      <td>
+                        <span className="pkdo-cake-name-text">{row.cake}</span>
+                      </td>
+                      <td>{row.qty}</td>
+                      <td>
+                        <span className="pkdo-price-text">P{row.totalPrice.toLocaleString()}</span>
+                      </td>
+                      <td>{row.customer || 'Walk-in Customer'}</td>
+                      <td>
+                        <span className="pkdo-contact-text">{row.contact || '-'}</span>
+                      </td>
+                      <td>
+                        <span className="pkdo-address-text" title={row.address || '-'}>
+                          {row.address || '-'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="pkdo-date-text">
+                          {formatDate(row.orderDate)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="pkdo-time-text">{row.time || '-'}</span>
+                      </td>
+                      <td>
+                        <span className={`pkdo-date-text ${isOverdue ? 'is-overdue' : isToday ? 'is-today' : ''}`}>
+                          {formatDate(row.deliveryDate)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`pkdo-status-pill ${statusPillClass(row.computedStatus)}`}>
+                          {row.computedStatus}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className={`pkdo-status-action-btn ${isActionDisabled(row.computedStatus) ? 'disabled' : ''}`}
+                          onClick={() => onAdvanceStatus?.(row.sourceIndex)}
+                          disabled={isActionDisabled(row.computedStatus)}
+                        >
+                          {getActionLabel(row.computedStatus)}
+                        </button>
+                        {canCancel(row.computedStatus) && (
+                          <button
+                            type="button"
+                            className="pkdo-cancel-btn"
+                            onClick={() => onCancelStatus?.(row.sourceIndex)}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={11} className="pkdo-no-data">
+                    No delivery orders match the current filter.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="pkdo-pagination">
+          <span className="pkdo-pagination-info">
+            {filteredData.length === 0
+              ? 'No results'
+              : `Showing ${(page - 1) * PER_PAGE + 1}-${Math.min(page * PER_PAGE, filteredData.length)} of ${filteredData.length}`}
+          </span>
+          <div className="pkdo-pagination-btns">
+            <button className="pkdo-page-btn" disabled={page === 1} onClick={() => setPage((prev) => prev - 1)} type="button">
+              {'<'}
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                className={`pkdo-page-btn ${page === p ? 'active' : ''}`}
+                onClick={() => setPage(p)}
+                type="button"
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              className="pkdo-page-btn"
+              disabled={page === totalPages}
+              onClick={() => setPage((prev) => prev + 1)}
+              type="button"
+            >
+              {'>'}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

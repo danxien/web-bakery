@@ -3,10 +3,12 @@
   --pack-red: #f3071d;
   --pack-yellow: #f7dd30;
   --pack-cream: #fcf6c4;
-  --pack-bg: #e9e5ba;
-  --pack-card: #f3f3f3;
+  --pack-bg: #fcf6c4;
+  --pack-card: #ffffff;
   --pack-text: #111111;
   --pack-muted: #666666;
+  --pack-shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.05);
+  --pack-shadow-md: 0 6px 15px rgba(0, 0, 0, 0.1);
   --ok: #20a35b;
   --warn: #b88700;
   --danger: #d33939;
@@ -38,11 +40,18 @@ html, body {
   flex: 1;                 /* Consumes all space next to sidebar */
   min-width: 0;            /* Prevents flex-item overflow */
   height: 100vh;
-  padding: 40px;           /* Increased for Seller Dashboard feel */
   overflow-y: auto;        /* Content scrolls here, not the whole page */
   overflow-x: hidden;      /* Kills the horizontal gap */
   display: flex;
   flex-direction: column;
+}
+
+.packer-content-inner {
+  padding: 40px;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
 
@@ -83,10 +92,11 @@ html, body {
 /* 4. SELLER-STYLE CARDS */
 .packer-table-card,
 .packer-panel-card {
-  background: #f0f0f0;
-  border: 1px solid #d8d8d8;
+  background: #ffffff;
+  border: 1px solid #ececec;
   border-radius: 12px;
-  padding: 14px;
+  padding: 16px;
+  box-shadow: var(--pack-shadow-sm);
 }
 
 .packer-table-head {
@@ -125,27 +135,27 @@ html, body {
   width: 100%;
 }
 
-table {
+.packer-main-content table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.94rem;
   min-width: 680px;
 }
 
-thead th {
+.packer-main-content thead th {
   text-align: left;
-  padding: 11px 8px;
-  border-bottom: 1px solid #dadada;
+  padding: 14px 12px;
+  border-bottom: 2px solid #fcf6c4;
   white-space: nowrap;
 }
 
-tbody td {
-  padding: 11px 8px;
-  border-bottom: 1px solid #e6e6e6;
+.packer-main-content tbody td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #eeeeee;
   white-space: nowrap;
 }
 
-tbody tr:hover {
+.packer-main-content tbody tr:hover {
   background: #f7f1d9;
 }
 
@@ -174,10 +184,12 @@ tbody tr:hover {
   }
   .packer-main-content {
     height: auto;
-    padding: 20px;
     overflow: visible;
   }
 
+  .packer-content-inner {
+    padding: 20px;
+  }
 }
 
 @media (max-width: 600px) {

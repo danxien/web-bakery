@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageSquare, Send } from 'lucide-react';
+import '../../styles/manager/messages.css';
 
 const THREAD_META = {
   seller: { label: 'Seller - Main Branch', role: 'Sales Staff' },
@@ -82,53 +83,58 @@ export default function PackerMessages({ inboxMessages, onAction, onSendMessage,
   };
 
   return (
-    <div className="pkmsg-page">
-      <div className="pkmsg-header">
-        <h1 className="pkmsg-title">Messages</h1>
-        <p className="pkmsg-subtitle">Communicate with Manager and Seller</p>
+    <div className="msg-page">
+      <div className="msg-header">
+        <h1 className="msg-title">Messages</h1>
+        <p className="msg-subtitle">Communicate with Seller and Manager</p>
       </div>
 
-      <div className="pkmsg-panel">
-        <div className="pkmsg-contacts">
-          <div className="pkmsg-contacts-label">Conversations</div>
+      <div className="msg-panel">
+        <div className="msg-contacts">
+          <div className="msg-contacts__label">Conversations</div>
 
           {Object.keys(THREAD_META).map((thread) => (
             <button
               key={thread}
               type="button"
-              className={`pkmsg-contact-item ${activeThread === thread ? 'active' : ''}`}
+              className={`msg-contact-item ${activeThread === thread ? 'active' : ''}`}
               onClick={() => selectThread(thread)}
             >
-              <div className="pkmsg-contact-info">
-                <span className="pkmsg-contact-name">{THREAD_META[thread].label}</span>
-                <span className="pkmsg-contact-role">{THREAD_META[thread].role}</span>
+              <div className="msg-contact-info">
+                <span className="msg-contact-name">{THREAD_META[thread].label}</span>
+                <span className="msg-contact-role">{THREAD_META[thread].role}</span>
               </div>
-              {unreadCounts[thread] > 0 && <span className="pkmsg-unread">{unreadCounts[thread]}</span>}
+              {unreadCounts[thread] > 0 && <span className="msg-unread-badge">{unreadCounts[thread]}</span>}
             </button>
           ))}
         </div>
 
-        <div className="pkmsg-chat">
-          <div className="pkmsg-chat-header">
-            <p className="pkmsg-chat-name">{THREAD_META[activeThread].label}</p>
-            <p className="pkmsg-chat-role">{THREAD_META[activeThread].role}</p>
+        <div className="msg-chat">
+          <div className="msg-chat__header">
+            <div>
+              <p className="msg-chat__name">{THREAD_META[activeThread].label}</p>
+              <p className="msg-chat__role">{THREAD_META[activeThread].role}</p>
+            </div>
           </div>
 
-          <div className="pkmsg-thread">
+          <div className="msg-thread">
             {activeMessages.length === 0 ? (
-              <div className="pkmsg-empty">
+              <div className="msg-empty">
                 <MessageSquare size={36} strokeWidth={1.2} />
-                <p>No messages yet.</p>
+                <p>No messages yet. Say hello!</p>
               </div>
             ) : (
               activeMessages.map((msg) => {
                 const outgoing = msg.fromRole === 'packer';
                 return (
-                  <div key={msg.id} className={`pkmsg-row ${outgoing ? 'out' : 'in'}`}>
-                    <div className={`pkmsg-bubble ${outgoing ? 'out' : 'in'} ${msg.urgent ? 'urgent' : ''}`}>
+                  <div
+                    key={msg.id}
+                    className={`msg-bubble-wrap ${outgoing ? 'msg-bubble-wrap--out' : 'msg-bubble-wrap--in'}`}
+                  >
+                    <div className={`msg-bubble ${outgoing ? 'msg-bubble--out' : 'msg-bubble--in'} ${msg.urgent ? 'msg-bubble--urgent' : ''}`}>
                       <p>{msg.content}</p>
-                      <span className="pkmsg-time">{msg.sentAt}</span>
-                      {msg.actionTaken && <small className="pkmsg-tag">{msg.actionTaken}</small>}
+                      <span className="msg-time">{msg.sentAt}</span>
+                      {msg.actionTaken && <small className="msg-tag">{msg.actionTaken}</small>}
                       {renderSellerActions(msg)}
                     </div>
                   </div>
@@ -138,10 +144,10 @@ export default function PackerMessages({ inboxMessages, onAction, onSendMessage,
             <div ref={bottomRef} />
           </div>
 
-          <div className="pkmsg-input-bar">
+          <div className="msg-input-bar">
             <textarea
               ref={inputRef}
-              className="pkmsg-input"
+              className="msg-input"
               rows={1}
               placeholder={`Message ${THREAD_META[activeThread].label}...`}
               value={draft}
@@ -150,7 +156,7 @@ export default function PackerMessages({ inboxMessages, onAction, onSendMessage,
             />
             <button
               type="button"
-              className={`pkmsg-send-btn ${draft.trim() ? 'active' : ''}`}
+              className={`msg-send-btn ${draft.trim() ? 'active' : ''}`}
               onClick={sendMessage}
             >
               <Send size={15} />

@@ -121,13 +121,17 @@ export default function DashboardOverview({
               </div>
 
       <div className="packer-alerts">
-        <div className="alert danger">
-          <CircleAlert size={16} />
-          <span>Red Velvet Cake - only 6 left in Main Branch</span>
+        <div className="packer-alert-card">
+          <div className="alert danger">
+            <CircleAlert size={16} />
+            <span>Red Velvet Cake - only 6 left in Main Branch</span>
+          </div>
         </div>
-        <div className="alert warn">
-          <CircleAlert size={16} />
-          <span>Blueberry Cheesecake - expired in Main Branch (2 pcs)</span>
+        <div className="packer-alert-card">
+          <div className="alert warn">
+            <CircleAlert size={16} />
+            <span>Blueberry Cheesecake - expired in Main Branch (2 pcs)</span>
+          </div>
         </div>
       </div>
 

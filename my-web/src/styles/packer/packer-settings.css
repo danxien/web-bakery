@@ -31,7 +31,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 0 32px;
+  padding: 24px 28px 40px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -59,12 +59,10 @@
 }
 
 .ms-cards-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 1220px;
-  margin: 0 auto;
 }
 
 .ms-cards-row .ms-card {
@@ -83,8 +81,6 @@
 
 .ms-card--full {
   width: 100%;
-  max-width: 1220px;
-  margin: 0 auto;
 }
 
 .ms-card__header {
@@ -273,12 +269,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #fff;
+  background: #1a1a1a;
   border-radius: 12px;
   padding: 14px 18px;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   min-width: 280px;
-  border-left: 4px solid #f3071d;
+  border-left: 4px solid #22c55e;
 }
 
 .ms-toast__icon-wrap {
@@ -301,13 +297,13 @@
 .ms-toast__main {
   font-weight: bold;
   font-size: 0.875rem;
-  color: #111;
+  color: #fff;
   margin: 0 0 2px 0;
 }
 
 .ms-toast__sub {
   font-size: 0.78rem;
-  color: #666;
+  color: #aaa;
   margin: 0;
 }
 
@@ -315,7 +311,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #aaa;
+  color: #666;
   padding: 2px;
   display: flex;
   align-items: center;
@@ -327,10 +323,6 @@
 }
 
 @media (max-width: 900px) {
-  .ms-cards-row {
-    grid-template-columns: 1fr;
-  }
-
   .ms-info-grid {
     grid-template-columns: 1fr;
   }
@@ -359,25 +351,5 @@
 
   .ms-toast__content {
     min-width: unset;
-  }
-}
-.packer-settings--full .packer-settings__body {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.packer-settings--full .ms-card {
-  width: 100%;
-}
-
-.packer-settings--full .packer-settings__header {
-  padding-left: 44px;
-  padding-right: 44px;
-}
-
-@media (max-width: 768px) {
-  .packer-settings--full .packer-settings__header {
-    padding-left: 18px;
-    padding-right: 18px;
   }
 }
