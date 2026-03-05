@@ -64,8 +64,7 @@ function inRange(date, start, end) {
 
 /* ── Constants ─────────────────────────────────────────────── */
 
-// Revenue is counted only when reservation is Picked Up
-const REVENUE_STATUSES = ['Picked Up'];
+const REVENUE_STATUSES = ['Pending', 'Ready', 'Picked Up'];
 
 const DATE_OPTIONS = [
   { key: 'today', label: 'Today' },
@@ -122,145 +121,20 @@ function StatusPill({ reservation }) {
 
 /* ──────────────────────────────────────────────────────────────
    TODO: Backend - Export reservations data for salesOverview.jsx
-   Replace this mock array with the fetched API response.
+   Replace this empty array with the fetched API response.
    Expected shape per reservation:
    {
      cakeType:        string  — cake product name
      quantity:        number
      price:           number  — unit price (₱)
      customer:        string
-     contact:         string  — customer contact number
+     seller:          string
      reservationDate: string  — YYYY-MM-DD
      pickupDate:      string  — YYYY-MM-DD
      status:          'Pending' | 'Ready' | 'Picked Up' | 'Cancelled'
-     instructions:    string  — special instructions / notes
-     createdBy:       string  — seller who created the reservation
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_RESERVATIONS = [
-  {
-    cakeType:        'Chocolate Cake',
-    quantity:        2,
-    price:           850,
-    customer:        'Kimberly Luceñada',
-    contact:         '09123456789',
-    reservationDate: TODAY_STR,
-    pickupDate:      TODAY_STR,
-    status:          'Pending',
-    instructions:    'Please add a small birthday candle.',
-    createdBy:       'staff',
-  },
-];
-
-/* ──────────────────────────────────────────────────────────────
-   RESERVATION DETAIL MODAL
-   Table shows: Cake Type · Qty · Price · Pick-Up Date · Status
-   Modal shows: all of the above + Total Value · Customer ·
-                Contact · Reservation Date · Special Instructions
-────────────────────────────────────────────────────────────── */
-function ReservationDetailModal({ reservation, onClose }) {
-  const overdue  = isOverdue(reservation);
-  const dueToday = isDueToday(reservation);
-
-  return (
-    <div className="ro-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="ro-modal">
-
-        <div className="ro-modal-header">
-          <div>
-            <p className="ro-modal-eyebrow">Reservation Details</p>
-            <h2 className="ro-modal-cake-name">{reservation.cakeType}</h2>
-          </div>
-          <button className="ro-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-
-        <div className="ro-modal-body">
-
-          {/* ── Section 1: Product ── */}
-          <h3 className="ro-modal-section-title">Product</h3>
-          <div className="ro-modal-info-grid">
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Cake Type</span>
-              <span className="ro-info-value">{reservation.cakeType}</span>
-            </div>
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Quantity</span>
-              <span className="ro-info-value">{reservation.quantity} pc{reservation.quantity > 1 ? 's' : ''}</span>
-            </div>
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Unit Price</span>
-              <span className="ro-info-value price-val">₱{reservation.price.toLocaleString()}</span>
-            </div>
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Total Value</span>
-              <span className="ro-info-value price-val">₱{totalValue(reservation).toLocaleString()}</span>
-            </div>
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Status</span>
-              <span className="ro-info-value"><StatusPill reservation={reservation} /></span>
-            </div>
-
-          </div>
-
-          {/* ── Section 2: Customer ── */}
-          <h3 className="ro-modal-section-title" style={{ marginTop: 22 }}>Customer</h3>
-          <div className="ro-modal-info-grid">
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Customer Name</span>
-              <span className="ro-info-value">{reservation.customer}</span>
-            </div>
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Contact Number</span>
-              <span className="ro-info-value">{reservation.contact || '—'}</span>
-            </div>
-
-          </div>
-
-          {/* ── Section 3: Schedule ── */}
-          <h3 className="ro-modal-section-title" style={{ marginTop: 22 }}>Schedule</h3>
-          <div className="ro-modal-info-grid">
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Reservation Date</span>
-              <span className="ro-info-value">{formatDate(reservation.reservationDate)}</span>
-            </div>
-
-            <div className="ro-info-item">
-              <span className="ro-info-label">Pick-Up Date</span>
-              <span className="ro-info-value" style={{
-                color:      overdue ? '#fd7e14' : dueToday ? '#854d0e' : undefined,
-                fontWeight: (overdue || dueToday) ? 700 : undefined,
-              }}>
-                {formatDate(reservation.pickupDate)}
-                {overdue  && '  ⚠ Overdue'}
-                {dueToday && '  ⚠ Due Today'}
-              </span>
-            </div>
-
-          </div>
-
-          {/* ── Section 4: Special Instructions ── */}
-          <h3 className="ro-modal-section-title" style={{ marginTop: 22 }}>Special Instructions</h3>
-          <div className="ro-modal-info-grid">
-            <div className="ro-info-item full-width">
-              <span className="ro-info-value instructions-val">
-                {reservation.instructions || 'No special instructions provided.'}
-              </span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
+export let INIT_RESERVATIONS = [];
 
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
@@ -272,9 +146,9 @@ const ReservationsOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace INIT_RESERVATIONS with fetched data
+  // TODO: Backend - Replace empty array with fetched reservations data
   // -----------------------------------------------------------
-  const [reservationsData, setReservationsData] = useState(INIT_RESERVATIONS);
+  const [reservationsData, setReservationsData] = useState([]);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
 
@@ -284,9 +158,8 @@ const ReservationsOverview = () => {
   const [dateDropOpen, setDateDropOpen] = useState(false);
   const dateDropRef = useRef(null);
 
-  const [statusFilter,      setStatusFilter]      = useState(null);
-  const [page,              setPage]              = useState(1);
-  const [modalReservation,  setModalReservation]  = useState(null);
+  const [statusFilter,  setStatusFilter]  = useState(null);
+  const [page,          setPage]          = useState(1);
 
 
   // -----------------------------------------------------------
@@ -316,9 +189,11 @@ const ReservationsOverview = () => {
   // -----------------------------------------------------------
   // SUMMARY METRICS
   // -----------------------------------------------------------
-  const totalReservations = dateScoped.length;
+  const reservedQtyTotal = dateScoped
+    .filter(r => r.status !== 'Cancelled')
+    .reduce((sum, r) => sum + r.quantity, 0);
 
-  const revenueTotal = dateScoped
+  const estimatedRevenue = dateScoped
     .filter(r => REVENUE_STATUSES.includes(r.status))
     .reduce((sum, r) => sum + totalValue(r), 0);
 
@@ -416,13 +291,6 @@ const ReservationsOverview = () => {
   return (
     <div className="ro-page-container">
 
-      {modalReservation && (
-        <ReservationDetailModal
-          reservation={modalReservation}
-          onClose={() => setModalReservation(null)}
-        />
-      )}
-
       {/* =====================================================
           1. HEADER + DATE FILTER
           ===================================================== */}
@@ -438,6 +306,7 @@ const ReservationsOverview = () => {
             onClick={() => setDateDropOpen(p => !p)}
             title="Filter by date range"
           >
+            {/* ✅ Calendar icon — matches inventory & delivery pattern */}
             <Calendar size={16} strokeWidth={2} color="currentColor" />
             <span>{dateLabel}</span>
             <ChevronDown size={12} />
@@ -493,34 +362,36 @@ const ReservationsOverview = () => {
 
         <div className="ro-metric-card">
           <div className="ro-card-top">
-            <span className="ro-metric-label">Total Reservations</span>
+            <span className="ro-metric-label">Reserved Quantity Total</span>
             <PackageCheck className="ro-blue-icon" size={20} />
           </div>
           <div className="ro-card-bottom">
-            <span className="ro-metric-value">{totalReservations}</span>
-            <span className="ro-metric-subtext">All reservations on record</span>
+            <span className="ro-metric-value">{reservedQtyTotal}</span>
+            <span className="ro-metric-subtext">Cakes reserved (excl. Cancelled)</span>
           </div>
         </div>
 
         <div className="ro-metric-card">
           <div className="ro-card-top">
-            <span className="ro-metric-label">Reservations Revenue</span>
+            <span className="ro-metric-label">Estimated Revenue</span>
             <CircleDollarSign className="ro-green-icon" size={20} />
           </div>
           <div className="ro-card-bottom">
-            <span className="ro-metric-value">₱{revenueTotal.toLocaleString()}</span>
-            <span className="ro-metric-subtext">Picked Up orders only</span>
+            <span className="ro-metric-value">₱{estimatedRevenue.toLocaleString()}</span>
+            <span className="ro-metric-subtext">Pending, Ready &amp; Picked Up only</span>
           </div>
         </div>
 
         <div className="ro-metric-card">
           <div className="ro-card-top">
-            <span className="ro-metric-label">Pending Reservations</span>
+            <span className="ro-metric-label">Total Pending</span>
             <ClipboardList className="ro-yellow-icon" size={20} />
           </div>
           <div className="ro-card-bottom">
             <span className="ro-metric-value">{pendingCount}</span>
-            <span className="ro-metric-subtext">Awaiting preparation</span>
+            <span className="ro-metric-subtext">
+              {pendingCount === 1 ? 'Cake awaiting preparation' : 'Cakes awaiting preparation'}
+            </span>
           </div>
         </div>
 
@@ -546,10 +417,6 @@ const ReservationsOverview = () => {
 
       {/* =====================================================
           4. RESERVATIONS TABLE
-          Visible columns: Cake Type · Qty · Price · Pick-Up Date · Status · Action
-          Hidden from table (shown only in modal):
-            Total Value, Customer Name, Contact Number,
-            Reservation Date, Special Instructions
           ===================================================== */}
       <div className="ro-table-container">
 
@@ -565,22 +432,16 @@ const ReservationsOverview = () => {
 
         <div className="ro-table-scroll-wrapper">
           <table className="ro-reservations-table">
-            <colgroup>
-              <col className="col-cake" />
-              <col className="col-qty" />
-              <col className="col-price" />
-              <col className="col-pickup" />
-              <col className="col-status" />
-              <col className="col-action" />
-            </colgroup>
             <thead>
               <tr>
                 <th>Cake Type</th>
                 <th>Qty</th>
                 <th>Price</th>
+                <th>Total Value</th>
+                <th>Customer Name</th>
+                <th>Reservation Date</th>
                 <th>Pick-Up Date</th>
                 <th>Status</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -591,26 +452,21 @@ const ReservationsOverview = () => {
                   <tr key={idx}>
                     <td><span className="ro-cake-name-text">{r.cakeType}</span></td>
                     <td>{r.quantity}</td>
-                    <td><span className="ro-price-text">₱{r.price.toLocaleString()}</span></td>
+                    <td>₱{r.price.toLocaleString()}</td>
+                    <td><span className="ro-price-text">₱{totalValue(r).toLocaleString()}</span></td>
+                    <td>{r.customer}</td>
+                    <td>{formatDate(r.reservationDate)}</td>
                     <td>
                       <span className={`ro-pickup-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
                         {formatDate(r.pickupDate)}
                       </span>
                     </td>
                     <td><StatusPill reservation={r} /></td>
-                    <td>
-                      <button
-                        className="ro-view-btn"
-                        onClick={e => { e.stopPropagation(); setModalReservation(r); }}
-                      >
-                        View
-                      </button>
-                    </td>
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan={6} className="ro-no-data">
+                  <td colSpan={8} className="ro-no-data">
                     No reservations match the current filter.
                   </td>
                 </tr>
