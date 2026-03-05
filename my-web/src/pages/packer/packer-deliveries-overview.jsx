@@ -1,8 +1,24 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CircleDollarSign, Download, Filter, Package, Truck } from 'lucide-react';
+import { Calendar, ChevronDown, CircleDollarSign, Download, Package, Truck } from 'lucide-react';
 import { exportRowsToCsv } from '../../utils/exportCsv';
 
 const PER_PAGE = 6;
+
+const DATE_OPTIONS = [
+  { value: 'all', label: 'All Dates' },
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This Week' },
+  { value: 'month', label: 'This Month' },
+  { value: 'custom', label: 'Custom Range' },
+];
+
+const STATUS_CARDS = [
+  { key: 'Pending', label: 'Pending' },
+  { key: 'Out for Delivery', label: 'Out for Delivery' },
+  { key: 'Delivered', label: 'Delivered' },
+  { key: 'Overdue', label: 'Overdue' },
+  { key: 'Cancelled', label: 'Cancelled' },
+];
 
 const toDisplayStatus = (status) => (status === 'In Transit' ? 'Out for Delivery' : status);
 
@@ -21,7 +37,7 @@ const formatDate = (value) => {
 const isOverdueRow = (row) => {
   const status = toDisplayStatus(row.status);
   if (status === 'Delivered' || status === 'Cancelled') return false;
-  const deliveryDate = toDateObject(row.pickupDate);
+  const deliveryDate = toDateObject(row.pickupDate || row.deliveryDate);
   if (!deliveryDate) return false;
 
   const today = new Date();
@@ -51,7 +67,7 @@ const isActionDisabled = (status) => status === 'Delivered' || status === 'Cance
 
 const canCancel = (status) => status === 'Pending' || status === 'Out for Delivery' || status === 'Overdue';
 
-const isWithinPeriod = (targetDate, period, selectedMonth) => {
+const isWithinPeriod = (targetDate, period, customStart, customEnd) => {
   if (!targetDate) return false;
 
   const today = new Date();
@@ -79,19 +95,28 @@ const isWithinPeriod = (targetDate, period, selectedMonth) => {
     return targetDate.getMonth() === today.getMonth() && targetDate.getFullYear() === today.getFullYear();
   }
 
-  if (period === 'pick-month') {
-    if (!selectedMonth) return true;
-    const [year, month] = selectedMonth.split('-').map(Number);
-    return targetDate.getFullYear() === year && targetDate.getMonth() === month - 1;
+  if (period === 'custom') {
+    const start = toDateObject(customStart);
+    const end = toDateObject(customEnd);
+    if (!start || !end) return true;
+
+    const customStartDate = new Date(start);
+    customStartDate.setHours(0, 0, 0, 0);
+
+    const customEndDate = new Date(end);
+    customEndDate.setHours(23, 59, 59, 999);
+
+    return targetDate >= customStartDate && targetDate <= customEndDate;
   }
 
   return true;
 };
 
 export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onCancelStatus, deliveryWarning }) {
-  const [quickFilter, setQuickFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState('all');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [page, setPage] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -121,58 +146,67 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
       .filter((row) => row.computedStatus === 'Delivered')
       .reduce((sum, row) => sum + Number(row.qty || 0), 0);
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const scheduledTodayNotDone = mappedRows.filter((row) => {
-      const deliveryDate = toDateObject(row.deliveryDate);
-      if (!deliveryDate) return false;
-      const notDone = row.computedStatus !== 'Delivered' && row.computedStatus !== 'Cancelled';
-      return notDone && deliveryDate.getTime() === today.getTime();
-    }).length;
-
-    const pendingDispatch = mappedRows.filter(
-      (row) => row.computedStatus === 'Pending' || row.computedStatus === 'Out for Delivery'
-    ).length;
-
-    const overdueCount = mappedRows.filter((row) => row.computedStatus === 'Overdue').length;
-
     return {
       totalOrders,
       estimatedRevenue,
       deliveredCakes,
-      scheduledTodayNotDone,
-      pendingDispatch,
-      overdueCount,
     };
   }, [mappedRows]);
 
+  const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd) {
+      return `${formatDate(customStart)} - ${formatDate(customEnd)}`;
+    }
+    return DATE_OPTIONS.find((option) => option.value === dateFilter)?.label || 'All Dates';
+  }, [customEnd, customStart, dateFilter]);
+
+  const dateScoped = useMemo(
+    () =>
+      mappedRows.filter((row) => {
+        const d = toDateObject(row.deliveryDate);
+        return d && isWithinPeriod(d, dateFilter, customStart, customEnd);
+      }),
+    [customEnd, customStart, dateFilter, mappedRows]
+  );
+
+  const statusCounts = useMemo(() => {
+    const counts = { Pending: 0, 'Out for Delivery': 0, Delivered: 0, Overdue: 0, Cancelled: 0 };
+    dateScoped.forEach((row) => {
+      if (row.computedStatus in counts) {
+        counts[row.computedStatus] += 1;
+      }
+    });
+    return counts;
+  }, [dateScoped]);
+
   const filteredData = useMemo(() => {
-    let rows = mappedRows;
-
-    if (quickFilter === 'today') {
-      rows = rows.filter((row) => {
-        const d = toDateObject(row.deliveryDate);
-        return d && isWithinPeriod(d, 'today');
-      });
-    } else if (quickFilter === 'pending') {
-      rows = rows.filter((row) => row.computedStatus === 'Pending' || row.computedStatus === 'Out for Delivery');
-    } else if (quickFilter === 'overdue') {
-      rows = rows.filter((row) => row.computedStatus === 'Overdue');
-    }
-
-    if (dateFilter !== 'all') {
-      rows = rows.filter((row) => {
-        const d = toDateObject(row.deliveryDate);
-        return d && isWithinPeriod(d, dateFilter, selectedMonth);
-      });
-    }
-
-    return rows;
-  }, [dateFilter, mappedRows, quickFilter, selectedMonth]);
+    if (!statusFilter) return dateScoped;
+    return dateScoped.filter((row) => row.computedStatus === statusFilter);
+  }, [dateScoped, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  const handleDateSelect = (value) => {
+    setDateFilter(value);
+    setStatusFilter(null);
+    setPage(1);
+    if (value !== 'custom') {
+      setDropdownOpen(false);
+    }
+  };
+
+  const handleStatusCard = (value) => {
+    setStatusFilter((prev) => (prev === value ? null : value));
+    setPage(1);
+  };
+
+  const applyCustomRange = () => {
+    if (!customStart || !customEnd) return;
+    setDateFilter('custom');
+    setDropdownOpen(false);
+    setPage(1);
+  };
 
   const exportDeliveryReport = () => {
     exportRowsToCsv(
@@ -206,13 +240,71 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
 
   useEffect(() => {
     setPage(1);
-  }, [dateFilter, quickFilter, selectedMonth]);
+  }, [customEnd, customStart, dateFilter, statusFilter]);
 
   return (
     <div className="pkdo-page-container">
       <header className="pkdo-header">
-        <h1 className="pkdo-title">Customer Deliveries</h1>
-        <p className="pkdo-subtitle">Monitor all delivery orders, status updates, and overdue alerts</p>
+        <div>
+          <h1 className="pkdo-title">Customer Deliveries</h1>
+          <p className="pkdo-subtitle">Monitor all delivery orders, status updates, and overdue alerts</p>
+        </div>
+
+        <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
+          <button
+            className={`pkdo-date-filter-btn ${dropdownOpen ? 'open' : ''}`}
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            title="Filter by date"
+            type="button"
+          >
+            <Calendar size={16} />
+            <span>{dateLabel}</span>
+            <ChevronDown size={13} />
+          </button>
+
+          {dropdownOpen && (
+            <div className="pkdo-date-dropdown">
+              {DATE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  className={`pkdo-dropdown-item ${dateFilter === option.value ? 'selected' : ''}`}
+                  onClick={() => handleDateSelect(option.value)}
+                  type="button"
+                >
+                  {option.label}
+                </button>
+              ))}
+
+              <div className="pkdo-custom-range-section">
+                <span className="pkdo-custom-range-title">Custom Range</span>
+                <label className="pkdo-custom-label">From</label>
+                <input
+                  type="date"
+                  className="pkdo-date-input"
+                  value={customStart}
+                  onChange={(event) => {
+                    setCustomStart(event.target.value);
+                    setDateFilter('custom');
+                  }}
+                />
+                <label className="pkdo-custom-label">To</label>
+                <input
+                  type="date"
+                  className="pkdo-date-input"
+                  value={customEnd}
+                  min={customStart}
+                  onChange={(event) => {
+                    setCustomEnd(event.target.value);
+                    setDateFilter('custom');
+                  }}
+                />
+                <button type="button" className="pkdo-apply-btn" onClick={applyCustomRange} disabled={!customStart || !customEnd}>
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="pkdo-metrics-row">
@@ -250,37 +342,18 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
         </article>
       </div>
 
-      <div className="pkdo-alerts-container">
-        <div className="pkdo-alert-wrapper">
+      <div className="pkdo-status-cards-row">
+        {STATUS_CARDS.map((card) => (
           <button
+            key={card.key}
+            className={`pkdo-status-card pkdo-status-card--${card.key.toLowerCase().replace(/\s+/g, '-')} ${statusFilter === card.key ? 'is-active' : ''}`}
+            onClick={() => handleStatusCard(card.key)}
             type="button"
-            className={`pkdo-alert-row warning ${quickFilter === 'today' ? 'active' : ''}`}
-            onClick={() => setQuickFilter((prev) => (prev === 'today' ? 'all' : 'today'))}
           >
-            <AlertTriangle size={18} />
-            <span>{summary.scheduledTodayNotDone} deliveries scheduled for today - not yet completed</span>
+            <span className="pkdo-status-card-count">{statusCounts[card.key] ?? 0}</span>
+            <span className="pkdo-status-card-label">{card.label}</span>
           </button>
-        </div>
-        <div className="pkdo-alert-wrapper">
-          <button
-            type="button"
-            className={`pkdo-alert-row info ${quickFilter === 'pending' ? 'active' : ''}`}
-            onClick={() => setQuickFilter((prev) => (prev === 'pending' ? 'all' : 'pending'))}
-          >
-            <AlertTriangle size={18} />
-            <span>{summary.pendingDispatch} pending deliveries - awaiting dispatch</span>
-          </button>
-        </div>
-        <div className="pkdo-alert-wrapper">
-          <button
-            type="button"
-            className={`pkdo-alert-row critical ${quickFilter === 'overdue' ? 'active' : ''}`}
-            onClick={() => setQuickFilter((prev) => (prev === 'overdue' ? 'all' : 'overdue'))}
-          >
-            <AlertTriangle size={18} />
-            <span>{summary.overdueCount} overdue deliveries - delivery date passed, manager action needed</span>
-          </button>
-        </div>
+        ))}
       </div>
 
       <section className="pkdo-table-container">
@@ -291,62 +364,11 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
             <span className="pkdo-table-section-title">Deliveries List</span>
             <span className="pkdo-table-count-pill">
               {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
-              {(quickFilter !== 'all' || dateFilter !== 'all') && ' · filtered'}
+              {statusFilter && ` · ${statusFilter}`}
             </span>
           </div>
 
           <div className="pkdo-toolbar-actions">
-            <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
-              <button
-                className={`pkdo-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-                onClick={() => setDropdownOpen((prev) => !prev)}
-                title="Filter by date"
-                type="button"
-              >
-                <Filter size={14} />
-                <span>
-                  {dateFilter === 'all' && 'All Dates'}
-                  {dateFilter === 'today' && 'Today'}
-                  {dateFilter === 'week' && 'This Week'}
-                  {dateFilter === 'month' && 'This Month'}
-                  {dateFilter === 'pick-month' && 'Select Month'}
-                </span>
-              </button>
-
-              {dropdownOpen && (
-                <div className="pkdo-filter-dropdown">
-                  {[
-                    { value: 'all', label: 'All Dates' },
-                    { value: 'today', label: 'Today' },
-                    { value: 'week', label: 'This Week' },
-                    { value: 'month', label: 'This Month' },
-                    { value: 'pick-month', label: 'Select Month' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      className={`pkdo-dropdown-item ${dateFilter === option.value ? 'selected' : ''}`}
-                      onClick={() => {
-                        setDateFilter(option.value);
-                        setDropdownOpen(false);
-                      }}
-                      type="button"
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {dateFilter === 'pick-month' && (
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(event) => setSelectedMonth(event.target.value)}
-                className="pkdo-month-input"
-              />
-            )}
-
             <button type="button" className="pkdo-filter-icon-btn" onClick={exportDeliveryReport}>
               <Download size={14} />
               <span>Export CSV</span>
