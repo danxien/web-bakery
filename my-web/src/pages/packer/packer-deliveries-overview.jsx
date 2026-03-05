@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CircleDollarSign, Download, Filter, Package, Truck } from 'lucide-react';
 import { exportRowsToCsv } from '../../utils/exportCsv';
 
@@ -178,6 +178,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
     exportRowsToCsv(
       `packer-deliveries-report-${new Date().toISOString().slice(0, 10)}.csv`,
       [
+        { key: 'orderType', label: 'Order Type' },
         { key: 'cake', label: 'Cake' },
         { key: 'qty', label: 'Qty' },
         { key: 'price', label: 'Unit Price' },
@@ -290,7 +291,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
             <span className="pkdo-table-section-title">Deliveries List</span>
             <span className="pkdo-table-count-pill">
               {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
-              {(quickFilter !== 'all' || dateFilter !== 'all') && ' � filtered'}
+              {(quickFilter !== 'all' || dateFilter !== 'all') && ' · filtered'}
             </span>
           </div>
 
@@ -382,7 +383,10 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
                   return (
                     <tr key={`${row.branch}-${row.cake}-${row.time}-${index}`}>
                       <td>
-                        <span className="pkdo-cake-name-text">{row.cake}</span>
+                        <span className="pkdo-cake-name-text">
+                          {row.cake}
+                          {row.orderType === 'custom' && <span className="pkdo-order-type custom">Custom</span>}
+                        </span>
                       </td>
                       <td>{row.qty}</td>
                       <td>
@@ -480,3 +484,4 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
     </div>
   );
 }
+

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { MessageSquare, Send } from 'lucide-react';
 import '../../styles/manager/messages.css';
+import '../../styles/packer/packer-messages.css';
 
 const THREAD_META = {
   seller: { label: 'Seller - Main Branch', role: 'Sales Staff' },

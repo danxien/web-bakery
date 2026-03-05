@@ -52,10 +52,16 @@ export default function PackerLandingPage({ onLogout }) {
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({
     branch: 'Main Branch',
+    orderType: 'regular',
     customer: '',
     contact: '',
     address: '',
     cake: initialBranchStock[0]?.cake || '',
+    customCakeName: '',
+    customSize: '',
+    customFlavor: '',
+    customTheme: '',
+    dedicationMessage: '',
     price: initialBranchStock[0]?.price || 0,
     qty: '',
     orderDate: new Date().toISOString().slice(0, 10),
@@ -226,6 +232,27 @@ export default function PackerLandingPage({ onLogout }) {
   };
 
   const handleDeliveryInput = (key, value) => {
+    if (key === 'orderType') {
+      if (value === 'custom') {
+        setDeliveryForm((prev) => ({
+          ...prev,
+          orderType: 'custom',
+          customCakeName: prev.customCakeName || prev.cake || '',
+        }));
+        return;
+      }
+
+      const fallbackCake = stockItems[0]?.cake || '';
+      const fallbackPrice = stockItems.find((item) => item.cake === fallbackCake)?.price || 0;
+      setDeliveryForm((prev) => ({
+        ...prev,
+        orderType: 'regular',
+        cake: fallbackCake,
+        price: fallbackPrice,
+      }));
+      return;
+    }
+
     if (key === 'cake') {
       const matchedCake = stockItems.find((item) => item.cake === value);
       setDeliveryForm((prev) => ({
@@ -241,8 +268,12 @@ export default function PackerLandingPage({ onLogout }) {
   const handleCreateDelivery = () => {
     const qty = Number(deliveryForm.qty);
     const price = Number(deliveryForm.price);
+    const isCustom = deliveryForm.orderType === 'custom';
+    const normalizedCake = isCustom
+      ? (deliveryForm.customCakeName.trim() || 'Custom Cake Order')
+      : deliveryForm.cake;
     if (
-      !deliveryForm.cake ||
+      !normalizedCake ||
       Number.isNaN(qty) ||
       qty <= 0 ||
       Number.isNaN(price) ||
@@ -257,13 +288,18 @@ export default function PackerLandingPage({ onLogout }) {
         customer: deliveryForm.customer.trim() || 'Walk-in Customer',
         contact: deliveryForm.contact.trim() || '-',
         address: deliveryForm.address.trim() || '-',
-        cake: deliveryForm.cake,
+        orderType: deliveryForm.orderType || 'regular',
+        cake: normalizedCake,
         price,
         qty,
         time: deliveryForm.deliveryTime,
         status: 'Pending',
         orderDate: deliveryForm.orderDate,
         pickupDate: deliveryForm.pickupDate || '-',
+        customSize: deliveryForm.customSize?.trim() || '-',
+        customFlavor: deliveryForm.customFlavor?.trim() || '-',
+        customTheme: deliveryForm.customTheme?.trim() || '-',
+        dedicationMessage: deliveryForm.dedicationMessage?.trim() || '-',
         specialInstructions: deliveryForm.specialInstructions.trim() || '-',
       },
     ]);
@@ -272,10 +308,16 @@ export default function PackerLandingPage({ onLogout }) {
     setIsDeliveryModalOpen(false);
     setDeliveryForm({
       branch: 'Main Branch',
+      orderType: 'regular',
       customer: '',
       contact: '',
       address: '',
       cake: stockItems[0]?.cake || '',
+      customCakeName: '',
+      customSize: '',
+      customFlavor: '',
+      customTheme: '',
+      dedicationMessage: '',
       price: stockItems[0]?.price || 0,
       qty: '',
       orderDate: new Date().toISOString().slice(0, 10),
@@ -298,6 +340,14 @@ export default function PackerLandingPage({ onLogout }) {
     }
 
     if (targetDelivery.status === 'Out for Delivery' || targetDelivery.status === 'In Transit') {
+      if (targetDelivery.orderType === 'custom') {
+        setDeliveryItems((prev) =>
+          prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Delivered' } : row))
+        );
+        setDeliveryWarning('');
+        return;
+      }
+
       const stockMatch = stockItems.find((item) => item.cake === targetDelivery.cake);
       const availableQty = stockMatch?.qty || 0;
 
@@ -356,12 +406,19 @@ export default function PackerLandingPage({ onLogout }) {
       actionKey === 'add-custom-delivery'
     ) {
       const detectedCake = getMessageCake(targetMessage.content);
+      const isCustomAction = actionKey === 'create-reservation' || actionKey === 'add-custom-delivery';
       setDeliveryForm({
         branch: 'Main Branch',
+        orderType: isCustomAction ? 'custom' : 'regular',
         customer: targetMessage.from.replace('Seller - ', '').trim() || 'Reserved Customer',
         contact: '',
         address: '',
         cake: detectedCake,
+        customCakeName: isCustomAction ? detectedCake : '',
+        customSize: '',
+        customFlavor: '',
+        customTheme: '',
+        dedicationMessage: '',
         price: stockItems.find((item) => item.cake === detectedCake)?.price || 0,
         qty: getMessageQty(targetMessage.content),
         orderDate: new Date().toISOString().slice(0, 10),

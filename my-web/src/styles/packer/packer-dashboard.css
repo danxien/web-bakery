@@ -1,17 +1,17 @@
 /* ─── Variables & Setup ─────────────────────────────────────────────────────── */
 :root {
-  --pack-red: #dc2626;
-  --pack-yellow: #f6c64e;
-  --pack-cream: #fff3d8;
-  --pack-bg: linear-gradient(160deg, #fff8e9 0%, #ffeccd 58%, #ffe4bf 100%);
+  --pack-red: #f3071d;
+  --pack-yellow: #f7dd30;
+  --pack-cream: #fcf6c4;
+  --pack-bg: #fcf6c4;
   --pack-card: #ffffff;
-  --pack-text: #2a1f14;
-  --pack-muted: #6f5b47;
-  --pack-shadow-sm: 0 8px 16px rgba(115, 76, 24, 0.08);
-  --pack-shadow-md: 0 14px 24px rgba(115, 76, 24, 0.14);
-  --ok: #14864c;
-  --warn: #9b6a00;
-  --danger: #c62828;
+  --pack-text: #111111;
+  --pack-muted: #888888;
+  --pack-shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.05);
+  --pack-shadow-md: 0 6px 15px rgba(0, 0, 0, 0.1);
+  --ok: #20a35b;
+  --warn: #b88700;
+  --danger: #d33939;
 }
 
 /* 1. VIEWPORT LOCK: Eliminates the "Black Space" bug */
@@ -30,7 +30,7 @@ html, body {
   width: 100vw;
   background: var(--pack-bg);
   color: var(--pack-text);
-  font-family: Cambria, Georgia, serif;
+  font-family: inherit;
   position: relative;
   overflow: hidden;
 }
@@ -52,23 +52,6 @@ html, body {
   max-width: 1600px;
   margin: 0 auto;
   animation: fadeIn 0.3s ease-in-out;
-  position: relative;
-}
-
-.packer-content-inner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.48), transparent 45%),
-    radial-gradient(circle at 0% 100%, rgba(255, 210, 145, 0.35), transparent 42%);
-  z-index: 0;
-}
-
-.packer-content-inner > * {
-  position: relative;
-  z-index: 1;
 }
 
 

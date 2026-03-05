@@ -334,6 +334,24 @@
 
 .pkdo-cake-name-text {
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pkdo-order-type {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pkdo-order-type.custom {
+  background: #ede9fe;
+  color: #5b21b6;
 }
 
 .pkdo-price-text {
