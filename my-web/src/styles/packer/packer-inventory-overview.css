@@ -192,3 +192,67 @@
     min-width: 0;
   }
 }
+
+.pkinv-stock-band-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pkinv-stock-band {
+  border: 1px solid transparent;
+  border-radius: 12px;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pkinv-stock-band:hover {
+  transform: translateY(-2px);
+}
+
+.pkinv-stock-band span {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pkinv-stock-band strong {
+  font-size: 1.6rem;
+  line-height: 1.05;
+}
+
+.pkinv-stock-band small {
+  font-size: 0.78rem;
+}
+
+.pkinv-stock-band.danger {
+  background: linear-gradient(135deg, #fff1f0, #ffdeda);
+  border-color: #ffb0a8;
+  color: #991b1b;
+}
+
+.pkinv-stock-band.balanced {
+  background: linear-gradient(135deg, #fff9e6, #ffefc0);
+  border-color: #efd07a;
+  color: #8a5a00;
+}
+
+.pkinv-stock-band.high {
+  background: linear-gradient(135deg, #ebfff4, #cff8e2);
+  border-color: #90ddb2;
+  color: #13663c;
+}
+
+.pkinv-stock-band.active {
+  box-shadow: 0 0 0 2px rgba(11, 108, 62, 0.16), 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.inventory-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -310,6 +310,13 @@ export default function PackerLandingPage({ onLogout }) {
     }
   };
 
+  const handleCancelDeliveryStatus = (rowIndex) => {
+    setDeliveryItems((prev) =>
+      prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Cancelled' } : row))
+    );
+    setDeliveryWarning('');
+  };
+
   const getMessageCake = (messageContent) => {
     const normalized = messageContent.toLowerCase();
     const matched = stockItems.find((item) => normalized.includes(item.cake.toLowerCase().replace(' cake', '')));
@@ -425,7 +432,6 @@ export default function PackerLandingPage({ onLogout }) {
           onChangeStockAdd={handleStockAddInput}
           onAddStock={handleAddStockQty}
           totals={totals}
-          deliveryItems={deliveryItems}
           customOrders={customOrders}
         />
       );
@@ -436,6 +442,7 @@ export default function PackerLandingPage({ onLogout }) {
         <DeliveriesOverview
           deliveryItems={deliveryItems}
           onAdvanceStatus={handleAdvanceDeliveryStatus}
+          onCancelStatus={handleCancelDeliveryStatus}
           deliveryWarning={deliveryWarning}
         />
       );

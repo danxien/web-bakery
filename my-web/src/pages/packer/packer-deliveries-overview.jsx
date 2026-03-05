@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CircleDollarSign, Filter, Package, Truck } from 'lucide-react';
+import { AlertTriangle, CircleDollarSign, Download, Filter, Package, Truck } from 'lucide-react';
+import { exportRowsToCsv } from '../../utils/exportCsv';
 
-const STATUS_OPTIONS = ['All', 'Pending', 'Out for Delivery', 'Delivered', 'Cancelled', 'Overdue'];
 const PER_PAGE = 6;
 
 const toDisplayStatus = (status) => (status === 'In Transit' ? 'Out for Delivery' : status);
@@ -51,8 +51,47 @@ const isActionDisabled = (status) => status === 'Delivered' || status === 'Cance
 
 const canCancel = (status) => status === 'Pending' || status === 'Out for Delivery' || status === 'Overdue';
 
+const isWithinPeriod = (targetDate, period, selectedMonth) => {
+  if (!targetDate) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (period === 'today') {
+    return targetDate.getTime() === today.getTime();
+  }
+
+  if (period === 'week') {
+    const start = new Date(today);
+    const day = start.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    start.setDate(start.getDate() + diffToMonday);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+
+    return targetDate >= start && targetDate <= end;
+  }
+
+  if (period === 'month') {
+    return targetDate.getMonth() === today.getMonth() && targetDate.getFullYear() === today.getFullYear();
+  }
+
+  if (period === 'pick-month') {
+    if (!selectedMonth) return true;
+    const [year, month] = selectedMonth.split('-').map(Number);
+    return targetDate.getFullYear() === year && targetDate.getMonth() === month - 1;
+  }
+
+  return true;
+};
+
 export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onCancelStatus, deliveryWarning }) {
-  const [statusFilter, setStatusFilter] = useState('All');
+  const [quickFilter, setQuickFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [page, setPage] = useState(1);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -72,11 +111,6 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
       }),
     [deliveryItems]
   );
-
-  const filteredData = useMemo(() => {
-    if (statusFilter === 'All') return mappedRows;
-    return mappedRows.filter((row) => row.computedStatus === statusFilter);
-  }, [mappedRows, statusFilter]);
 
   const summary = useMemo(() => {
     const totalOrders = mappedRows.length;
@@ -113,8 +147,51 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
     };
   }, [mappedRows]);
 
+  const filteredData = useMemo(() => {
+    let rows = mappedRows;
+
+    if (quickFilter === 'today') {
+      rows = rows.filter((row) => {
+        const d = toDateObject(row.deliveryDate);
+        return d && isWithinPeriod(d, 'today');
+      });
+    } else if (quickFilter === 'pending') {
+      rows = rows.filter((row) => row.computedStatus === 'Pending' || row.computedStatus === 'Out for Delivery');
+    } else if (quickFilter === 'overdue') {
+      rows = rows.filter((row) => row.computedStatus === 'Overdue');
+    }
+
+    if (dateFilter !== 'all') {
+      rows = rows.filter((row) => {
+        const d = toDateObject(row.deliveryDate);
+        return d && isWithinPeriod(d, dateFilter, selectedMonth);
+      });
+    }
+
+    return rows;
+  }, [dateFilter, mappedRows, quickFilter, selectedMonth]);
+
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  const exportDeliveryReport = () => {
+    exportRowsToCsv(
+      `packer-deliveries-report-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        { key: 'cake', label: 'Cake' },
+        { key: 'qty', label: 'Qty' },
+        { key: 'price', label: 'Unit Price' },
+        { key: 'totalPrice', label: 'Total Price' },
+        { key: 'customer', label: 'Customer' },
+        { key: 'contact', label: 'Contact' },
+        { key: 'address', label: 'Address' },
+        { key: 'orderDate', label: 'Order Date' },
+        { key: 'pickupDate', label: 'Delivery Date' },
+        { key: 'computedStatus', label: 'Status' },
+      ],
+      filteredData
+    );
+  };
 
   useEffect(() => {
     const handler = (event) => {
@@ -125,6 +202,10 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [dateFilter, quickFilter, selectedMonth]);
 
   return (
     <div className="pkdo-page-container">
@@ -170,22 +251,34 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
 
       <div className="pkdo-alerts-container">
         <div className="pkdo-alert-wrapper">
-          <div className="pkdo-alert-row warning">
+          <button
+            type="button"
+            className={`pkdo-alert-row warning ${quickFilter === 'today' ? 'active' : ''}`}
+            onClick={() => setQuickFilter((prev) => (prev === 'today' ? 'all' : 'today'))}
+          >
             <AlertTriangle size={18} />
             <span>{summary.scheduledTodayNotDone} deliveries scheduled for today - not yet completed</span>
-          </div>
+          </button>
         </div>
         <div className="pkdo-alert-wrapper">
-          <div className="pkdo-alert-row info">
+          <button
+            type="button"
+            className={`pkdo-alert-row info ${quickFilter === 'pending' ? 'active' : ''}`}
+            onClick={() => setQuickFilter((prev) => (prev === 'pending' ? 'all' : 'pending'))}
+          >
             <AlertTriangle size={18} />
             <span>{summary.pendingDispatch} pending deliveries - awaiting dispatch</span>
-          </div>
+          </button>
         </div>
         <div className="pkdo-alert-wrapper">
-          <div className="pkdo-alert-row critical">
+          <button
+            type="button"
+            className={`pkdo-alert-row critical ${quickFilter === 'overdue' ? 'active' : ''}`}
+            onClick={() => setQuickFilter((prev) => (prev === 'overdue' ? 'all' : 'overdue'))}
+          >
             <AlertTriangle size={18} />
             <span>{summary.overdueCount} overdue deliveries - delivery date passed, manager action needed</span>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -197,38 +290,66 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
             <span className="pkdo-table-section-title">Deliveries List</span>
             <span className="pkdo-table-count-pill">
               {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
+              {(quickFilter !== 'all' || dateFilter !== 'all') && ' · filtered'}
             </span>
           </div>
 
-          <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
-            <button
-              className={`pkdo-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-              onClick={() => setDropdownOpen((prev) => !prev)}
-              title="Filter by status"
-              type="button"
-            >
-              <Filter size={14} />
-              <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
-            </button>
+          <div className="pkdo-toolbar-actions">
+            <div className="pkdo-filter-dropdown-wrapper" ref={dropdownRef}>
+              <button
+                className={`pkdo-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
+                onClick={() => setDropdownOpen((prev) => !prev)}
+                title="Filter by date"
+                type="button"
+              >
+                <Filter size={14} />
+                <span>
+                  {dateFilter === 'all' && 'All Dates'}
+                  {dateFilter === 'today' && 'Today'}
+                  {dateFilter === 'week' && 'This Week'}
+                  {dateFilter === 'month' && 'This Month'}
+                  {dateFilter === 'pick-month' && 'Select Month'}
+                </span>
+              </button>
 
-            {dropdownOpen && (
-              <div className="pkdo-filter-dropdown">
-                {STATUS_OPTIONS.map((option) => (
-                  <button
-                    key={option}
-                    className={`pkdo-dropdown-item ${statusFilter === option ? 'selected' : ''}`}
-                    onClick={() => {
-                      setStatusFilter(option);
-                      setPage(1);
-                      setDropdownOpen(false);
-                    }}
-                    type="button"
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+              {dropdownOpen && (
+                <div className="pkdo-filter-dropdown">
+                  {[
+                    { value: 'all', label: 'All Dates' },
+                    { value: 'today', label: 'Today' },
+                    { value: 'week', label: 'This Week' },
+                    { value: 'month', label: 'This Month' },
+                    { value: 'pick-month', label: 'Select Month' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      className={`pkdo-dropdown-item ${dateFilter === option.value ? 'selected' : ''}`}
+                      onClick={() => {
+                        setDateFilter(option.value);
+                        setDropdownOpen(false);
+                      }}
+                      type="button"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {dateFilter === 'pick-month' && (
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(event) => setSelectedMonth(event.target.value)}
+                className="pkdo-month-input"
+              />
             )}
+
+            <button type="button" className="pkdo-filter-icon-btn" onClick={exportDeliveryReport}>
+              <Download size={14} />
+              <span>Export CSV</span>
+            </button>
           </div>
         </div>
 
@@ -277,9 +398,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
                         </span>
                       </td>
                       <td>
-                        <span className="pkdo-date-text">
-                          {formatDate(row.orderDate)}
-                        </span>
+                        <span className="pkdo-date-text">{formatDate(row.orderDate)}</span>
                       </td>
                       <td>
                         <span className="pkdo-time-text">{row.time || '-'}</span>
