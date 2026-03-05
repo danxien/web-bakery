@@ -256,3 +256,23 @@
   align-items: center;
   gap: 6px;
 }
+
+.inventory-primary-btn {
+  border-color: #a50213;
+  background: var(--pack-red);
+  color: #fff;
+}
+
+.inventory-primary-btn:hover {
+  border-color: #87000c;
+  background: #be0516;
+}
+
+.inventory-modal-time-row {
+  display: flex;
+  gap: 8px;
+}
+
+.inventory-modal-time-row input {
+  flex: 1;
+}

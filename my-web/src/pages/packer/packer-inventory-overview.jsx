@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CircleDollarSign, Download, PackageCheck, Truck } from 'lucide-react';
+import { AlertTriangle, CircleDollarSign, Download, PackageCheck, Plus, Truck, X } from 'lucide-react';
 import { exportRowsToCsv } from '../../utils/exportCsv';
 
 const LOW_STOCK_QTY = 5;
@@ -62,6 +62,14 @@ export default function InventoryOverview({
   const [stockBandFilter, setStockBandFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [isAddStockOpen, setIsAddStockOpen] = useState(false);
+
+  const setNowMadeTime = () => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    onChangeStockAdd('madeTime', `${hours}:${minutes}`);
+  };
 
   const filteredStockItems = useMemo(() => {
     return stockItems.filter((item) => {
@@ -138,6 +146,13 @@ export default function InventoryOverview({
       ],
       filteredStockItems
     );
+  };
+
+  const handleAddStockSubmit = () => {
+    const qty = Number(stockAddForm.qty);
+    if (!stockAddForm.cake || Number.isNaN(qty) || qty <= 0 || !stockAddForm.madeDate || !stockAddForm.madeTime || !stockAddForm.expiryDate) return;
+    onAddStock();
+    setIsAddStockOpen(false);
   };
 
   return (
@@ -232,67 +247,6 @@ export default function InventoryOverview({
         <h3>Inventory (Main Branch)</h3>
         <p>Update stock and expiry details for Main Branch.</p>
 
-        <div className="inventory-add-stock">
-          <select
-            value={stockAddForm.cake}
-            onChange={(event) => onChangeStockAdd('cake', event.target.value)}
-            className="inventory-filter"
-          >
-            {stockItems.map((item) => (
-              <option key={`stock-add-${item.cake}`} value={item.cake}>
-                {item.cake}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            min="1"
-            placeholder="Qty to add"
-            value={stockAddForm.qty}
-            onChange={(event) => onChangeStockAdd('qty', event.target.value)}
-            className="inventory-search inventory-qty-input"
-          />
-          <input
-            type="date"
-            placeholder="Made Date"
-            value={stockAddForm.madeDate}
-            onChange={(event) => onChangeStockAdd('madeDate', event.target.value)}
-            className="inventory-search inventory-date-input"
-          />
-          <div className="time-input-wrapper">
-            <input
-              type="time"
-              placeholder="Time"
-              value={stockAddForm.madeTime || ''}
-              onChange={(event) => onChangeStockAdd('madeTime', event.target.value)}
-              className="inventory-search inventory-time-input"
-            />
-            <button
-              type="button"
-              className="time-now-btn"
-              onClick={() => {
-                const now = new Date();
-                const hours = String(now.getHours()).padStart(2, '0');
-                const minutes = String(now.getMinutes()).padStart(2, '0');
-                onChangeStockAdd('madeTime', `${hours}:${minutes}`);
-              }}
-              title="Set to current time"
-            >
-              Now
-            </button>
-          </div>
-          <input
-            type="date"
-            placeholder="Expiry Date"
-            value={stockAddForm.expiryDate}
-            onChange={(event) => onChangeStockAdd('expiryDate', event.target.value)}
-            className="inventory-search inventory-date-input"
-          />
-          <button type="button" className="inventory-add-btn" onClick={onAddStock}>
-            Add Stock
-          </button>
-        </div>
-
         <div className="inventory-controls">
           <input
             type="text"
@@ -322,6 +276,9 @@ export default function InventoryOverview({
               className="inventory-search inventory-date-input"
             />
           )}
+          <button type="button" className="inventory-add-btn inventory-primary-btn" onClick={() => setIsAddStockOpen(true)}>
+            <Plus size={14} /> Add Stock
+          </button>
           <button type="button" className="inventory-add-btn" onClick={exportInventoryReport}>
             <Download size={14} /> Export CSV
           </button>
@@ -370,6 +327,77 @@ export default function InventoryOverview({
           </table>
         </div>
       </section>
+
+      {isAddStockOpen && (
+        <div className="add-cake-modal-overlay" onClick={() => setIsAddStockOpen(false)}>
+          <div className="add-cake-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="add-cake-modal-header">
+              <div>
+                <h3>Add Stock (Main Branch)</h3>
+                <p>Fill in stock details to update inventory.</p>
+              </div>
+              <button className="close-modal-btn" onClick={() => setIsAddStockOpen(false)} type="button">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="add-cake-modal-body">
+              <label>Cake Type</label>
+              <select value={stockAddForm.cake} onChange={(event) => onChangeStockAdd('cake', event.target.value)}>
+                {stockItems.map((item) => (
+                  <option key={`stock-add-modal-${item.cake}`} value={item.cake}>
+                    {item.cake}
+                  </option>
+                ))}
+              </select>
+
+              <label>Quantity</label>
+              <input
+                type="number"
+                min="1"
+                value={stockAddForm.qty}
+                onChange={(event) => onChangeStockAdd('qty', event.target.value)}
+                placeholder="0"
+              />
+
+              <label>Made Date</label>
+              <input
+                type="date"
+                value={stockAddForm.madeDate}
+                onChange={(event) => onChangeStockAdd('madeDate', event.target.value)}
+              />
+
+              <label>Made Time</label>
+              <div className="inventory-modal-time-row">
+                <input
+                  type="time"
+                  value={stockAddForm.madeTime || ''}
+                  onChange={(event) => onChangeStockAdd('madeTime', event.target.value)}
+                />
+                <button type="button" className="time-now-btn" onClick={setNowMadeTime}>
+                  Now
+                </button>
+              </div>
+
+              <label>Expiry Date</label>
+              <input
+                type="date"
+                value={stockAddForm.expiryDate}
+                onChange={(event) => onChangeStockAdd('expiryDate', event.target.value)}
+              />
+            </div>
+
+            <div className="add-cake-modal-actions">
+              <button className="confirm-add-cake-btn" onClick={handleAddStockSubmit} type="button">
+                Add Stock
+              </button>
+              <button className="cancel-add-cake-btn" onClick={() => setIsAddStockOpen(false)} type="button">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

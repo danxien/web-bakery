@@ -144,6 +144,13 @@ export function DeliveryModal({
             onChange={(event) => onChangeField('pickupDate', event.target.value)}
           />
 
+          <label>Delivery Time</label>
+          <input
+            type="time"
+            value={deliveryForm.deliveryTime || ''}
+            onChange={(event) => onChangeField('deliveryTime', event.target.value)}
+          />
+
           <label>Special Instructions</label>
           <input
             type="text"

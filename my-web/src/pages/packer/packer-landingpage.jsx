@@ -25,6 +25,13 @@ import '../../styles/packer/packer-modals.css';
 import '../../styles/packer/packer-cake-prices.css';
 import '../../styles/packer/packer-settings.css';
 
+const getCurrentTimeValue = () => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
 export default function PackerLandingPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [packerName, setPackerName] = useState('Packer');
@@ -53,13 +60,14 @@ export default function PackerLandingPage({ onLogout }) {
     qty: '',
     orderDate: new Date().toISOString().slice(0, 10),
     pickupDate: '',
+    deliveryTime: '',
     specialInstructions: '',
   });
   const [stockAddForm, setStockAddForm] = useState({
     cake: initialBranchStock[0]?.cake || '',
     qty: '',
     madeDate: new Date().toISOString().slice(0, 10),
-    madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    madeTime: getCurrentTimeValue(),
     expiryDate: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
@@ -185,10 +193,14 @@ export default function PackerLandingPage({ onLogout }) {
 
   const handleAddStockQty = () => {
     const qtyToAdd = Number(stockAddForm.qty);
-    if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
-
-    const now = new Date();
-    const madeTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (
+      !stockAddForm.cake ||
+      Number.isNaN(qtyToAdd) ||
+      qtyToAdd <= 0 ||
+      !stockAddForm.madeDate ||
+      !stockAddForm.madeTime ||
+      !stockAddForm.expiryDate
+    ) return;
 
     setStockItems((prev) =>
       prev.map((item) =>
@@ -197,7 +209,7 @@ export default function PackerLandingPage({ onLogout }) {
               ...item,
               qty: item.qty + qtyToAdd,
               madeDate: stockAddForm.madeDate,
-              time: stockAddForm.madeTime || madeTime,
+              time: stockAddForm.madeTime,
               expiryDate: stockAddForm.expiryDate,
             }
           : item
@@ -208,7 +220,7 @@ export default function PackerLandingPage({ onLogout }) {
       ...prev, 
       qty: '',
       madeDate: new Date().toISOString().slice(0, 10),
-      madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      madeTime: getCurrentTimeValue(),
       expiryDate: '',
     }));
   };
@@ -229,10 +241,14 @@ export default function PackerLandingPage({ onLogout }) {
   const handleCreateDelivery = () => {
     const qty = Number(deliveryForm.qty);
     const price = Number(deliveryForm.price);
-    if (!deliveryForm.cake || Number.isNaN(qty) || qty <= 0 || Number.isNaN(price) || price <= 0) return;
-
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (
+      !deliveryForm.cake ||
+      Number.isNaN(qty) ||
+      qty <= 0 ||
+      Number.isNaN(price) ||
+      price <= 0 ||
+      !deliveryForm.deliveryTime
+    ) return;
 
     setDeliveryItems((prev) => [
       ...prev,
@@ -244,7 +260,7 @@ export default function PackerLandingPage({ onLogout }) {
         cake: deliveryForm.cake,
         price,
         qty,
-        time,
+        time: deliveryForm.deliveryTime,
         status: 'Pending',
         orderDate: deliveryForm.orderDate,
         pickupDate: deliveryForm.pickupDate || '-',
@@ -264,6 +280,7 @@ export default function PackerLandingPage({ onLogout }) {
       qty: '',
       orderDate: new Date().toISOString().slice(0, 10),
       pickupDate: '',
+      deliveryTime: '',
       specialInstructions: '',
     });
   };
@@ -349,6 +366,7 @@ export default function PackerLandingPage({ onLogout }) {
         qty: getMessageQty(targetMessage.content),
         orderDate: new Date().toISOString().slice(0, 10),
         pickupDate: '',
+        deliveryTime: '',
         specialInstructions:
           actionKey === 'convert-order' || actionKey === 'add-order-delivery'
             ? `Converted from message: ${targetMessage.content}`
