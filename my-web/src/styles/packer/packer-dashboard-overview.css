@@ -25,8 +25,8 @@
   gap: 15px;
   border: 1px solid #ececec;
   border-radius: 15px;
-  padding: 20px;
-  min-height: 100px;
+  padding: 20px 22px;
+  min-height: 118px;
   background: #fff;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -50,13 +50,14 @@
 
 .packer-action-card h4 {
   margin: 0;
-  font-size: 1.15rem;
-  color: #1b1b1b;
+  font-size: 1.2rem;
+  color: #261a12;
 }
 
 .packer-action-card p {
-  margin: 3px 0 0;
-  color: #4f4f4f;
+  margin: 5px 0 0;
+  color: #7a6858;
+  font-size: 0.92rem;
 }
 
 .packer-stats-grid {
@@ -69,32 +70,36 @@
 .packer-stat-card {
   background: #ffffff;
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 20px 22px;
   border: 1px solid #ececec;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 5px;
+  min-height: 138px;
 }
 
 .packer-stat-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #333;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #7a634a;
 }
 
 .packer-stat-card h2 {
-  margin: 6px 0 4px 0;
-  font-size: 2rem;
+  margin: 5px 0 2px 0;
+  font-size: clamp(2rem, 3.2vw, 2.5rem);
   line-height: 1.1;
+  color: #1d130c;
+  font-weight: 800;
 }
 
 .packer-stat-card small {
-  font-size: 0.88rem;
-  color: #666;
+  font-size: 0.82rem;
+  color: #8a7765;
 }
 
 .packer-stats-grid .packer-stat-card:nth-child(1) .packer-stat-row svg { color: #6366f1; }
@@ -313,6 +318,51 @@
 
 .stock-row-high {
   background: #f3fff8;
+}
+
+.dashboard-table {
+  min-width: 760px;
+}
+
+.dashboard-table-wrap {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #f3ead2;
+  border-radius: 12px;
+}
+
+.dashboard-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff8ea;
+  border-bottom-color: #f1ddaf;
+}
+
+.dashboard-table tbody tr:nth-child(even) {
+  background: #fffcf3;
+}
+
+.dashboard-table tbody tr:hover {
+  background: #fff4d9;
+}
+
+.dashboard-empty-cell {
+  text-align: center;
+  padding: 28px 10px;
+}
+
+.dashboard-empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7b6854;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: #fff6e3;
+  border: 1px solid #f1ddaf;
+  border-radius: 999px;
+  padding: 8px 14px;
 }
 
 .stock-qty-chip {

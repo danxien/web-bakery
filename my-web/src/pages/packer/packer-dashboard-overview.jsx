@@ -2,8 +2,10 @@ import React from 'react';
 import {
   Truck,
   MessageSquare,
-  Package,  Clock3,
+  Package,
+  Clock3,
   CheckCircle2,
+  CircleAlert,
 } from 'lucide-react';
 
 const LOW_STOCK_QTY = 5;
@@ -82,8 +84,8 @@ export default function DashboardOverview({
         <div className="packer-table-head">
           <h3>Main Branch Stock List</h3>
         </div>
-        <div className="packer-table-wrap">
-          <table>
+        <div className="packer-table-wrap dashboard-table-wrap">
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Cake Name</th>
@@ -97,7 +99,12 @@ export default function DashboardOverview({
             <tbody>
               {stockItems.length === 0 && (
                 <tr>
-                  <td colSpan={6}>No stock rows available</td>
+                  <td colSpan={6} className="dashboard-empty-cell">
+                    <span className="dashboard-empty">
+                      <CircleAlert size={16} />
+                      No stock rows available
+                    </span>
+                  </td>
                 </tr>
               )}
               {stockItems.map((item) => (
@@ -128,8 +135,8 @@ export default function DashboardOverview({
         <div className="packer-table-head">
           <h3>New Delivery Orders</h3>
         </div>
-        <div className="packer-table-wrap">
-          <table>
+        <div className="packer-table-wrap dashboard-table-wrap">
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Branch</th>
@@ -144,7 +151,12 @@ export default function DashboardOverview({
             <tbody>
               {pendingOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7}>No pending delivery orders</td>
+                  <td colSpan={7} className="dashboard-empty-cell">
+                    <span className="dashboard-empty">
+                      <CircleAlert size={16} />
+                      No pending delivery orders
+                    </span>
+                  </td>
                 </tr>
               )}
               {pendingOrders.map((order, index) => (
@@ -169,8 +181,8 @@ export default function DashboardOverview({
         <div className="packer-table-head">
           <h3>Main Branch Custom Orders</h3>
         </div>
-        <div className="packer-table-wrap">
-          <table>
+        <div className="packer-table-wrap dashboard-table-wrap">
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Customer</th>
@@ -183,6 +195,16 @@ export default function DashboardOverview({
               </tr>
             </thead>
             <tbody>
+              {customOrders.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="dashboard-empty-cell">
+                    <span className="dashboard-empty">
+                      <CircleAlert size={16} />
+                      No custom orders found
+                    </span>
+                  </td>
+                </tr>
+              )}
               {customOrders.map((order) => (
                 <tr key={`${order.customer}-${order.pickup}`}>
                   <td>{order.customer}</td>
