@@ -1,7 +1,7 @@
 // =============================================================
 // customOrders.jsx
-// -------------------------------------------------------------
 // PURPOSE: Manager monitoring view for custom cake orders.
+// FILTERING: Date Filter (header calendar icon) + Status Cards (clickable)
 //
 // STATUS LOGIC (Operational-Based):
 //   Pending   → Cake not yet prepared (waiting for action)
@@ -17,19 +17,72 @@
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ShieldCheck, CircleDollarSign, ClipboardList, AlertTriangle, Filter } from 'lucide-react';
+import { ShieldCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/customOrders.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
 const TODAY     = new Date();
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
-/* ── Helpers ─────────────────────────────────────────────── */
+/* ── Date Range Helpers ────────────────────────────────────── */
+
+function getDateRange(filter, customStart, customEnd) {
+  const start = new Date(TODAY);
+  const end   = new Date(TODAY);
+
+  switch (filter) {
+    case 'today':
+      return { start: TODAY_STR, end: TODAY_STR };
+
+    case 'week': {
+      const day = start.getDay();
+      start.setDate(start.getDate() - day);
+      end.setDate(end.getDate() + (6 - day));
+      return {
+        start: start.toISOString().split('T')[0],
+        end:   end.toISOString().split('T')[0],
+      };
+    }
+
+    case 'month':
+      return {
+        start: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1).toISOString().split('T')[0],
+        end:   new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0).toISOString().split('T')[0],
+      };
+
+    case 'custom':
+      return { start: customStart || TODAY_STR, end: customEnd || TODAY_STR };
+
+    default:
+      return { start: TODAY_STR, end: TODAY_STR };
+  }
+}
+
+function inRange(date, start, end) {
+  return date >= start && date <= end;
+}
+
+/* ── Constants ─────────────────────────────────────────────── */
 
 // Revenue is counted only when order is Picked Up
 const REVENUE_STATUSES = ['Picked Up'];
 
-// Overdue: past pickup date AND status is still 'Ready'
+const DATE_OPTIONS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week',  label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+];
+
+const STATUS_CARDS = [
+  { key: 'Pending',   label: 'Pending' },
+  { key: 'Ready',     label: 'Ready' },
+  { key: 'Picked Up', label: 'Picked Up' },
+  { key: 'Overdue',   label: 'Overdue' },
+  { key: 'Cancelled', label: 'Cancelled' },
+];
+
+/* ── Misc Helpers ──────────────────────────────────────────── */
+
 function isOverdue(o) {
   return (
     new Date(o.pickupDate + 'T00:00:00') < TODAY &&
@@ -38,14 +91,7 @@ function isOverdue(o) {
 }
 
 function isDueToday(o) {
-  return (
-    o.pickupDate === TODAY_STR &&
-    o.status === 'Ready'
-  );
-}
-
-function displayStatus(o) {
-  return isOverdue(o) ? 'Overdue' : o.status;
+  return o.pickupDate === TODAY_STR && o.status === 'Ready';
 }
 
 function formatDate(s) {
@@ -56,23 +102,23 @@ function formatDate(s) {
 
 function statusPillClass(ds) {
   const map = {
-    Pending:    'pending',
-    Ready:      'ready',
+    Pending:     'pending',
+    Ready:       'ready',
     'Picked Up': 'picked-up',
-    Cancelled:  'cancelled',
-    Overdue:    'overdue',
+    Cancelled:   'cancelled',
+    Overdue:     'overdue',
   };
   return map[ds] || 'pending';
 }
 
 function StatusPill({ order }) {
-  const ds = displayStatus(order);
+  const ds = isOverdue(order) ? 'Overdue' : order.status;
   return <span className={`co-status-pill ${statusPillClass(ds)}`}>{ds}</span>;
 }
 
 /* ──────────────────────────────────────────────────────────────
    TODO: Backend - Export orders data for salesOverview.jsx
-   Replace this empty array with the fetched API response.
+   Replace this mock array with the fetched API response.
    Expected shape per custom order:
    {
      cakeType:     string  — cake product name
@@ -80,6 +126,7 @@ function StatusPill({ order }) {
      quantity:     number
      price:        number  — total order price (₱)
      customer:     string
+     contact:      string  — customer contact number
      orderDate:    string  — YYYY-MM-DD
      pickupDate:   string  — YYYY-MM-DD
      status:       'Pending' | 'Ready' | 'Picked Up' | 'Cancelled'
@@ -88,10 +135,28 @@ function StatusPill({ order }) {
      timeline:     [{ event: string, time: string, state: 'done' | 'current' | 'pending' }]
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_ORDERS = [];
+export let INIT_ORDERS = [
+  {
+    cakeType:     'Custom Birthday Cake',
+    instructions: 'Minimalist pink cake with gold lettering.',
+    quantity:     1,
+    price:        1500,
+    customer:     'Kimberly Luceñada',
+    contact:      '09123456789',
+    orderDate:    '2026-03-06',
+    pickupDate:   '2026-03-06',
+    status:       'Pending',
+    createdBy:    'staff',
+    lastUpdated:  '2026-06-01T10:00:00',
+    timeline:     [],
+  },
+];
 
 /* ──────────────────────────────────────────────────────────────
    ORDER DETAIL MODAL
+   Table shows: Cake Type · Qty · Price · Pick-Up Date · Status
+   Modal shows: all of the above + Customer · Contact ·
+                Order Date · Special Instructions
 ────────────────────────────────────────────────────────────── */
 function OrderDetailModal({ order, onClose }) {
   const overdue  = isOverdue(order);
@@ -103,62 +168,87 @@ function OrderDetailModal({ order, onClose }) {
 
         <div className="co-modal-header">
           <div>
+            <p className="co-modal-eyebrow">Custom Order Details</p>
             <h2 className="co-modal-cake-name">{order.cakeType}</h2>
           </div>
           <button className="co-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <div className="co-modal-body">
-          <div>
-            <h3 className="co-modal-section-title">Order Information</h3>
-            <div className="co-modal-info-grid">
 
-              <div className="co-info-item">
-                <span className="co-info-label">Status</span>
-                <span className="co-info-value">
-                  <StatusPill order={order} />
-                </span>
-              </div>
+          {/* ── Section 1: Product ── */}
+          <h3 className="co-modal-section-title">Product</h3>
+          <div className="co-modal-info-grid">
 
-              <div className="co-info-item">
-                <span className="co-info-label">Customer</span>
-                <span className="co-info-value">{order.customer}</span>
-              </div>
+            <div className="co-info-item">
+              <span className="co-info-label">Cake Type</span>
+              <span className="co-info-value">{order.cakeType}</span>
+            </div>
 
-              <div className="co-info-item">
-                <span className="co-info-label">Total Price</span>
-                <span className="co-info-value price-val">₱{order.price.toLocaleString()}</span>
-              </div>
+            <div className="co-info-item">
+              <span className="co-info-label">Quantity</span>
+              <span className="co-info-value">{order.quantity} pc{order.quantity > 1 ? 's' : ''}</span>
+            </div>
 
-              <div className="co-info-item">
-                <span className="co-info-label">Quantity</span>
-                <span className="co-info-value">{order.quantity} pc{order.quantity > 1 ? 's' : ''}</span>
-              </div>
+            <div className="co-info-item">
+              <span className="co-info-label">Total Price</span>
+              <span className="co-info-value price-val">₱{order.price.toLocaleString()}</span>
+            </div>
 
-              <div className="co-info-item">
-                <span className="co-info-label">Order Date</span>
-                <span className="co-info-value">{formatDate(order.orderDate)}</span>
-              </div>
+            <div className="co-info-item">
+              <span className="co-info-label">Status</span>
+              <span className="co-info-value"><StatusPill order={order} /></span>
+            </div>
 
-              <div className="co-info-item">
-                <span className="co-info-label">Pick-Up Date</span>
-                <span className="co-info-value" style={{
-                  color:      overdue ? '#b91c1c' : dueToday ? '#854d0e' : undefined,
-                  fontWeight: (overdue || dueToday) ? 700 : undefined,
-                }}>
-                  {formatDate(order.pickupDate)}
-                  {overdue  && '  ⚠ Overdue'}
-                  {dueToday && '  ⚠ Due Today'}
-                </span>
-              </div>
+          </div>
 
-              <div className="co-info-item full-width">
-                <span className="co-info-label">Special Instructions / Design Notes</span>
-                <span className="co-info-value instructions-val">{order.instructions}</span>
-              </div>
+          {/* ── Section 2: Customer ── */}
+          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Customer</h3>
+          <div className="co-modal-info-grid">
 
+            <div className="co-info-item">
+              <span className="co-info-label">Customer Name</span>
+              <span className="co-info-value">{order.customer}</span>
+            </div>
+
+            <div className="co-info-item">
+              <span className="co-info-label">Contact Number</span>
+              <span className="co-info-value">{order.contact || '—'}</span>
+            </div>
+
+          </div>
+
+          {/* ── Section 3: Schedule ── */}
+          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Schedule</h3>
+          <div className="co-modal-info-grid">
+
+            <div className="co-info-item">
+              <span className="co-info-label">Order Date</span>
+              <span className="co-info-value">{formatDate(order.orderDate)}</span>
+            </div>
+
+            <div className="co-info-item">
+              <span className="co-info-label">Pick-Up Date</span>
+              <span className="co-info-value" style={{
+                color:      overdue ? '#fd7e14' : dueToday ? '#854d0e' : undefined,
+                fontWeight: (overdue || dueToday) ? 700 : undefined,
+              }}>
+                {formatDate(order.pickupDate)}
+                {overdue  && '  ⚠ Overdue'}
+                {dueToday && '  ⚠ Due Today'}
+              </span>
+            </div>
+
+          </div>
+
+          {/* ── Section 4: Special Instructions ── */}
+          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Special Instructions / Design Notes</h3>
+          <div className="co-modal-info-grid">
+            <div className="co-info-item full-width">
+              <span className="co-info-value instructions-val">{order.instructions}</span>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -169,73 +259,112 @@ function OrderDetailModal({ order, onClose }) {
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-const STATUS_OPTIONS = ['All', 'Pending', 'Ready', 'Picked Up', 'Overdue', 'Cancelled'];
-
 const PER_PAGE = 6;
-const NO_QUICK = 'all';
 
 const CustomOrders = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace empty array with fetched orders data
+  // TODO: Backend - Replace INIT_ORDERS with fetched data
   // -----------------------------------------------------------
-  const [ordersData, setOrdersData] = useState([]);
+  const [ordersData, setOrdersData] = useState(INIT_ORDERS);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [quickFilter,  setQuickFilter]  = useState(NO_QUICK);
+  const [dateFilter,   setDateFilter]   = useState('today');
+  const [customStart,  setCustomStart]  = useState('');
+  const [customEnd,    setCustomEnd]    = useState('');
+  const [dateDropOpen, setDateDropOpen] = useState(false);
+  const dateDropRef = useRef(null);
+
+  const [statusFilter, setStatusFilter] = useState(null);
   const [page,         setPage]         = useState(1);
   const [modalOrder,   setModalOrder]   = useState(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
 
 
   // -----------------------------------------------------------
-  // DERIVED METRIC VALUES
-  // TODO: Backend - All values are derived from ordersData
+  // DATE RANGE
   // -----------------------------------------------------------
-  const totalOrders   = ordersData.length;
+  const { start: rangeStart, end: rangeEnd } = useMemo(
+    () => getDateRange(dateFilter, customStart, customEnd),
+    [dateFilter, customStart, customEnd]
+  );
 
-  const revenueTotal  = ordersData
+  const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd)
+      return `${formatDate(customStart)} – ${formatDate(customEnd)}`;
+    return DATE_OPTIONS.find(o => o.key === dateFilter)?.label || 'Today';
+  }, [dateFilter, customStart, customEnd]);
+
+
+  // -----------------------------------------------------------
+  // DATE-SCOPED ORDERS (filter by pickupDate)
+  // -----------------------------------------------------------
+  const dateScoped = useMemo(
+    () => ordersData.filter(o => inRange(o.pickupDate, rangeStart, rangeEnd)),
+    [ordersData, rangeStart, rangeEnd]
+  );
+
+
+  // -----------------------------------------------------------
+  // SUMMARY METRICS
+  // -----------------------------------------------------------
+  const totalOrders = dateScoped.length;
+
+  const revenueTotal = dateScoped
     .filter(o => REVENUE_STATUSES.includes(o.status))
     .reduce((sum, o) => sum + o.price, 0);
 
-  const pendingCount  = ordersData.filter(o => o.status === 'Pending').length;
-  const dueTodayCount = ordersData.filter(isDueToday).length;
-  const overdueCount  = ordersData.filter(isOverdue).length;
+  const pendingCount = dateScoped.filter(o => o.status === 'Pending').length;
 
 
   // -----------------------------------------------------------
-  // FILTER LOGIC
+  // STATUS CARD COUNTS
+  // -----------------------------------------------------------
+  const statusCounts = useMemo(() => {
+    const counts = { Pending: 0, Ready: 0, 'Picked Up': 0, Overdue: 0, Cancelled: 0 };
+    dateScoped.forEach(o => {
+      if (isOverdue(o))            counts.Overdue++;
+      else if (o.status in counts) counts[o.status]++;
+    });
+    return counts;
+  }, [dateScoped]);
+
+
+  // -----------------------------------------------------------
+  // TABLE DATA
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = ordersData;
-
-    if (quickFilter === 'due-today') {
-      result = result.filter(isDueToday);
-    } else if (quickFilter === 'overdue') {
-      result = result.filter(isOverdue);
-    } else {
-      if (statusFilter === 'Overdue') {
-        result = result.filter(isOverdue);
-      } else if (statusFilter === 'Ready') {
-        result = result.filter(o => o.status === 'Ready' && !isOverdue(o));
-      } else if (statusFilter !== 'All') {
-        result = result.filter(o => o.status === statusFilter);
-      }
-    }
-
-    return result;
-  }, [quickFilter, statusFilter, ordersData]);
+    if (!statusFilter)              return dateScoped;
+    if (statusFilter === 'Overdue') return dateScoped.filter(isOverdue);
+    if (statusFilter === 'Ready')   return dateScoped.filter(o => o.status === 'Ready' && !isOverdue(o));
+    return dateScoped.filter(o => o.status === statusFilter);
+  }, [dateScoped, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  function activateQuick(key) {
-    setQuickFilter(prev => (prev === key ? NO_QUICK : key));
+
+  // -----------------------------------------------------------
+  // HANDLERS
+  // -----------------------------------------------------------
+  function handleDateSelect(key) {
+    setDateFilter(key);
+    setStatusFilter(null);
     setPage(1);
+    if (key !== 'custom') setDateDropOpen(false);
+  }
+
+  function handleStatusCard(key) {
+    setStatusFilter(prev => prev === key ? null : key);
+    setPage(1);
+  }
+
+  function applyCustomRange() {
+    if (customStart && customEnd) {
+      setDateDropOpen(false);
+      setPage(1);
+    }
   }
 
 
@@ -244,14 +373,13 @@ const CustomOrders = () => {
   // -----------------------------------------------------------
   useEffect(() => {
     // TODO: Backend - Fetch custom orders on mount
-    // Example:
     // const fetchOrders = async () => {
     //   try {
     //     setLoading(true);
     //     const response = await fetch('/api/custom-orders');
     //     const data = await response.json();
     //     setOrdersData(data.orders);
-    //     INIT_ORDERS = data.orders; // Keep export in sync for salesOverview
+    //     INIT_ORDERS = data.orders;
     //   } catch (err) {
     //     setError('Failed to load custom orders.');
     //   } finally {
@@ -262,12 +390,14 @@ const CustomOrders = () => {
     setLoading(false);
 
     const handler = e => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
-        setDropdownOpen(false);
+      if (dateDropRef.current && !dateDropRef.current.contains(e.target))
+        setDateDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => { setPage(1); }, [statusFilter, dateFilter, customStart, customEnd]);
 
 
   // -----------------------------------------------------------
@@ -284,16 +414,70 @@ const CustomOrders = () => {
       )}
 
       {/* =====================================================
-          1. HEADER
+          1. HEADER + DATE FILTER
           ===================================================== */}
       <div className="co-header">
-        <h1 className="co-title">Custom Orders</h1>
-        <p className="co-subtitle">Monitor all custom cake orders and production status</p>
+        <div>
+          <h1 className="co-title">Custom Orders</h1>
+          <p className="co-subtitle">Monitor all custom cake orders and production status</p>
+        </div>
+
+        <div className="co-filter-dropdown-wrapper" ref={dateDropRef}>
+          <button
+            className={`co-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+            onClick={() => setDateDropOpen(p => !p)}
+            title="Filter by date range"
+          >
+            <Calendar size={16} strokeWidth={2} color="currentColor" />
+            <span>{dateLabel}</span>
+            <ChevronDown size={12} />
+          </button>
+
+          {dateDropOpen && (
+            <div className="co-date-dropdown">
+              {DATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  className={`co-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                  onClick={() => handleDateSelect(opt.key)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+
+              <div className="co-custom-range-section">
+                <span className="co-custom-range-title">Custom Range</span>
+                <label className="co-custom-label">From</label>
+                <input
+                  type="date"
+                  className="co-date-input"
+                  value={customStart}
+                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                />
+                <label className="co-custom-label">To</label>
+                <input
+                  type="date"
+                  className="co-date-input"
+                  value={customEnd}
+                  min={customStart}
+                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                />
+                <button
+                  className="co-apply-btn"
+                  onClick={applyCustomRange}
+                  disabled={!customStart || !customEnd}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
 
       {/* =====================================================
-          2. METRIC CARDS
+          2. SUMMARY METRIC CARDS
           ===================================================== */}
       <div className="co-metrics-row">
 
@@ -334,108 +518,55 @@ const CustomOrders = () => {
 
 
       {/* =====================================================
-          3. ALERTS
+          3. STATUS CARDS (Clickable Filters)
           ===================================================== */}
-      <div className="co-alerts-container">
-
-        <div className="co-alert-wrapper">
+      <div className="co-status-cards-row">
+        {STATUS_CARDS.map(card => (
           <button
-            className={`co-alert-row warning ${quickFilter === 'due-today' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('due-today')}
+            key={card.key}
+            className={`co-status-card co-status-card--${card.key.toLowerCase().replace(/\s+/g, '-')} ${statusFilter === card.key ? 'is-active' : ''}`}
+            onClick={() => handleStatusCard(card.key)}
           >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{dueTodayCount}</strong>
-              {' '}order{dueTodayCount !== 1 ? 's' : ''} due for pick-up today — Ready &amp; awaiting customer
-            </span>
+            <span className="co-status-card-count">{statusCounts[card.key] ?? 0}</span>
+            <span className="co-status-card-label">{card.label}</span>
           </button>
-        </div>
-
-        <div className="co-alert-wrapper">
-          <button
-            className={`co-alert-row critical ${quickFilter === 'overdue' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('overdue')}
-          >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{overdueCount}</strong>
-              {' '}overdue order{overdueCount !== 1 ? 's' : ''} — Ready but pick-up date has passed
-            </span>
-          </button>
-        </div>
-
+        ))}
       </div>
 
 
       {/* =====================================================
-          4. TABLE
+          4. ORDERS TABLE
+          Visible columns: Cake Type · Qty · Price · Pick-Up Date · Status · Action
+          Hidden from table (shown only in modal):
+            Customer Name, Contact Number, Order Date, Special Instructions
           ===================================================== */}
       <div className="co-table-container">
 
         <div className="co-table-toolbar">
-
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="co-table-section-title">Orders List</span>
             <span className="co-table-count-pill">
               {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
-              {quickFilter !== NO_QUICK && ' · filtered'}
+              {statusFilter && ` · ${statusFilter}`}
             </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-
-            <div className="co-filter-dropdown-wrapper" ref={dropdownRef}>
-              <button
-                className={`co-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-                onClick={() => setDropdownOpen(prev => !prev)}
-                title="Filter by status"
-              >
-                <Filter size={14} />
-                <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
-              </button>
-
-              {dropdownOpen && (
-                <div className="co-filter-dropdown">
-                  {STATUS_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      className={`co-dropdown-item ${statusFilter === opt && quickFilter === NO_QUICK ? 'selected' : ''}`}
-                      onClick={() => {
-                        setStatusFilter(opt);
-                        setQuickFilter(NO_QUICK);
-                        setDropdownOpen(false);
-                        setPage(1);
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {quickFilter !== NO_QUICK && (
-              <button
-                className="co-filter-icon-btn"
-                onClick={() => { setQuickFilter(NO_QUICK); setPage(1); }}
-              >
-                ✕ Clear
-              </button>
-            )}
-
           </div>
         </div>
 
         <div className="co-table-scroll-wrapper">
           <table className="co-orders-table">
+            <colgroup>
+              <col className="col-cake" />
+              <col className="col-qty" />
+              <col className="col-price" />
+              <col className="col-pickup" />
+              <col className="col-status" />
+              <col className="col-action" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Cake Type</th>
                 <th>Qty</th>
                 <th>Price</th>
-                <th>Customer</th>
-                <th>Special Instructions</th>
-                <th>Order Date</th>
                 <th>Pick-Up Date</th>
                 <th>Status</th>
                 <th></th>
@@ -450,13 +581,6 @@ const CustomOrders = () => {
                     <td><span className="co-cake-name-text">{order.cakeType}</span></td>
                     <td>{order.quantity}</td>
                     <td><span className="co-price-text">₱{order.price.toLocaleString()}</span></td>
-                    <td>{order.customer}</td>
-                    <td>
-                      <span className="co-instructions-text" title={order.instructions}>
-                        {order.instructions}
-                      </span>
-                    </td>
-                    <td>{formatDate(order.orderDate)}</td>
                     <td>
                       <span className={`co-pickup-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
                         {formatDate(order.pickupDate)}
@@ -475,7 +599,7 @@ const CustomOrders = () => {
                 );
               }) : (
                 <tr>
-                  <td colSpan={9} className="co-no-data">
+                  <td colSpan={6} className="co-no-data">
                     No orders match the current filter.
                   </td>
                 </tr>

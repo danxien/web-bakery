@@ -1,10 +1,8 @@
 /* =============================================================
-   reservationOverview.css
-   STRUCTURAL MIRROR of customOrders.css
-   Every spacing, radius, shadow, font-size, color value is
-   copied verbatim from customOrders.css.
-   Only class names (.ro- prefix) differ, plus the
-   reservation-specific status pills and pickup highlight colors.
+   reservationsOverview.css
+   Mirrors deliveriesOverview.css structure exactly.
+   Only class names (.ro- prefix) and reservation-specific
+   status pill colors differ.
    ============================================================= */
 
 /* ── Animation ── */
@@ -20,9 +18,16 @@
   box-sizing: border-box;
 }
 
-/* ── Header ── */
+/* =========================================================
+   HEADER — title left, date filter button right
+   ========================================================= */
 .ro-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .ro-title {
@@ -37,6 +42,144 @@
   color: #888;
   margin: 5px 0 0 0;
 }
+
+/* =========================================================
+   DATE FILTER — calendar icon button + dropdown in header
+   ========================================================= */
+.ro-filter-dropdown-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ro-date-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 500;
+  /* Visible mid-grey at rest — readable on white without being harsh */
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+/* ✅ Calendar SVG inherits button color — shifts #444 → #111 on hover/open */
+.ro-date-filter-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+.ro-date-filter-btn:hover,
+.ro-date-filter-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.ro-date-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
+}
+
+.ro-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+.ro-dropdown-item:hover    { background: #fcf6c4; }
+.ro-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+
+.ro-custom-range-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.ro-custom-range-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.ro-custom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ro-date-input {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff9c4;
+}
+.ro-date-input:focus { border-color: #f7dd30; }
+
+/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
+.ro-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) saturate(100%) opacity(0.65);
+  border-radius: 6px;
+  padding: 4px;
+  background-color: transparent;
+  transition: filter 0.15s, background-color 0.15s;
+}
+.ro-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.30);
+}
+.ro-date-input::-webkit-calendar-picker-indicator:active {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.55);
+}
+
+.ro-apply-btn {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f7dd30;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.ro-apply-btn:hover    { filter: brightness(0.95); }
+.ro-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* =========================================================
    METRIC CARDS
@@ -57,8 +200,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: none;
-  text-align: left;
   min-width: 0;
 }
 
@@ -98,61 +239,75 @@
 }
 
 /* =========================================================
-   ALERTS — 3 rows: warning (yellow), critical (red), info (blue)
+   STATUS CARDS — Clickable Filters
    ========================================================= */
-.ro-alerts-container {
+.ro-status-cards-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.ro-status-card {
+  flex: 1 1 100px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.ro-alert-wrapper {
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 12px;
   background: #fff;
+  border: 2px solid transparent;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  padding: 10px 12px;
-}
-
-.ro-alert-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-left: 4px solid transparent;
-  width: 100%;
-  background: transparent;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  text-align: left;
   cursor: pointer;
-  transition: filter 0.13s;
+  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
+  text-align: center;
+  min-width: 0;
 }
-.ro-alert-row:hover     { filter: brightness(0.95); }
-.ro-alert-row.is-active { filter: brightness(0.90); }
+.ro-status-card:hover { filter: brightness(0.97); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10); }
 
-.ro-alert-row.critical {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-left-color: #ef4444;
-}
-
-.ro-alert-row.warning {
-  background: #fef9c3;
-  color: #854d0e;
-  border-left-color: #eab308;
+.ro-status-card-count {
+  font-family: Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: bold;
+  line-height: 1;
 }
 
-/* Upcoming pickups — blue info tone */
-.ro-alert-row.info {
-  background: #eff6ff;
-  color: #1e40af;
-  border-left-color: #3b82f6;
+.ro-status-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
+
+/* ── Status Card Variants — updated semantic palette ── */
+
+/* Pending — Yellow/Amber #ffc107: cake not yet prepared, action needed */
+.ro-status-card--pending .ro-status-card-count { color: #ffc107; }
+.ro-status-card--pending .ro-status-card-label { color: #ffc107; }
+.ro-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
+
+/* Ready — Teal/Light Blue #17a2b8: cake prepared, awaiting pickup */
+.ro-status-card--ready .ro-status-card-count { color: #17a2b8; }
+.ro-status-card--ready .ro-status-card-label { color: #17a2b8; }
+.ro-status-card--ready.is-active             { border-color: #17a2b8; background: #e0f7fa; }
+
+/* Picked Up — Green #28a745: completed, revenue counted */
+.ro-status-card--picked-up .ro-status-card-count { color: #28a745; }
+.ro-status-card--picked-up .ro-status-card-label { color: #28a745; }
+.ro-status-card--picked-up.is-active             { border-color: #28a745; background: #d4edda; }
+
+/* Overdue — Orange #fd7e14: missed pickup, urgent follow-up */
+.ro-status-card--overdue .ro-status-card-count { color: #fd7e14; }
+.ro-status-card--overdue .ro-status-card-label { color: #fd7e14; }
+.ro-status-card--overdue.is-active             { border-color: #fd7e14; background: #fff3e0; }
+
+/* Cancelled — Red #dc3545: no action needed, excluded from revenue */
+.ro-status-card--cancelled .ro-status-card-count { color: #dc3545; }
+.ro-status-card--cancelled .ro-status-card-label { color: #dc3545; }
+.ro-status-card--cancelled.is-active             { border-color: #dc3545; background: #fde8ea; }
 
 /* =========================================================
    TABLE CONTAINER
@@ -170,15 +325,12 @@
   box-sizing: border-box;
 }
 
-/* Toolbar */
 .ro-table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px 0;
   margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -198,61 +350,8 @@
   margin-left: 8px;
 }
 
-.ro-filter-icon-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.ro-filter-icon-btn:hover,
-.ro-filter-icon-btn.open {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
-
-.ro-filter-dropdown-wrapper {
-  position: relative;
-}
-
-.ro-filter-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  z-index: 10000;
-  min-width: 160px;
-}
-
-.ro-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 9px 16px;
-  text-align: left;
-  font-size: 0.85rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.12s;
-}
-.ro-dropdown-item:hover    { background: #fcf6c4; }
-.ro-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
-
 /* =========================================================
-   TABLE SCROLL WRAPPER — sidebar-safe
+   TABLE SCROLL WRAPPER
    ========================================================= */
 .ro-table-scroll-wrapper {
   flex: 1;
@@ -264,13 +363,9 @@
 }
 .ro-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
 .ro-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
-.ro-table-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 3px;
-}
+.ro-table-scroll-wrapper::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 .ro-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
-/* ── Table ── */
 .ro-reservations-table {
   width: 100%;
   min-width: 960px;
@@ -308,16 +403,11 @@
 .ro-cake-name-text { font-weight: 500; }
 .ro-price-text     { font-weight: 600; color: #22c55e; }
 
-/* Pick-Up Date highlight variants */
-.ro-pickup-text              { font-weight: 600; font-size: 0.85rem; }
-.ro-pickup-text.is-today     { color: #854d0e; }
-.ro-pickup-text.is-overdue   { color: #b91c1c; }
-.ro-pickup-text.is-upcoming  { color: #1d4ed8; }
+.ro-pickup-text            { font-weight: 600; font-size: 0.85rem; }
+.ro-pickup-text.is-today   { color: #854d0e; }
+.ro-pickup-text.is-overdue { color: #fd7e14; }
 
-/* =========================================================
-   STATUS PILLS
-   Statuses: Pending | Ready | Picked Up | Overdue | Cancelled
-   ========================================================= */
+/* ── Status pills — match updated card palette ── */
 .ro-status-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -326,28 +416,13 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.ro-status-pill.pending   { background: #fff8e1; color: #ffc107; }
+.ro-status-pill.ready     { background: #e0f7fa; color: #17a2b8; }
+.ro-status-pill.picked-up { background: #d4edda; color: #28a745; }
+.ro-status-pill.overdue   { background: #fff3e0; color: #fd7e14; }
+.ro-status-pill.cancelled { background: #fde8ea; color: #dc3545; }
 
-/* Pending — yellow: cake not yet prepared */
-.ro-status-pill.pending    { background: #fef9c3; color: #854d0e; }
-
-/* Ready — blue/purple: cake prepared, awaiting pickup */
-.ro-status-pill.ready      { background: #ede9fe; color: #5b21b6; }
-
-/* Picked Up — green: customer collected cake, order complete */
-.ro-status-pill.picked-up  { background: #d1fae5; color: #065f46; }
-
-/* Overdue — red: Ready but pickup date has passed */
-.ro-status-pill.overdue    { background: #fee2e2; color: #991b1b; }
-
-/* Cancelled — grey: final state */
-.ro-status-pill.cancelled  { background: #f3f4f6; color: #6b7280; }
-
-/* No data */
-.ro-no-data {
-  text-align: center;
-  padding: 40px !important;
-  color: #888;
-}
+.ro-no-data { text-align: center; padding: 40px !important; color: #888; }
 
 /* ── Pagination ── */
 .ro-pagination {
@@ -387,5 +462,10 @@
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .ro-metrics-row { flex-direction: column; }
+  .ro-metrics-row          { flex-direction: column; }
+  .ro-status-cards-row     { gap: 8px; }
+  .ro-status-card          { flex: 1 1 80px; padding: 10px 8px; }
+  .ro-status-card-count    { font-size: 1.3rem; }
+  .ro-header               { flex-direction: column; align-items: flex-start; }
+  .ro-date-dropdown        { right: auto; left: 0; }
 }

@@ -1,23 +1,75 @@
 // =============================================================
 // deliveriesOverview.jsx
-// -------------------------------------------------------------
 // PURPOSE: Manager monitoring view for customer delivery orders.
+// FILTERING: Date Filter (header calendar icon) + Status Cards (clickable)
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Truck, CircleDollarSign, PackageCheck, AlertTriangle, Filter } from 'lucide-react';
+import { Truck, CircleDollarSign, PackageCheck, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/deliveriesOverview.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
 const TODAY     = new Date();
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
-/* ── Helpers ─────────────────────────────────────────────── */
+/* ── Date Range Helpers ────────────────────────────────────── */
 
-// Statuses included in Estimated Revenue — exclude Cancelled
+function getDateRange(filter, customStart, customEnd) {
+  const start = new Date(TODAY);
+  const end   = new Date(TODAY);
+
+  switch (filter) {
+    case 'today':
+      return { start: TODAY_STR, end: TODAY_STR };
+
+    case 'week': {
+      const day = start.getDay();
+      start.setDate(start.getDate() - day);
+      end.setDate(end.getDate() + (6 - day));
+      return {
+        start: start.toISOString().split('T')[0],
+        end:   end.toISOString().split('T')[0],
+      };
+    }
+
+    case 'month':
+      return {
+        start: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1).toISOString().split('T')[0],
+        end:   new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0).toISOString().split('T')[0],
+      };
+
+    case 'custom':
+      return { start: customStart || TODAY_STR, end: customEnd || TODAY_STR };
+
+    default:
+      return { start: TODAY_STR, end: TODAY_STR };
+  }
+}
+
+function inRange(deliveryDate, start, end) {
+  return deliveryDate >= start && deliveryDate <= end;
+}
+
+/* ── Constants ─────────────────────────────────────────────── */
+
 const REVENUE_STATUSES = ['Pending', 'Out for Delivery', 'Delivered'];
 
-// Overdue: deliveryDate < today AND status is not Delivered or Cancelled
+const DATE_OPTIONS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week',  label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+];
+
+const STATUS_CARDS = [
+  { key: 'Pending',          label: 'Pending' },
+  { key: 'Out for Delivery', label: 'Out for Delivery' },
+  { key: 'Delivered',        label: 'Delivered' },
+  { key: 'Overdue',          label: 'Overdue' },
+  { key: 'Cancelled',        label: 'Cancelled' },
+];
+
+/* ── Misc Helpers ──────────────────────────────────────────── */
+
 function isOverdue(d) {
   return (
     new Date(d.deliveryDate + 'T00:00:00') < TODAY &&
@@ -26,7 +78,6 @@ function isOverdue(d) {
   );
 }
 
-// Deliveries Today: deliveryDate === today AND not yet Delivered or Cancelled
 function isDeliveryToday(d) {
   return (
     d.deliveryDate === TODAY_STR &&
@@ -35,21 +86,12 @@ function isDeliveryToday(d) {
   );
 }
 
-function isPending(d) {
-  return d.status === 'Pending';
-}
-
 function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
 }
 
-/**
- * Cake Type column display:
- * Single item  → show name directly
- * Multiple     → "First Cake + N more"
- */
 function formatCakeType(items) {
   if (!items || items.length === 0) return '—';
   if (items.length === 1) return items[0].name;
@@ -63,21 +105,17 @@ function fullCakeList(items) {
 
 function statusPillClass(status) {
   const map = {
-    Pending:           'pending',
-    'Out for Delivery':'out-for-delivery',
-    Delivered:         'delivered',
-    Cancelled:         'cancelled',
-    Overdue:           'overdue',
+    Pending:            'pending',
+    'Out for Delivery': 'out-for-delivery',
+    Delivered:          'delivered',
+    Cancelled:          'cancelled',
+    Overdue:            'overdue',
   };
   return map[status] || 'pending';
 }
 
-function displayStatus(d) {
-  return isOverdue(d) ? 'Overdue' : d.status;
-}
-
 function StatusPill({ delivery }) {
-  const ds = displayStatus(delivery);
+  const ds = isOverdue(delivery) ? 'Overdue' : delivery.status;
   return <span className={`do-status-pill ${statusPillClass(ds)}`}>{ds}</span>;
 }
 
@@ -110,74 +148,68 @@ function DeliveryDetailModal({ delivery, onClose }) {
       <div className="do-modal">
 
         <div className="do-modal-header">
-          <div>
-            <h2 className="do-modal-title">{formatCakeType(delivery.items)}</h2>
-          </div>
+          <h2 className="do-modal-title">{formatCakeType(delivery.items)}</h2>
           <button className="do-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <div className="do-modal-body">
-          <div>
-            <h3 className="do-modal-section-title">Delivery Information</h3>
-            <div className="do-modal-info-grid">
+          <h3 className="do-modal-section-title">Delivery Information</h3>
+          <div className="do-modal-info-grid">
 
-              <div className="do-info-item">
-                <span className="do-info-label">Status</span>
-                <span className="do-info-value">
-                  <StatusPill delivery={delivery} />
-                </span>
-              </div>
-
-              <div className="do-info-item">
-                <span className="do-info-label">Customer</span>
-                <span className="do-info-value">{delivery.customer}</span>
-              </div>
-
-              <div className="do-info-item">
-                <span className="do-info-label">Total Price</span>
-                <span className="do-info-value do-price-val">₱{delivery.totalPrice.toLocaleString()}</span>
-              </div>
-
-              <div className="do-info-item">
-                <span className="do-info-label">Total Quantity</span>
-                <span className="do-info-value">{delivery.totalQty} pc{delivery.totalQty > 1 ? 's' : ''}</span>
-              </div>
-
-              <div className="do-info-item">
-                <span className="do-info-label">Contact Number</span>
-                <span className="do-info-value">{delivery.contact}</span>
-              </div>
-
-              <div className="do-info-item">
-                <span className="do-info-label">Delivery Date</span>
-                <span className="do-info-value" style={{
-                  color:      overdue  ? '#b91c1c' : dueToday ? '#854d0e' : undefined,
-                  fontWeight: (overdue || dueToday) ? 700 : undefined,
-                }}>
-                  {formatDate(delivery.deliveryDate)}
-                  {overdue  && '  ⚠ Overdue'}
-                  {dueToday && '  ⚠ Due Today'}
-                </span>
-              </div>
-
-              <div className="do-info-item full-width">
-                <span className="do-info-label">Delivery Address</span>
-                <span className="do-info-value do-address-val">{delivery.address}</span>
-              </div>
-
-              <div className="do-info-item full-width">
-                <span className="do-info-label">Order Items</span>
-                <div className="do-items-list">
-                  {delivery.items.map((item, idx) => (
-                    <div key={idx} className="do-item-row">
-                      <span className="do-item-name">{item.name}</span>
-                      <span className="do-item-qty">×{item.qty}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+            <div className="do-info-item">
+              <span className="do-info-label">Status</span>
+              <span className="do-info-value"><StatusPill delivery={delivery} /></span>
             </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Customer</span>
+              <span className="do-info-value">{delivery.customer}</span>
+            </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Total Price</span>
+              <span className="do-info-value do-price-val">₱{delivery.totalPrice.toLocaleString()}</span>
+            </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Total Quantity</span>
+              <span className="do-info-value">{delivery.totalQty} pc{delivery.totalQty > 1 ? 's' : ''}</span>
+            </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Contact Number</span>
+              <span className="do-info-value">{delivery.contact}</span>
+            </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Delivery Date</span>
+              <span className="do-info-value" style={{
+                color:      overdue  ? '#b91c1c' : dueToday ? '#854d0e' : undefined,
+                fontWeight: (overdue || dueToday) ? 700 : undefined,
+              }}>
+                {formatDate(delivery.deliveryDate)}
+                {overdue  && '  ⚠ Overdue'}
+                {dueToday && '  ⚠ Due Today'}
+              </span>
+            </div>
+
+            <div className="do-info-item full-width">
+              <span className="do-info-label">Delivery Address</span>
+              <span className="do-info-value do-address-val">{delivery.address}</span>
+            </div>
+
+            <div className="do-info-item full-width">
+              <span className="do-info-label">Order Items</span>
+              <div className="do-items-list">
+                {delivery.items.map((item, idx) => (
+                  <div key={idx} className="do-item-row">
+                    <span className="do-item-name">{item.name}</span>
+                    <span className="do-item-qty">×{item.qty}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -189,10 +221,7 @@ function DeliveryDetailModal({ delivery, onClose }) {
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-const STATUS_OPTIONS = ['All', 'Pending', 'Out for Delivery', 'Delivered', 'Cancelled', 'Overdue'];
-
 const PER_PAGE = 6;
-const NO_QUICK = 'all';
 
 const DeliveryOverview = () => {
 
@@ -204,56 +233,101 @@ const DeliveryOverview = () => {
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState(null);
 
-  const [statusFilter,  setStatusFilter]  = useState('All');
-  const [quickFilter,   setQuickFilter]   = useState(NO_QUICK);
+  const [dateFilter,   setDateFilter]   = useState('today');
+  const [customStart,  setCustomStart]  = useState('');
+  const [customEnd,    setCustomEnd]    = useState('');
+  const [dateDropOpen, setDateDropOpen] = useState(false);
+  const dateDropRef = useRef(null);
+
+  const [statusFilter,  setStatusFilter]  = useState(null);
   const [page,          setPage]          = useState(1);
   const [modalDelivery, setModalDelivery] = useState(null);
-  const [dropdownOpen,  setDropdownOpen]  = useState(false);
-  const dropdownRef = useRef(null);
 
 
   // -----------------------------------------------------------
-  // DERIVED METRIC VALUES
-  // TODO: Backend - All values are derived from deliveriesData
+  // DATE RANGE
   // -----------------------------------------------------------
-  const totalDeliveryOrders = deliveriesData.length;
+  const { start: rangeStart, end: rangeEnd } = useMemo(
+    () => getDateRange(dateFilter, customStart, customEnd),
+    [dateFilter, customStart, customEnd]
+  );
 
-  const estimatedRevenue = deliveriesData
+  const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd)
+      return `${formatDate(customStart)} – ${formatDate(customEnd)}`;
+    return DATE_OPTIONS.find(o => o.key === dateFilter)?.label || 'Today';
+  }, [dateFilter, customStart, customEnd]);
+
+
+  // -----------------------------------------------------------
+  // DATE-SCOPED DELIVERIES
+  // -----------------------------------------------------------
+  const dateScoped = useMemo(
+    () => deliveriesData.filter(d => inRange(d.deliveryDate, rangeStart, rangeEnd)),
+    [deliveriesData, rangeStart, rangeEnd]
+  );
+
+
+  // -----------------------------------------------------------
+  // SUMMARY METRICS
+  // -----------------------------------------------------------
+  const totalDeliveryOrders = dateScoped.length;
+
+  const estimatedRevenue = dateScoped
     .filter(d => REVENUE_STATUSES.includes(d.status))
     .reduce((sum, d) => sum + d.totalPrice, 0);
 
-  const totalCakesDelivered = deliveriesData
+  const totalCakesDelivered = dateScoped
     .filter(d => d.status === 'Delivered')
     .reduce((sum, d) => sum + d.totalQty, 0);
 
-  const deliveriesTodayCount = deliveriesData.filter(isDeliveryToday).length;
-  const pendingCount         = deliveriesData.filter(isPending).length;
-  const overdueCount         = deliveriesData.filter(isOverdue).length;
+
+  // -----------------------------------------------------------
+  // STATUS CARD COUNTS
+  // -----------------------------------------------------------
+  const statusCounts = useMemo(() => {
+    const counts = { Pending: 0, 'Out for Delivery': 0, Delivered: 0, Overdue: 0, Cancelled: 0 };
+    dateScoped.forEach(d => {
+      if (isOverdue(d))            counts.Overdue++;
+      else if (d.status in counts) counts[d.status]++;
+    });
+    return counts;
+  }, [dateScoped]);
 
 
   // -----------------------------------------------------------
-  // FILTER LOGIC
+  // TABLE DATA
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = deliveriesData;
-
-    if      (quickFilter === 'today')   result = result.filter(isDeliveryToday);
-    else if (quickFilter === 'pending') result = result.filter(isPending);
-    else if (quickFilter === 'overdue') result = result.filter(isOverdue);
-    else {
-      if      (statusFilter === 'Overdue') result = result.filter(isOverdue);
-      else if (statusFilter !== 'All')     result = result.filter(d => d.status === statusFilter && !isOverdue(d));
-    }
-
-    return result;
-  }, [quickFilter, statusFilter, deliveriesData]);
+    if (!statusFilter)              return dateScoped;
+    if (statusFilter === 'Overdue') return dateScoped.filter(isOverdue);
+    return dateScoped.filter(d => d.status === statusFilter && !isOverdue(d));
+  }, [dateScoped, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  function activateQuick(key) {
-    setQuickFilter(prev => (prev === key ? NO_QUICK : key));
+
+  // -----------------------------------------------------------
+  // HANDLERS
+  // -----------------------------------------------------------
+  function handleDateSelect(key) {
+    setDateFilter(key);
+    setStatusFilter(null);
     setPage(1);
+    if (key !== 'custom') setDateDropOpen(false);
+  }
+
+  function handleStatusCard(key) {
+    setStatusFilter(prev => prev === key ? null : key);
+    setPage(1);
+  }
+
+  function applyCustomRange() {
+    if (customStart && customEnd) {
+      setDateDropOpen(false);
+      setPage(1);
+    }
   }
 
 
@@ -262,14 +336,13 @@ const DeliveryOverview = () => {
   // -----------------------------------------------------------
   useEffect(() => {
     // TODO: Backend - Fetch deliveries on mount
-    // Example:
     // const fetchDeliveries = async () => {
     //   try {
     //     setLoading(true);
     //     const response = await fetch('/api/deliveries');
     //     const data = await response.json();
     //     setDeliveriesData(data.deliveries);
-    //     INIT_DELIVERIES = data.deliveries; // Keep export in sync for salesOverview
+    //     INIT_DELIVERIES = data.deliveries;
     //   } catch (err) {
     //     setError('Failed to load delivery data.');
     //   } finally {
@@ -280,12 +353,14 @@ const DeliveryOverview = () => {
     setLoading(false);
 
     const handler = e => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
-        setDropdownOpen(false);
+      if (dateDropRef.current && !dateDropRef.current.contains(e.target))
+        setDateDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => { setPage(1); }, [statusFilter, dateFilter, customStart, customEnd]);
 
 
   // -----------------------------------------------------------
@@ -302,16 +377,71 @@ const DeliveryOverview = () => {
       )}
 
       {/* =====================================================
-          1. HEADER
+          1. HEADER + DATE FILTER
           ===================================================== */}
       <div className="do-header">
-        <h1 className="do-title">Customer Deliveries</h1>
-        <p className="do-subtitle">Monitor all delivery orders, status updates, and overdue alerts</p>
+        <div>
+          <h1 className="do-title">Customer Deliveries</h1>
+          <p className="do-subtitle">Monitor all delivery orders, status updates, and overdue alerts</p>
+        </div>
+
+        <div className="do-filter-dropdown-wrapper" ref={dateDropRef}>
+          <button
+            className={`do-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+            onClick={() => setDateDropOpen(p => !p)}
+            title="Filter by date range"
+          >
+            {/* ✅ Calendar icon — matches inventoryOverview pattern */}
+            <Calendar size={16} strokeWidth={2} color="currentColor" />
+            <span>{dateLabel}</span>
+            <ChevronDown size={12} />
+          </button>
+
+          {dateDropOpen && (
+            <div className="do-date-dropdown">
+              {DATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  className={`do-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                  onClick={() => handleDateSelect(opt.key)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+
+              <div className="do-custom-range-section">
+                <span className="do-custom-range-title">Custom Range</span>
+                <label className="do-custom-label">From</label>
+                <input
+                  type="date"
+                  className="do-date-input"
+                  value={customStart}
+                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                />
+                <label className="do-custom-label">To</label>
+                <input
+                  type="date"
+                  className="do-date-input"
+                  value={customEnd}
+                  min={customStart}
+                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                />
+                <button
+                  className="do-apply-btn"
+                  onClick={applyCustomRange}
+                  disabled={!customStart || !customEnd}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
 
       {/* =====================================================
-          2. METRIC CARDS
+          2. SUMMARY METRIC CARDS
           ===================================================== */}
       <div className="do-metrics-row">
 
@@ -354,108 +484,34 @@ const DeliveryOverview = () => {
 
 
       {/* =====================================================
-          3. ALERTS
+          3. STATUS CARDS (Clickable Filters)
           ===================================================== */}
-      <div className="do-alerts-container">
-
-        <div className="do-alert-wrapper">
+      <div className="do-status-cards-row">
+        {STATUS_CARDS.map(card => (
           <button
-            className={`do-alert-row warning ${quickFilter === 'today' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('today')}
+            key={card.key}
+            className={`do-status-card do-status-card--${card.key.toLowerCase().replace(/\s+/g, '-')} ${statusFilter === card.key ? 'is-active' : ''}`}
+            onClick={() => handleStatusCard(card.key)}
           >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{deliveriesTodayCount}</strong>
-              {' '}deliver{deliveriesTodayCount !== 1 ? 'ies' : 'y'} scheduled for today — not yet completed
-            </span>
+            <span className="do-status-card-count">{statusCounts[card.key] ?? 0}</span>
+            <span className="do-status-card-label">{card.label}</span>
           </button>
-        </div>
-
-        <div className="do-alert-wrapper">
-          <button
-            className={`do-alert-row info ${quickFilter === 'pending' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('pending')}
-          >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{pendingCount}</strong>
-              {' '}pending deliver{pendingCount !== 1 ? 'ies' : 'y'} — awaiting dispatch
-            </span>
-          </button>
-        </div>
-
-        <div className="do-alert-wrapper">
-          <button
-            className={`do-alert-row critical ${quickFilter === 'overdue' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('overdue')}
-          >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{overdueCount}</strong>
-              {' '}overdue deliver{overdueCount !== 1 ? 'ies' : 'y'} — delivery date passed, manager action needed
-            </span>
-          </button>
-        </div>
-
+        ))}
       </div>
 
 
       {/* =====================================================
-          4. TABLE
+          4. DELIVERIES TABLE
           ===================================================== */}
       <div className="do-table-container">
 
         <div className="do-table-toolbar">
-
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="do-table-section-title">Deliveries List</span>
             <span className="do-table-count-pill">
               {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
-              {quickFilter !== NO_QUICK && ' · filtered'}
+              {statusFilter && ` · ${statusFilter}`}
             </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-
-            <div className="do-filter-dropdown-wrapper" ref={dropdownRef}>
-              <button
-                className={`do-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-                onClick={() => setDropdownOpen(prev => !prev)}
-                title="Filter by status"
-              >
-                <Filter size={14} />
-                <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
-              </button>
-
-              {dropdownOpen && (
-                <div className="do-filter-dropdown">
-                  {STATUS_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      className={`do-dropdown-item ${statusFilter === opt && quickFilter === NO_QUICK ? 'selected' : ''}`}
-                      onClick={() => {
-                        setStatusFilter(opt);
-                        setQuickFilter(NO_QUICK);
-                        setDropdownOpen(false);
-                        setPage(1);
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {quickFilter !== NO_QUICK && (
-              <button
-                className="do-filter-icon-btn"
-                onClick={() => { setQuickFilter(NO_QUICK); setPage(1); }}
-              >
-                ✕ Clear
-              </button>
-            )}
-
           </div>
         </div>
 
@@ -490,9 +546,7 @@ const DeliveryOverview = () => {
                     <td>{d.customer}</td>
                     <td><span className="do-contact-text">{d.contact}</span></td>
                     <td>
-                      <span className="do-address-text" title={d.address}>
-                        {d.address}
-                      </span>
+                      <span className="do-address-text" title={d.address}>{d.address}</span>
                     </td>
                     <td>
                       <span className={`do-date-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>

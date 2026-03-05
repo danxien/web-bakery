@@ -1,10 +1,5 @@
 /* =============================================================
    deliveriesOverview.css
-   STRUCTURAL MIRROR of reservationOverview.css
-   Every spacing, radius, shadow, font-size, color value is
-   copied verbatim from reservationOverview.css.
-   Only class names (.do- prefix) and delivery-specific
-   status pills and date highlight colors differ.
    ============================================================= */
 
 /* ── Animation ── */
@@ -20,9 +15,16 @@
   box-sizing: border-box;
 }
 
-/* ── Header ── */
+/* =========================================================
+   HEADER — title left, date filter button right
+   ========================================================= */
 .do-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .do-title {
@@ -39,7 +41,145 @@
 }
 
 /* =========================================================
-   METRIC CARDS — static display, NOT clickable
+   DATE FILTER — calendar icon button + dropdown in header
+   ========================================================= */
+.do-filter-dropdown-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.do-date-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 500;
+  /* Visible mid-grey at rest — readable on white without being harsh */
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+/* ✅ Calendar SVG inherits button color — shifts #444 → #111 on hover/open */
+.do-date-filter-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+.do-date-filter-btn:hover,
+.do-date-filter-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.do-date-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
+}
+
+.do-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+.do-dropdown-item:hover    { background: #fcf6c4; }
+.do-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+
+.do-custom-range-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.do-custom-range-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.do-custom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.do-date-input {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff9c4;
+}
+.do-date-input:focus { border-color: #f7dd30; }
+
+/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
+.do-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) saturate(100%) opacity(0.65);
+  border-radius: 6px;
+  padding: 4px;
+  background-color: transparent;
+  transition: filter 0.15s, background-color 0.15s;
+}
+.do-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.30);
+}
+.do-date-input::-webkit-calendar-picker-indicator:active {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.55);
+}
+
+.do-apply-btn {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f7dd30;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.do-apply-btn:hover    { filter: brightness(0.95); }
+.do-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   METRIC CARDS
    ========================================================= */
 .do-metrics-row {
   display: flex;
@@ -57,10 +197,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: none;
-  text-align: left;
   min-width: 0;
-  /* No cursor, no hover, no transition — cards are display-only */
 }
 
 .do-card-top {
@@ -99,71 +236,83 @@
 }
 
 /* =========================================================
-   ALERTS — 3 rows: warning (yellow), info (blue), critical (red)
+   STATUS CARDS — Clickable Filters
    ========================================================= */
-.do-alerts-container {
+.do-status-cards-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.do-status-card {
+  flex: 1 1 100px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.do-alert-wrapper {
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 12px;
   background: #fff;
+  border: 2px solid transparent;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  padding: 10px 12px;
-}
-
-.do-alert-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-left: 4px solid transparent;
-  width: 100%;
-  background: transparent;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  text-align: left;
   cursor: pointer;
-  transition: filter 0.13s;
+  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
+  text-align: center;
+  min-width: 0;
 }
-.do-alert-row:hover     { filter: brightness(0.95); }
-.do-alert-row.is-active { filter: brightness(0.90); }
+.do-status-card:hover { filter: brightness(0.97); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10); }
 
-/* Deliveries Today — yellow */
-.do-alert-row.warning {
-  background: #fef9c3;
-  color: #854d0e;
-  border-left-color: #eab308;
-}
-
-/* Pending Deliveries — blue */
-.do-alert-row.info {
-  background: #eff6ff;
-  color: #1e40af;
-  border-left-color: #3b82f6;
+.do-status-card-count {
+  font-family: Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: bold;
+  line-height: 1;
 }
 
-/* Overdue Deliveries — red/critical */
-.do-alert-row.critical {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-left-color: #ef4444;
+.do-status-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
+
+/* ── Status Card Variants — updated semantic palette ── */
+
+/* Pending — Yellow/Amber #ffc107: action required, waiting to dispatch */
+.do-status-card--pending .do-status-card-count { color: #ffc107; }
+.do-status-card--pending .do-status-card-label { color: #ffc107; }
+.do-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
+
+/* Out for Delivery — Teal/Light Blue #17a2b8: active in transit */
+.do-status-card--out-for-delivery .do-status-card-count { color: #17a2b8; }
+.do-status-card--out-for-delivery .do-status-card-label { color: #17a2b8; }
+.do-status-card--out-for-delivery.is-active             { border-color: #17a2b8; background: #e0f7fa; }
+
+/* Delivered — Green #28a745: completed, revenue counted */
+.do-status-card--delivered .do-status-card-count { color: #28a745; }
+.do-status-card--delivered .do-status-card-label { color: #28a745; }
+.do-status-card--delivered.is-active             { border-color: #28a745; background: #d4edda; }
+
+/* Overdue — Orange #fd7e14: urgent, missed deadline */
+.do-status-card--overdue .do-status-card-count { color: #fd7e14; }
+.do-status-card--overdue .do-status-card-label { color: #fd7e14; }
+.do-status-card--overdue.is-active             { border-color: #fd7e14; background: #fff3e0; }
+
+/* Cancelled — Red #dc3545: no action needed, excluded from revenue */
+.do-status-card--cancelled .do-status-card-count { color: #dc3545; }
+.do-status-card--cancelled .do-status-card-label { color: #dc3545; }
+.do-status-card--cancelled.is-active             { border-color: #dc3545; background: #fde8ea; }
 
 /* =========================================================
-   TABLE CONTAINER — sidebar-safe flex column
+   TABLE CONTAINER
    ========================================================= */
 .do-table-container {
   background: #fff;
   border-radius: 12px;
-  overflow: visible;              /* allow dropdown to escape */
+  overflow: visible;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -173,15 +322,12 @@
   box-sizing: border-box;
 }
 
-/* Toolbar */
 .do-table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px 0;
   margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -201,61 +347,8 @@
   margin-left: 8px;
 }
 
-.do-filter-icon-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.do-filter-icon-btn:hover,
-.do-filter-icon-btn.open {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
-
-.do-filter-dropdown-wrapper {
-  position: relative;
-}
-
-.do-filter-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  z-index: 10000;
-  min-width: 168px;
-}
-
-.do-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 9px 16px;
-  text-align: left;
-  font-size: 0.85rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.12s;
-}
-.do-dropdown-item:hover    { background: #fcf6c4; }
-.do-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
-
 /* =========================================================
-   TABLE SCROLL WRAPPER — sidebar-safe
+   TABLE SCROLL WRAPPER
    ========================================================= */
 .do-table-scroll-wrapper {
   flex: 1;
@@ -267,16 +360,12 @@
 }
 .do-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
 .do-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
-.do-table-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 3px;
-}
+.do-table-scroll-wrapper::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 .do-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
-/* ── Table ── */
 .do-deliveries-table {
   width: 100%;
-  min-width: 1020px;              /* extra column (View btn) — prevents column crush */
+  min-width: 1020px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -305,25 +394,16 @@
 }
 
 .do-deliveries-table th:first-child,
-.do-deliveries-table td:first-child {
-  padding-left: 20px;   /* increase this value */
-}
-
-.do-deliveries-table td:last-child {
-  padding-right: 15px;  /* increase space from table edge */
-}
+.do-deliveries-table td:first-child { padding-left: 20px; }
+.do-deliveries-table td:last-child  { padding-right: 15px; }
 
 .do-deliveries-table tbody tr:last-child td { border-bottom: none; }
 .do-deliveries-table tbody tr:hover         { background-color: #fffde8; }
 
 /* ── Cell helpers ── */
-.do-cake-name-text {
-  font-weight: 500;
-  cursor: default; /* title attr provides hover tooltip for full list */
-}
-
-.do-price-text   { font-weight: 600; color: #22c55e; }
-.do-contact-text { font-size: 0.82rem; color: #555; font-variant-numeric: tabular-nums; }
+.do-cake-name-text { font-weight: 500; cursor: default; }
+.do-price-text     { font-weight: 600; color: #22c55e; }
+.do-contact-text   { font-size: 0.82rem; color: #555; font-variant-numeric: tabular-nums; }
 
 .do-address-text {
   max-width: 135px;
@@ -333,15 +413,14 @@
   font-size: 0.82rem;
   color: #666;
   display: block;
-  cursor: default; /* title attr shows full address on hover */
+  cursor: default;
 }
 
-/* Delivery Date highlight variants */
 .do-date-text            { font-weight: 600; font-size: 0.85rem; }
 .do-date-text.is-today   { color: #854d0e; }
-.do-date-text.is-overdue { color: #b91c1c; }
+.do-date-text.is-overdue { color: #fd7e14; }
 
-/* ── Status pills ── */
+/* ── Status pills — match updated card palette ── */
 .do-status-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -350,21 +429,14 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.do-status-pill.pending          { background: #fff8e1; color: #ffc107; }
+.do-status-pill.out-for-delivery { background: #e0f7fa; color: #17a2b8; }
+.do-status-pill.delivered        { background: #d4edda; color: #28a745; }
+.do-status-pill.overdue          { background: #fff3e0; color: #fd7e14; }
+.do-status-pill.cancelled        { background: #fde8ea; color: #dc3545; }
 
-.do-status-pill.pending          { background: #fef9c3; color: #854d0e; }
-.do-status-pill.out-for-delivery { background: #e0e7ff; color: #3730a3; }
-.do-status-pill.delivered        { background: #d1fae5; color: #065f46; }
-.do-status-pill.cancelled        { background: #f3f4f6; color: #6b7280; }
-.do-status-pill.overdue          { background: #fee2e2; color: #991b1b; }
+.do-no-data { text-align: center; padding: 40px !important; color: #888; }
 
-/* No data */
-.do-no-data {
-  text-align: center;
-  padding: 40px !important;
-  color: #888;
-}
-
-/* View button — mirrors .co-view-btn exactly */
 .do-view-btn {
   display: inline-flex;
   align-items: center;
@@ -380,11 +452,7 @@
   transition: background 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
-.do-view-btn:hover {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
+.do-view-btn:hover { background: #f7dd30; border-color: #e5c800; color: #111; }
 
 /* ── Pagination ── */
 .do-pagination {
@@ -421,7 +489,7 @@
 .do-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* =========================================================
-   MODAL — mirrors customOrders.css modal exactly
+   MODAL
    ========================================================= */
 .do-modal-overlay {
   position: fixed;
@@ -464,7 +532,7 @@
   font-size: 1.45rem;
   font-weight: bold;
   color: #000;
-  margin: 0 0 4px;
+  margin: 0;
   line-height: 1.2;
 }
 
@@ -487,20 +555,26 @@
 
 .do-modal-body {
   padding: 24px 28px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
-/* Info grid — mirrors .co-modal-info-grid */
+.do-modal-section-title {
+  font-family: Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #fcf6c4;
+}
+
 .do-modal-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px 24px;
 }
 
-.do-info-item             { display: flex; flex-direction: column; gap: 3px; }
-.do-info-item.full-width  { grid-column: span 2; }
+.do-info-item            { display: flex; flex-direction: column; gap: 3px; }
+.do-info-item.full-width { grid-column: span 2; }
 
 .do-info-label {
   font-size: 0.68rem;
@@ -510,10 +584,9 @@
   letter-spacing: 0.07em;
 }
 
-.do-info-value           { font-size: 0.88rem; color: #222; line-height: 1.4; }
-.do-price-val            { font-family: Georgia, serif; font-size: 1.15rem; font-weight: bold; color: #22c55e; }
+.do-info-value { font-size: 0.88rem; color: #222; line-height: 1.4; }
+.do-price-val  { font-family: Georgia, serif; font-size: 1.15rem; font-weight: bold; color: #22c55e; }
 
-/* Address — full text, no truncation in modal */
 .do-address-val {
   padding: 10px 12px;
   background: #fefce8;
@@ -522,11 +595,10 @@
   color: #555;
   font-size: 0.83rem;
   line-height: 1.5;
-  white-space: normal;            /* override table truncation — show full address */
+  white-space: normal;
   word-break: break-word;
 }
 
-/* Order Items list */
 .do-items-list {
   display: flex;
   flex-direction: column;
@@ -544,36 +616,19 @@
   border: 1px solid #f0f0f0;
 }
 
-.do-item-name {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #222;
-}
-
-.do-item-qty {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #6366f1;
-  background: #e0e7ff;
-  padding: 2px 10px;
-  border-radius: 20px;
-}
-
-.do-modal-section-title {
-  font-family: Georgia, serif;
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: #222;
-  margin: 0 0 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #fcf6c4;
-}
+.do-item-name { font-size: 0.85rem; font-weight: 500; color: #222; }
+.do-item-qty  { font-size: 0.82rem; font-weight: 600; color: #6366f1; background: #e0e7ff; padding: 2px 10px; border-radius: 20px; }
 
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
   .do-metrics-row          { flex-direction: column; }
+  .do-status-cards-row     { gap: 8px; }
+  .do-status-card          { flex: 1 1 80px; padding: 10px 8px; }
+  .do-status-card-count    { font-size: 1.3rem; }
   .do-modal-info-grid      { grid-template-columns: 1fr; }
   .do-info-item.full-width { grid-column: span 1; }
+  .do-header               { flex-direction: column; align-items: flex-start; }
+  .do-date-dropdown        { right: auto; left: 0; }
 }
