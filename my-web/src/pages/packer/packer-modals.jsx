@@ -79,6 +79,24 @@ export function DeliveryModal({
           <label>Branch</label>
           <input type="text" value="Main Branch" disabled />
 
+          <label>Order Type</label>
+          <div className="delivery-type-toggle">
+            <button
+              type="button"
+              className={deliveryForm.orderType === 'regular' ? 'active' : ''}
+              onClick={() => onChangeField('orderType', 'regular')}
+            >
+              Regular
+            </button>
+            <button
+              type="button"
+              className={deliveryForm.orderType === 'custom' ? 'active' : ''}
+              onClick={() => onChangeField('orderType', 'custom')}
+            >
+              Custom
+            </button>
+          </div>
+
           <label>Customer Name</label>
           <input
             type="text"
@@ -103,14 +121,60 @@ export function DeliveryModal({
             placeholder="e.g. 123 Rizal St., Calamba"
           />
 
-          <label>Cake Type</label>
-          <select value={deliveryForm.cake} onChange={(event) => onChangeField('cake', event.target.value)}>
-            {stockItems.map((item) => (
-              <option key={`delivery-cake-${item.cake}`} value={item.cake}>
-                {item.cake}
-              </option>
-            ))}
-          </select>
+          {deliveryForm.orderType === 'custom' ? (
+            <>
+              <label>Custom Cake Name</label>
+              <input
+                type="text"
+                value={deliveryForm.customCakeName || ''}
+                onChange={(event) => onChangeField('customCakeName', event.target.value)}
+                placeholder="e.g. Unicorn Theme Cake"
+              />
+
+              <label>Size</label>
+              <input
+                type="text"
+                value={deliveryForm.customSize || ''}
+                onChange={(event) => onChangeField('customSize', event.target.value)}
+                placeholder="e.g. 8 inch"
+              />
+
+              <label>Flavor</label>
+              <input
+                type="text"
+                value={deliveryForm.customFlavor || ''}
+                onChange={(event) => onChangeField('customFlavor', event.target.value)}
+                placeholder="e.g. Chocolate Moist"
+              />
+
+              <label>Design / Theme</label>
+              <input
+                type="text"
+                value={deliveryForm.customTheme || ''}
+                onChange={(event) => onChangeField('customTheme', event.target.value)}
+                placeholder="e.g. Frozen Theme"
+              />
+
+              <label>Message on Cake</label>
+              <input
+                type="text"
+                value={deliveryForm.dedicationMessage || ''}
+                onChange={(event) => onChangeField('dedicationMessage', event.target.value)}
+                placeholder="e.g. Happy Birthday Anna"
+              />
+            </>
+          ) : (
+            <>
+              <label>Cake Type</label>
+              <select value={deliveryForm.cake} onChange={(event) => onChangeField('cake', event.target.value)}>
+                {stockItems.map((item) => (
+                  <option key={`delivery-cake-${item.cake}`} value={item.cake}>
+                    {item.cake}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           <label>Quantity</label>
           <input
@@ -142,6 +206,13 @@ export function DeliveryModal({
             type="date"
             value={deliveryForm.pickupDate}
             onChange={(event) => onChangeField('pickupDate', event.target.value)}
+          />
+
+          <label>Delivery Time</label>
+          <input
+            type="time"
+            value={deliveryForm.deliveryTime || ''}
+            onChange={(event) => onChangeField('deliveryTime', event.target.value)}
           />
 
           <label>Special Instructions</label>

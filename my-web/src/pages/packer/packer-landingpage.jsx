@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import PackerSidebar from './packer-sidebarmenu';
 import DashboardOverview from './packer-dashboard-overview';
 import InventoryOverview from './packer-inventory-overview';
@@ -25,6 +25,13 @@ import '../../styles/packer/packer-modals.css';
 import '../../styles/packer/packer-cake-prices.css';
 import '../../styles/packer/packer-settings.css';
 
+const getCurrentTimeValue = () => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
 export default function PackerLandingPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [packerName, setPackerName] = useState('Packer');
@@ -45,52 +52,31 @@ export default function PackerLandingPage({ onLogout }) {
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({
     branch: 'Main Branch',
+    orderType: 'regular',
     customer: '',
     contact: '',
     address: '',
     cake: initialBranchStock[0]?.cake || '',
+    customCakeName: '',
+    customSize: '',
+    customFlavor: '',
+    customTheme: '',
+    dedicationMessage: '',
     price: initialBranchStock[0]?.price || 0,
     qty: '',
     orderDate: new Date().toISOString().slice(0, 10),
     pickupDate: '',
+    deliveryTime: '',
     specialInstructions: '',
   });
   const [stockAddForm, setStockAddForm] = useState({
     cake: initialBranchStock[0]?.cake || '',
     qty: '',
     madeDate: new Date().toISOString().slice(0, 10),
-    madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    madeTime: getCurrentTimeValue(),
     expiryDate: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
-
-  useEffect(() => {
-    const root = document.getElementById('root');
-    if (!root) return undefined;
-
-    const prevMaxWidth = root.style.maxWidth;
-    const prevWidth = root.style.width;
-    const prevMinHeight = root.style.minHeight;
-    const prevMargin = root.style.margin;
-    const prevPadding = root.style.padding;
-    const prevTextAlign = root.style.textAlign;
-
-    root.style.maxWidth = 'none';
-    root.style.width = '100vw';
-    root.style.minHeight = '100vh';
-    root.style.margin = '0';
-    root.style.padding = '0';
-    root.style.textAlign = 'left';
-
-    return () => {
-      root.style.maxWidth = prevMaxWidth;
-      root.style.width = prevWidth;
-      root.style.minHeight = prevMinHeight;
-      root.style.margin = prevMargin;
-      root.style.padding = prevPadding;
-      root.style.textAlign = prevTextAlign;
-    };
-  }, []);
 
   const totals = useMemo(() => {
     const totalCakes = stockItems.reduce((sum, row) => sum + row.qty, 0);
@@ -213,10 +199,14 @@ export default function PackerLandingPage({ onLogout }) {
 
   const handleAddStockQty = () => {
     const qtyToAdd = Number(stockAddForm.qty);
-    if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
-
-    const now = new Date();
-    const madeTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (
+      !stockAddForm.cake ||
+      Number.isNaN(qtyToAdd) ||
+      qtyToAdd <= 0 ||
+      !stockAddForm.madeDate ||
+      !stockAddForm.madeTime ||
+      !stockAddForm.expiryDate
+    ) return;
 
     setStockItems((prev) =>
       prev.map((item) =>
@@ -225,7 +215,7 @@ export default function PackerLandingPage({ onLogout }) {
               ...item,
               qty: item.qty + qtyToAdd,
               madeDate: stockAddForm.madeDate,
-              time: stockAddForm.madeTime || madeTime,
+              time: stockAddForm.madeTime,
               expiryDate: stockAddForm.expiryDate,
             }
           : item
@@ -236,12 +226,33 @@ export default function PackerLandingPage({ onLogout }) {
       ...prev, 
       qty: '',
       madeDate: new Date().toISOString().slice(0, 10),
-      madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      madeTime: getCurrentTimeValue(),
       expiryDate: '',
     }));
   };
 
   const handleDeliveryInput = (key, value) => {
+    if (key === 'orderType') {
+      if (value === 'custom') {
+        setDeliveryForm((prev) => ({
+          ...prev,
+          orderType: 'custom',
+          customCakeName: prev.customCakeName || prev.cake || '',
+        }));
+        return;
+      }
+
+      const fallbackCake = stockItems[0]?.cake || '';
+      const fallbackPrice = stockItems.find((item) => item.cake === fallbackCake)?.price || 0;
+      setDeliveryForm((prev) => ({
+        ...prev,
+        orderType: 'regular',
+        cake: fallbackCake,
+        price: fallbackPrice,
+      }));
+      return;
+    }
+
     if (key === 'cake') {
       const matchedCake = stockItems.find((item) => item.cake === value);
       setDeliveryForm((prev) => ({
@@ -257,10 +268,18 @@ export default function PackerLandingPage({ onLogout }) {
   const handleCreateDelivery = () => {
     const qty = Number(deliveryForm.qty);
     const price = Number(deliveryForm.price);
-    if (!deliveryForm.cake || Number.isNaN(qty) || qty <= 0 || Number.isNaN(price) || price <= 0) return;
-
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isCustom = deliveryForm.orderType === 'custom';
+    const normalizedCake = isCustom
+      ? (deliveryForm.customCakeName.trim() || 'Custom Cake Order')
+      : deliveryForm.cake;
+    if (
+      !normalizedCake ||
+      Number.isNaN(qty) ||
+      qty <= 0 ||
+      Number.isNaN(price) ||
+      price <= 0 ||
+      !deliveryForm.deliveryTime
+    ) return;
 
     setDeliveryItems((prev) => [
       ...prev,
@@ -269,13 +288,18 @@ export default function PackerLandingPage({ onLogout }) {
         customer: deliveryForm.customer.trim() || 'Walk-in Customer',
         contact: deliveryForm.contact.trim() || '-',
         address: deliveryForm.address.trim() || '-',
-        cake: deliveryForm.cake,
+        orderType: deliveryForm.orderType || 'regular',
+        cake: normalizedCake,
         price,
         qty,
-        time,
+        time: deliveryForm.deliveryTime,
         status: 'Pending',
         orderDate: deliveryForm.orderDate,
         pickupDate: deliveryForm.pickupDate || '-',
+        customSize: deliveryForm.customSize?.trim() || '-',
+        customFlavor: deliveryForm.customFlavor?.trim() || '-',
+        customTheme: deliveryForm.customTheme?.trim() || '-',
+        dedicationMessage: deliveryForm.dedicationMessage?.trim() || '-',
         specialInstructions: deliveryForm.specialInstructions.trim() || '-',
       },
     ]);
@@ -284,14 +308,21 @@ export default function PackerLandingPage({ onLogout }) {
     setIsDeliveryModalOpen(false);
     setDeliveryForm({
       branch: 'Main Branch',
+      orderType: 'regular',
       customer: '',
       contact: '',
       address: '',
       cake: stockItems[0]?.cake || '',
+      customCakeName: '',
+      customSize: '',
+      customFlavor: '',
+      customTheme: '',
+      dedicationMessage: '',
       price: stockItems[0]?.price || 0,
       qty: '',
       orderDate: new Date().toISOString().slice(0, 10),
       pickupDate: '',
+      deliveryTime: '',
       specialInstructions: '',
     });
   };
@@ -309,6 +340,14 @@ export default function PackerLandingPage({ onLogout }) {
     }
 
     if (targetDelivery.status === 'Out for Delivery' || targetDelivery.status === 'In Transit') {
+      if (targetDelivery.orderType === 'custom') {
+        setDeliveryItems((prev) =>
+          prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Delivered' } : row))
+        );
+        setDeliveryWarning('');
+        return;
+      }
+
       const stockMatch = stockItems.find((item) => item.cake === targetDelivery.cake);
       const availableQty = stockMatch?.qty || 0;
 
@@ -338,6 +377,13 @@ export default function PackerLandingPage({ onLogout }) {
     }
   };
 
+  const handleCancelDeliveryStatus = (rowIndex) => {
+    setDeliveryItems((prev) =>
+      prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Cancelled' } : row))
+    );
+    setDeliveryWarning('');
+  };
+
   const getMessageCake = (messageContent) => {
     const normalized = messageContent.toLowerCase();
     const matched = stockItems.find((item) => normalized.includes(item.cake.toLowerCase().replace(' cake', '')));
@@ -360,16 +406,24 @@ export default function PackerLandingPage({ onLogout }) {
       actionKey === 'add-custom-delivery'
     ) {
       const detectedCake = getMessageCake(targetMessage.content);
+      const isCustomAction = actionKey === 'create-reservation' || actionKey === 'add-custom-delivery';
       setDeliveryForm({
         branch: 'Main Branch',
+        orderType: isCustomAction ? 'custom' : 'regular',
         customer: targetMessage.from.replace('Seller - ', '').trim() || 'Reserved Customer',
         contact: '',
         address: '',
         cake: detectedCake,
+        customCakeName: isCustomAction ? detectedCake : '',
+        customSize: '',
+        customFlavor: '',
+        customTheme: '',
+        dedicationMessage: '',
         price: stockItems.find((item) => item.cake === detectedCake)?.price || 0,
         qty: getMessageQty(targetMessage.content),
         orderDate: new Date().toISOString().slice(0, 10),
         pickupDate: '',
+        deliveryTime: '',
         specialInstructions:
           actionKey === 'convert-order' || actionKey === 'add-order-delivery'
             ? `Converted from message: ${targetMessage.content}`
@@ -452,9 +506,6 @@ export default function PackerLandingPage({ onLogout }) {
           stockAddForm={stockAddForm}
           onChangeStockAdd={handleStockAddInput}
           onAddStock={handleAddStockQty}
-          totals={totals}
-          deliveryItems={deliveryItems}
-          customOrders={customOrders}
         />
       );
     }
@@ -464,6 +515,7 @@ export default function PackerLandingPage({ onLogout }) {
         <DeliveriesOverview
           deliveryItems={deliveryItems}
           onAdvanceStatus={handleAdvanceDeliveryStatus}
+          onCancelStatus={handleCancelDeliveryStatus}
           deliveryWarning={deliveryWarning}
         />
       );
@@ -506,7 +558,9 @@ export default function PackerLandingPage({ onLogout }) {
         packerName={packerName}
       />
 
-      <main className="packer-main-content">{renderActivePage()}</main>
+      <main className="packer-main-content">
+        <div className="packer-content-inner">{renderActivePage()}</div>
+      </main>
 
       <AddCakeModal
         isOpen={isAddCakeOpen}

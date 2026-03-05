@@ -24,7 +24,7 @@
 
 .packer-sidebar.collapsed,
 .sidebar-minimized .packer-sidebar {
-  width: 80px;
+  width: 86px;
 }
 
 /* ─── Header & Logo ───────────────────────────────────────────────────────────*/
@@ -34,7 +34,7 @@
   gap: 12px;
   padding: 0 15px;
   margin-bottom: 15px;
-  min-height: 60px;
+  min-height: 55px;
 }
 
 .packer-logo-wrap {
@@ -55,7 +55,7 @@
 .packer-logo-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .packer-logo {
@@ -69,6 +69,8 @@
 .packer-logo-text h2 {
   margin: 0;
   font-size: 1.1rem;
+  font-family: Georgia, serif;
+  font-weight: bold;
   color: var(--pack-yellow);
 }
 
@@ -81,12 +83,13 @@
 /* ─── User Info ───────────────────────────────────────────────────────────────*/
 .packer-user-info {
   padding: 0 17px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .packer-user-info h3 {
   margin: 0;
   font-size: 0.90rem;
+  font-family: Georgia, serif;
   color: var(--pack-yellow);
 }
 
@@ -103,7 +106,7 @@
   flex: 1;
   gap: 10px;
   padding: 8px 15px 12px 15px;
-  overflow-y: auto;
+  overflow-y: hidden;
   min-height: 0;
   scroll-behavior: smooth;
   scrollbar-width: thin;
@@ -133,16 +136,23 @@
   align-items: center;
   width: 100%;
   gap: 12px;
-  padding: 12px 15px;
+  padding: 11.5px 15px;
   border: none;
   border-radius: 8px;
-  background-color: var(--pack-cream); /* Mirroring var(--color-bg-main) */
+  background-color: var(--pack-cream);
   font-family: var(--font-main);
   font-size: 0.95rem;
   color: #000000;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+}
+
+.packer-nav-item svg,
+.packer-footer-item svg {
+  color: #000000;
+  flex-shrink: 0;
 }
 
 .packer-sidebar.collapsed .packer-nav-item,
@@ -167,9 +177,31 @@
   margin-left: auto;
   padding: 0;
   background-color: transparent;
-  color: #000000;
-  font-size: 0.95rem;
+  color: #000;
+  font-size: 0.98rem;
   font-weight: bold;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.packer-sidebar.collapsed .packer-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin-left: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 0.68rem;
+  background: #f3071d;
+  color: #fff;
+  border-radius: 999px;
+  line-height: 1;
 }
 
 .packer-sidebar-footer {
@@ -192,13 +224,69 @@
 .sidebar-minimized .packer-sidebar .packer-nav-item,
 .sidebar-minimized .packer-sidebar .packer-footer-item {
   justify-content: center;
-  padding: 12px 0;
+  padding: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  margin: 0 auto;
 }
 
 .packer-sidebar.collapsed .packer-logo-wrap,
 .sidebar-minimized .packer-sidebar .packer-logo-wrap {
-  width: 55px;
-  height: 55px;
+  width: 52px;
+  height: 52px;
+}
+
+.packer-sidebar.collapsed .packer-sidebar-header,
+.sidebar-minimized .packer-sidebar .packer-sidebar-header {
+  margin-bottom: 12px;
+}
+
+.packer-sidebar.collapsed .packer-nav,
+.sidebar-minimized .packer-sidebar .packer-nav {
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 12px;
+}
+
+.packer-sidebar.collapsed .packer-sidebar-footer,
+.sidebar-minimized .packer-sidebar .packer-sidebar-footer {
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px 14px;
+}
+
+.packer-sidebar.collapsed .packer-nav-item:hover,
+.packer-sidebar.collapsed .packer-footer-item:hover,
+.sidebar-minimized .packer-sidebar .packer-nav-item:hover,
+.sidebar-minimized .packer-sidebar .packer-footer-item:hover {
+  transform: translateY(-1px);
+}
+
+.packer-sidebar.collapsed .packer-nav-item.active,
+.packer-sidebar.collapsed .packer-footer-item.active,
+.sidebar-minimized .packer-sidebar .packer-nav-item.active,
+.sidebar-minimized .packer-sidebar .packer-footer-item.active {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.packer-footer-item.active {
+  background-color: var(--pack-yellow) !important;
+  color: #000000 !important;
+  font-weight: bold;
+}
+
+.packer-footer-item.active svg {
+  color: #000000;
+}
+
+.packer-logout:hover {
+  background-color: #000;
+  color: #fff;
+}
+
+.packer-logout:hover svg {
+  color: #fff;
 }
 
 @media (max-width: 1024px) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AtSign, CheckCircle, Lock, Save, User, X } from 'lucide-react';
 import '../../styles/packer/packer-settings.css';
 
@@ -12,11 +12,6 @@ export default function PackerSettings({
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [toast, setToast] = useState({ show: false, type: 'success', msg: '' });
-
-  useEffect(() => {
-    setDisplayName(packerName);
-    setUsername(packerName.toLowerCase().replace(/\s+/g, ''));
-  }, [packerName]);
 
   const showToast = (type, msg) => {
     setToast({ show: true, type, msg });

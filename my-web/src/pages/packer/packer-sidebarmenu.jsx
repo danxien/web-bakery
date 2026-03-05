@@ -69,13 +69,9 @@ export default function PackerSidebar({
             >
               <Icon size={20} />
               {/* Labels and unread numbers only show when NOT minimized */}
-              {!isMinimized && (
-                <>
-                  <span>{item.label}</span>
-                  {item.id === 'messages' && unreadCount > 0 && (
-                    <span className="packer-badge">{unreadCount}</span>
-                  )}
-                </>
+              {!isMinimized && <span>{item.label}</span>}
+              {item.id === 'messages' && unreadCount > 0 && (
+                <span className="packer-badge">{unreadCount}</span>
               )}
             </button>
           );

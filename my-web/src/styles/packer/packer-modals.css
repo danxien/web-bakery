@@ -79,6 +79,28 @@
   font-weight: 700;
 }
 
+.delivery-type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.delivery-type-toggle button {
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1px solid #d0c88f;
+  background: #fffbe9;
+  color: #3d2b1f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delivery-type-toggle button.active {
+  border-color: #e5c800;
+  background: #f7dd30;
+  color: #111;
+}
+
 .add-cake-modal-body input,
 .add-cake-modal-body select {
   min-height: 42px;
