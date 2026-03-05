@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CircleDollarSign, Download, PackageCheck, Plus, Truck, X } from 'lucide-react';
+import { AlertTriangle, Download, Plus, X } from 'lucide-react';
 import { exportRowsToCsv } from '../../utils/exportCsv';
 
 const LOW_STOCK_QTY = 5;
@@ -54,8 +54,6 @@ export default function InventoryOverview({
   stockAddForm,
   onChangeStockAdd,
   onAddStock,
-  totals,
-  customOrders,
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -132,6 +130,11 @@ export default function InventoryOverview({
     return { low, balanced, high };
   }, [stockItems]);
 
+  const totalUnits = useMemo(
+    () => stockItems.reduce((sum, item) => sum + Number(item.qty || 0), 0),
+    [stockItems]
+  );
+
   const exportInventoryReport = () => {
     exportRowsToCsv(
       `packer-inventory-report-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -160,29 +163,34 @@ export default function InventoryOverview({
       <div className="pkinv-metrics-row">
         <article className="pkinv-metric-card">
           <div className="pkinv-metric-top">
-            <span>Delivered Today</span>
-            <Truck size={18} className="pkinv-blue-icon" />
+            <span>Total Stock Units</span>
           </div>
-          <h2>{totals?.deliveredToday || 0}</h2>
-          <small>Units delivered today</small>
+          <h2>{totalUnits}</h2>
+          <small>All units currently in inventory</small>
         </article>
 
         <article className="pkinv-metric-card">
           <div className="pkinv-metric-top">
-            <span>Revenue Today</span>
-            <CircleDollarSign size={18} className="pkinv-green-icon" />
+            <span>Low Stock Units</span>
           </div>
-          <h2>PHP {(totals?.revenueToday || 0).toLocaleString()}</h2>
-          <small>Total collected today</small>
+          <h2>{stockAlerts.lowStockUnits}</h2>
+          <small>Needs replenishment</small>
         </article>
 
         <article className="pkinv-metric-card">
           <div className="pkinv-metric-top">
-            <span>Custom Orders</span>
-            <PackageCheck size={18} className="pkinv-yellow-icon" />
+            <span>Near Expiry Units</span>
           </div>
-          <h2>{customOrders?.length || 0}</h2>
-          <small>Main Branch requests today</small>
+          <h2>{stockAlerts.nearExpiryUnits}</h2>
+          <small>Prioritize selling</small>
+        </article>
+
+        <article className="pkinv-metric-card">
+          <div className="pkinv-metric-top">
+            <span>Expired Units</span>
+          </div>
+          <h2>{stockAlerts.expiredUnits}</h2>
+          <small>Remove from available stock</small>
         </article>
       </div>
 

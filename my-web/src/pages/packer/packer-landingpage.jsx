@@ -506,8 +506,6 @@ export default function PackerLandingPage({ onLogout }) {
           stockAddForm={stockAddForm}
           onChangeStockAdd={handleStockAddInput}
           onAddStock={handleAddStockQty}
-          totals={totals}
-          customOrders={customOrders}
         />
       );
     }
