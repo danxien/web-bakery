@@ -32,6 +32,25 @@ const getCurrentTimeValue = () => {
   return `${hours}:${minutes}`;
 };
 
+const toDateValue = (value) => {
+  if (!value || value === '-') return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const computeStockStatus = (expiryDate) => {
+  const expiry = toDateValue(expiryDate);
+  if (!expiry) return 'Fresh';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return 'Expired';
+  if (diffDays <= 2) return 'Near Expiry';
+  return 'Fresh';
+};
+
 export default function PackerLandingPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [packerName, setPackerName] = useState('Packer');
@@ -80,9 +99,11 @@ export default function PackerLandingPage({ onLogout }) {
 
   const totals = useMemo(() => {
     const totalCakes = stockItems.reduce((sum, row) => sum + row.qty, 0);
-    const freshCount = stockItems.filter((row) => row.status === 'Fresh').reduce((sum, row) => sum + row.qty, 0);
+    const freshCount = stockItems
+      .filter((row) => computeStockStatus(row.expiryDate) === 'Fresh')
+      .reduce((sum, row) => sum + row.qty, 0);
     const nearExpiryCount = stockItems
-      .filter((row) => row.status === 'Near Expiry')
+      .filter((row) => computeStockStatus(row.expiryDate) === 'Near Expiry')
       .reduce((sum, row) => sum + row.qty, 0);
     
     const today = new Date().toISOString().slice(0, 10);
@@ -208,19 +229,22 @@ export default function PackerLandingPage({ onLogout }) {
       !stockAddForm.expiryDate
     ) return;
 
-    setStockItems((prev) =>
-      prev.map((item) =>
-        item.cake === stockAddForm.cake
-          ? {
-              ...item,
-              qty: item.qty + qtyToAdd,
-              madeDate: stockAddForm.madeDate,
-              time: stockAddForm.madeTime,
-              expiryDate: stockAddForm.expiryDate,
-            }
-          : item
-      )
-    );
+    setStockItems((prev) => {
+      const matchedCake = prev.find((item) => item.cake === stockAddForm.cake);
+      return [
+        ...prev,
+        {
+          branch: 'Main Branch',
+          cake: stockAddForm.cake,
+          price: matchedCake?.price || 0,
+          qty: qtyToAdd,
+          madeDate: stockAddForm.madeDate,
+          time: stockAddForm.madeTime,
+          expiryDate: stockAddForm.expiryDate,
+          status: computeStockStatus(stockAddForm.expiryDate),
+        },
+      ];
+    });
 
     setStockAddForm((prev) => ({ 
       ...prev, 
@@ -348,8 +372,13 @@ export default function PackerLandingPage({ onLogout }) {
         return;
       }
 
-      const stockMatch = stockItems.find((item) => item.cake === targetDelivery.cake);
-      const availableQty = stockMatch?.qty || 0;
+      const eligibleBatches = stockItems.filter(
+        (item) =>
+          item.cake === targetDelivery.cake &&
+          Number(item.qty || 0) > 0 &&
+          computeStockStatus(item.expiryDate) !== 'Expired'
+      );
+      const availableQty = eligibleBatches.reduce((sum, item) => sum + Number(item.qty || 0), 0);
 
       if (availableQty < targetDelivery.qty) {
         setDeliveryWarning(
@@ -359,16 +388,35 @@ export default function PackerLandingPage({ onLogout }) {
         return;
       }
 
-      setStockItems((prev) =>
-        prev.map((item) =>
-          item.cake === targetDelivery.cake
-            ? {
-                ...item,
-                qty: item.qty - targetDelivery.qty,
-              }
-            : item
-        )
-      );
+      setStockItems((prev) => {
+        const next = prev.map((item) => ({ ...item }));
+        let remaining = Number(targetDelivery.qty || 0);
+
+        const sortedBatchIndexes = next
+          .map((item, index) => ({ item, index }))
+          .filter(
+            ({ item }) =>
+              item.cake === targetDelivery.cake &&
+              Number(item.qty || 0) > 0 &&
+              computeStockStatus(item.expiryDate) !== 'Expired'
+          )
+          .sort((a, b) => {
+            const aDate = toDateValue(a.item.expiryDate)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+            const bDate = toDateValue(b.item.expiryDate)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+            return aDate - bDate;
+          })
+          .map(({ index }) => index);
+
+        sortedBatchIndexes.forEach((index) => {
+          if (remaining <= 0) return;
+          const currentQty = Number(next[index].qty || 0);
+          const deductQty = Math.min(currentQty, remaining);
+          next[index].qty = currentQty - deductQty;
+          remaining -= deductQty;
+        });
+
+        return next;
+      });
 
       setDeliveryItems((prev) =>
         prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Delivered' } : row))

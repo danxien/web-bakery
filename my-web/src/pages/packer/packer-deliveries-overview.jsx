@@ -326,7 +326,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
           </div>
           <div className="pkdo-card-bottom">
             <span className="pkdo-metric-value">P{summary.estimatedRevenue.toLocaleString()}</span>
-            <span className="pkdo-metric-subtext">Excl. Cancelled orders</span>
+            <span className="pkdo-metric-subtext">Except Cancelled Orders</span>
           </div>
         </article>
 
@@ -386,7 +386,7 @@ export default function DeliveriesOverview({ deliveryItems, onAdvanceStatus, onC
                 <th>Customer Name</th>
                 <th>Contact</th>
                 <th>Delivery Address</th>
-                <th>Date Made</th>
+                <th>Order Date</th>
                 <th>Time</th>
                 <th>Delivery Date</th>
                 <th>Status</th>

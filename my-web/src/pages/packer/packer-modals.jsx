@@ -62,6 +62,13 @@ export function DeliveryModal({
 }) {
   if (!isOpen) return null;
 
+  const cakeOptions = stockItems.reduce((list, item) => {
+    if (!list.some((cakeName) => cakeName.toLowerCase() === item.cake.toLowerCase())) {
+      list.push(item.cake);
+    }
+    return list;
+  }, []);
+
   return (
     <div className="add-cake-modal-overlay" onClick={onClose}>
       <div className="add-cake-modal" onClick={(event) => event.stopPropagation()}>
@@ -167,9 +174,9 @@ export function DeliveryModal({
             <>
               <label>Cake Type</label>
               <select value={deliveryForm.cake} onChange={(event) => onChangeField('cake', event.target.value)}>
-                {stockItems.map((item) => (
-                  <option key={`delivery-cake-${item.cake}`} value={item.cake}>
-                    {item.cake}
+                {cakeOptions.map((cakeName) => (
+                  <option key={`delivery-cake-${cakeName}`} value={cakeName}>
+                    {cakeName}
                   </option>
                 ))}
               </select>

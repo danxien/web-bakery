@@ -10,7 +10,6 @@ const DATE_OPTIONS = [
   { value: 'today', label: 'Today' },
   { value: 'week', label: 'This Week' },
   { value: 'month', label: 'This Month' },
-  { value: 'custom', label: 'Custom Range' },
 ];
 
 const STATUS_CARDS = [
@@ -45,7 +44,7 @@ const computeStatus = (expiryDate) => {
   return 'Fresh';
 };
 
-const isWithinPeriod = (targetDate, period, customStart, customEnd) => {
+const isWithinPeriod = (targetDate, period) => {
   if (!targetDate) return false;
 
   const today = new Date();
@@ -73,24 +72,12 @@ const isWithinPeriod = (targetDate, period, customStart, customEnd) => {
     return targetDate.getMonth() === today.getMonth() && targetDate.getFullYear() === today.getFullYear();
   }
 
-  if (period === 'custom') {
-    const start = toDate(customStart);
-    const end = toDate(customEnd);
-    if (!start || !end) return true;
-
-    const customStartDate = new Date(start);
-    customStartDate.setHours(0, 0, 0, 0);
-
-    const customEndDate = new Date(end);
-    customEndDate.setHours(23, 59, 59, 999);
-
-    return targetDate >= customStartDate && targetDate <= customEndDate;
-  }
-
   return true;
 };
 
 const isLowStock = (item) => item.qty <= LOW_STOCK_QTY && item.computedStatus !== 'Expired';
+
+const getInventoryFilterDate = (item) => toDate(item.madeDate || item.expiryDate);
 
 export default function InventoryOverview({
   stockItems,
@@ -101,8 +88,6 @@ export default function InventoryOverview({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState('all');
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
   const [isDateDropOpen, setIsDateDropOpen] = useState(false);
   const dateDropRef = useRef(null);
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
@@ -124,20 +109,29 @@ export default function InventoryOverview({
     [stockItems]
   );
 
+  const cakeOptions = useMemo(() => {
+    const seen = new Set();
+    return stockItems.reduce((list, item) => {
+      const key = item.cake.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(item.cake);
+      }
+      return list;
+    }, []);
+  }, [stockItems]);
+
   const dateLabel = useMemo(() => {
-    if (dateFilter === 'custom' && customStart && customEnd) {
-      return `${formatDate(customStart)} - ${formatDate(customEnd)}`;
-    }
     return DATE_OPTIONS.find((option) => option.value === dateFilter)?.label || 'All Dates';
-  }, [customEnd, customStart, dateFilter]);
+  }, [dateFilter]);
 
   const dateScoped = useMemo(
     () =>
       inventoryRows.filter((item) => {
-        const d = toDate(item.expiryDate);
-        return d && isWithinPeriod(d, dateFilter, customStart, customEnd);
+        const d = getInventoryFilterDate(item);
+        return d && isWithinPeriod(d, dateFilter);
       }),
-    [customEnd, customStart, dateFilter, inventoryRows]
+    [dateFilter, inventoryRows]
   );
 
   const totalCakeTypes = useMemo(
@@ -168,7 +162,8 @@ export default function InventoryOverview({
       rows = rows.filter((item) =>
         item.cake.toLowerCase().includes(needle) ||
         String(item.price).includes(needle) ||
-        item.expiryDate.includes(needle)
+        (item.expiryDate || '').includes(needle) ||
+        (item.madeDate || '').includes(needle)
       );
     }
 
@@ -204,20 +199,11 @@ export default function InventoryOverview({
     setDateFilter(value);
     setStatusFilter(null);
     setPage(1);
-    if (value !== 'custom') {
-      setIsDateDropOpen(false);
-    }
+    setIsDateDropOpen(false);
   };
 
   const handleStatusCard = (value) => {
     setStatusFilter((prev) => (prev === value ? null : value));
-    setPage(1);
-  };
-
-  const applyCustomRange = () => {
-    if (!customStart || !customEnd) return;
-    setDateFilter('custom');
-    setIsDateDropOpen(false);
     setPage(1);
   };
 
@@ -241,7 +227,7 @@ export default function InventoryOverview({
 
   useEffect(() => {
     setPage(1);
-  }, [customEnd, customStart, dateFilter, searchTerm, statusFilter]);
+  }, [dateFilter, searchTerm, statusFilter]);
 
   return (
     <>
@@ -277,33 +263,6 @@ export default function InventoryOverview({
                   </button>
                 ))}
 
-                <div className="pkinv-custom-range-section">
-                  <span className="pkinv-custom-range-title">Custom Range</span>
-                  <label className="pkinv-custom-label">From</label>
-                  <input
-                    type="date"
-                    className="pkinv-date-input"
-                    value={customStart}
-                    onChange={(event) => {
-                      setCustomStart(event.target.value);
-                      setDateFilter('custom');
-                    }}
-                  />
-                  <label className="pkinv-custom-label">To</label>
-                  <input
-                    type="date"
-                    className="pkinv-date-input"
-                    value={customEnd}
-                    min={customStart}
-                    onChange={(event) => {
-                      setCustomEnd(event.target.value);
-                      setDateFilter('custom');
-                    }}
-                  />
-                  <button type="button" className="pkinv-apply-btn" onClick={applyCustomRange} disabled={!customStart || !customEnd}>
-                    Apply
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -470,9 +429,9 @@ export default function InventoryOverview({
             <div className="add-cake-modal-body">
               <label>Cake Type</label>
               <select value={stockAddForm.cake} onChange={(event) => onChangeStockAdd('cake', event.target.value)}>
-                {stockItems.map((item) => (
-                  <option key={`stock-add-modal-${item.cake}`} value={item.cake}>
-                    {item.cake}
+                {cakeOptions.map((cakeName) => (
+                  <option key={`stock-add-modal-${cakeName}`} value={cakeName}>
+                    {cakeName}
                   </option>
                 ))}
               </select>
