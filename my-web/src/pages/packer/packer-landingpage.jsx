@@ -3,6 +3,7 @@ import PackerSidebar from './packer-sidebarmenu';
 import DashboardOverview from './packer-dashboard-overview';
 import InventoryOverview from './packer-inventory-overview';
 import DeliveriesOverview from './packer-deliveries-overview';
+import CustomOrdersOverview from './packer-custom-orders-overview';
 import PackerMessages from './packer-messages';
 import CakePrices from './packer-cake-prices';
 import PackerSettings from './packer-settings';
@@ -20,6 +21,7 @@ import '../../styles/packer/packer-sidebarmenu.css';
 import '../../styles/packer/packer-dashboard-overview.css';
 import '../../styles/packer/packer-inventory-overview.css';
 import '../../styles/packer/packer-deliveries-overview.css';
+import '../../styles/packer/packer-custom-orders-overview.css';
 import '../../styles/packer/packer-messages.css';
 import '../../styles/packer/packer-modals.css';
 import '../../styles/packer/packer-cake-prices.css';
@@ -57,6 +59,7 @@ export default function PackerLandingPage({ onLogout }) {
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [stockItems, setStockItems] = useState(initialBranchStock);
   const [deliveryItems, setDeliveryItems] = useState(initialDeliveryToday);
+  const [customOrderItems, setCustomOrderItems] = useState(customOrders);
   const [messages, setMessages] = useState(
     inboxMessages.map((msg, index) => ({
       ...msg,
@@ -115,15 +118,39 @@ export default function PackerLandingPage({ onLogout }) {
       .filter((row) => row.status === 'Delivered' && row.orderDate === today)
       .reduce((sum, row) => sum + (row.price * row.qty), 0);
     
-    const customOrderCount = customOrders.length;
+    const customOrderCount = customOrderItems.length;
 
     return { totalCakes, freshCount, nearExpiryCount, deliveredToday, revenueToday, customOrderCount };
-  }, [stockItems, deliveryItems]);
+  }, [stockItems, deliveryItems, customOrderItems]);
 
   const unreadCount = messages.filter((msg) => msg.unread).length;
   const pendingOrders = deliveryItems.filter(
     (row) => row.status === 'Pending' || row.status === 'Out for Delivery' || row.status === 'In Transit'
   );
+
+  const handleAdvanceCustomOrderStatus = (rowIndex) => {
+    const target = customOrderItems[rowIndex];
+    if (!target || target.status === 'Picked Up' || target.status === 'Cancelled') return;
+
+    if (target.status === 'Pending') {
+      setCustomOrderItems((prev) =>
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Ready' } : row))
+      );
+      return;
+    }
+
+    if (target.status === 'Ready' || target.status === 'Overdue') {
+      setCustomOrderItems((prev) =>
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Picked Up' } : row))
+      );
+    }
+  };
+
+  const handleCancelCustomOrderStatus = (rowIndex) => {
+    setCustomOrderItems((prev) =>
+      prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Cancelled' } : row))
+    );
+  };
 
   const handleAddCake = () => {
     const name = newCakeName.trim();
@@ -538,7 +565,7 @@ export default function PackerLandingPage({ onLogout }) {
           unreadCount={unreadCount}
           stockItems={stockItems}
           pendingOrders={pendingOrders}
-          customOrders={customOrders}
+          customOrders={customOrderItems}
           getBadgeClass={getBadgeClass}
           onOpenDeliveryModal={() => setIsDeliveryModalOpen(true)}
           onOpenMessages={() => setActiveTab('messages')}
@@ -565,6 +592,16 @@ export default function PackerLandingPage({ onLogout }) {
           onAdvanceStatus={handleAdvanceDeliveryStatus}
           onCancelStatus={handleCancelDeliveryStatus}
           deliveryWarning={deliveryWarning}
+        />
+      );
+    }
+
+    if (activeTab === 'custom-orders') {
+      return (
+        <CustomOrdersOverview
+          customOrderItems={customOrderItems}
+          onAdvanceStatus={handleAdvanceCustomOrderStatus}
+          onCancelStatus={handleCancelCustomOrderStatus}
         />
       );
     }
