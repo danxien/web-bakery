@@ -10,6 +10,7 @@ const DATE_OPTIONS = [
   { value: 'today', label: 'Today' },
   { value: 'week', label: 'This Week' },
   { value: 'month', label: 'This Month' },
+  { value: 'custom', label: 'Custom Range' },
 ];
 
 const STATUS_CARDS = [
@@ -44,7 +45,7 @@ const computeStatus = (expiryDate) => {
   return 'Fresh';
 };
 
-const isWithinPeriod = (targetDate, period) => {
+const isWithinPeriod = (targetDate, period, customStart, customEnd) => {
   if (!targetDate) return false;
 
   const today = new Date();
@@ -72,12 +73,24 @@ const isWithinPeriod = (targetDate, period) => {
     return targetDate.getMonth() === today.getMonth() && targetDate.getFullYear() === today.getFullYear();
   }
 
+  if (period === 'custom') {
+    const start = toDate(customStart);
+    const end = toDate(customEnd);
+    if (!start || !end) return true;
+
+    const customStartDate = new Date(start);
+    customStartDate.setHours(0, 0, 0, 0);
+
+    const customEndDate = new Date(end);
+    customEndDate.setHours(23, 59, 59, 999);
+
+    return targetDate >= customStartDate && targetDate <= customEndDate;
+  }
+
   return true;
 };
 
 const isLowStock = (item) => item.qty <= LOW_STOCK_QTY && item.computedStatus !== 'Expired';
-
-const getInventoryFilterDate = (item) => toDate(item.madeDate || item.expiryDate);
 
 export default function InventoryOverview({
   stockItems,
@@ -88,6 +101,8 @@ export default function InventoryOverview({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [dateFilter, setDateFilter] = useState('all');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [isDateDropOpen, setIsDateDropOpen] = useState(false);
   const dateDropRef = useRef(null);
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
@@ -109,29 +124,20 @@ export default function InventoryOverview({
     [stockItems]
   );
 
-  const cakeOptions = useMemo(() => {
-    const seen = new Set();
-    return stockItems.reduce((list, item) => {
-      const key = item.cake.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
-        list.push(item.cake);
-      }
-      return list;
-    }, []);
-  }, [stockItems]);
-
   const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd) {
+      return `${formatDate(customStart)} - ${formatDate(customEnd)}`;
+    }
     return DATE_OPTIONS.find((option) => option.value === dateFilter)?.label || 'All Dates';
-  }, [dateFilter]);
+  }, [customEnd, customStart, dateFilter]);
 
   const dateScoped = useMemo(
     () =>
       inventoryRows.filter((item) => {
-        const d = getInventoryFilterDate(item);
-        return d && isWithinPeriod(d, dateFilter);
+        const d = toDate(item.expiryDate);
+        return d && isWithinPeriod(d, dateFilter, customStart, customEnd);
       }),
-    [dateFilter, inventoryRows]
+    [customEnd, customStart, dateFilter, inventoryRows]
   );
 
   const totalCakeTypes = useMemo(
@@ -162,8 +168,7 @@ export default function InventoryOverview({
       rows = rows.filter((item) =>
         item.cake.toLowerCase().includes(needle) ||
         String(item.price).includes(needle) ||
-        (item.expiryDate || '').includes(needle) ||
-        (item.madeDate || '').includes(needle)
+        item.expiryDate.includes(needle)
       );
     }
 
@@ -179,32 +184,43 @@ export default function InventoryOverview({
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const exportInventoryReport = () => {
-    exportRowsToCsv(
-      `packer-inventory-report-${new Date().toISOString().slice(0, 10)}.csv`,
-      [
-        { key: 'cake', label: 'Cake' },
-        { key: 'price', label: 'Price' },
-        { key: 'qty', label: 'Qty' },
-        { key: 'madeDate', label: 'Made Date' },
-        { key: 'time', label: 'Time' },
-        { key: 'expiryDate', label: 'Expiry Date' },
-        { key: 'computedStatus', label: 'Status' },
-      ],
-      filteredData
-    );
-  };
-
   const handleDateSelect = (value) => {
     setDateFilter(value);
     setStatusFilter(null);
     setPage(1);
-    setIsDateDropOpen(false);
+    if (value !== 'custom') {
+      setIsDateDropOpen(false);
+    }
   };
 
   const handleStatusCard = (value) => {
     setStatusFilter((prev) => (prev === value ? null : value));
     setPage(1);
+  };
+
+  const applyCustomRange = () => {
+    if (!customStart || !customEnd) return;
+    setDateFilter('custom');
+    setIsDateDropOpen(false);
+    setPage(1);
+  };
+
+  const handleExportCsv = () => {
+    const columns = [
+      { key: 'cake', label: 'Cake' },
+      { key: 'qty', label: 'Quantity' },
+      { key: 'price', label: 'Price' },
+      { key: 'madeDate', label: 'Made Date' },
+      { key: 'madeTime', label: 'Made Time' },
+      { key: 'expiryDate', label: 'Expiry Date' },
+      { key: 'computedStatus', label: 'Status' },
+    ];
+
+    exportRowsToCsv(
+      `inventory-report-${new Date().toISOString().slice(0, 10)}.csv`,
+      columns,
+      filteredData
+    );
   };
 
   const handleAddStockSubmit = () => {
@@ -227,7 +243,7 @@ export default function InventoryOverview({
 
   useEffect(() => {
     setPage(1);
-  }, [dateFilter, searchTerm, statusFilter]);
+  }, [customEnd, customStart, dateFilter, searchTerm, statusFilter]);
 
   return (
     <>
@@ -263,6 +279,33 @@ export default function InventoryOverview({
                   </button>
                 ))}
 
+                <div className="pkinv-custom-range-section">
+                  <span className="pkinv-custom-range-title">Custom Range</span>
+                  <label className="pkinv-custom-label">From</label>
+                  <input
+                    type="date"
+                    className="pkinv-date-input"
+                    value={customStart}
+                    onChange={(event) => {
+                      setCustomStart(event.target.value);
+                      setDateFilter('custom');
+                    }}
+                  />
+                  <label className="pkinv-custom-label">To</label>
+                  <input
+                    type="date"
+                    className="pkinv-date-input"
+                    value={customEnd}
+                    min={customStart}
+                    onChange={(event) => {
+                      setCustomEnd(event.target.value);
+                      setDateFilter('custom');
+                    }}
+                  />
+                  <button type="button" className="pkinv-apply-btn" onClick={applyCustomRange} disabled={!customStart || !customEnd}>
+                    Apply
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -306,28 +349,26 @@ export default function InventoryOverview({
           ))}
         </div>
 
-        <section className="pkinv-table-container">
+        <div className="pkinv-table-container">
           <div className="pkinv-table-toolbar">
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span className="pkinv-table-section-title">Stock List</span>
-              <span className="pkinv-table-count-pill">
-                {filteredData.length} batch{filteredData.length !== 1 ? 'es' : ''}
-                {statusFilter && ` · ${statusFilter}`}
-              </span>
+            <div>
+              <span className="pkinv-table-section-title">Stock Items</span>
+              <span className="pkinv-table-count-pill">{filteredData.length} items</span>
             </div>
-
             <div className="pkinv-toolbar-actions">
               <input
                 type="text"
-                placeholder="Search cake / price / expiry"
+                className="pkinv-search-input"
+                placeholder="Search cakes..."
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                className="pkinv-search-input"
               />
+
               <button type="button" className="pkinv-action-btn pkinv-action-btn--primary" onClick={() => setIsAddStockOpen(true)}>
                 <Plus size={14} /> Add Stock
               </button>
-              <button type="button" className="pkinv-action-btn" onClick={exportInventoryReport}>
+
+              <button type="button" className="pkinv-action-btn" onClick={handleExportCsv}>
                 <Download size={14} /> Export CSV
               </button>
             </div>
@@ -337,44 +378,48 @@ export default function InventoryOverview({
             <table className="pkinv-table">
               <thead>
                 <tr>
-                  <th>Cake Name</th>
+                  <th>Cake</th>
                   <th>Quantity</th>
                   <th>Price</th>
-                  <th>Date Produced</th>
+                  <th>Made Date</th>
+                  <th>Made Time</th>
                   <th>Expiry Date</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {paged.length > 0 ? (
+                {paged.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="pkinv-no-data">
+                      No inventory items found
+                    </td>
+                  </tr>
+                ) : (
                   paged.map((item, index) => (
-                    <tr key={`${item.branch}-inv-${item.cake}-${index}`} className={item.computedStatus === 'Expired' ? 'row-expired' : ''}>
-                      <td className="pkinv-cake-name-text">{item.cake}</td>
-                      <td className={isLowStock(item) ? 'pkinv-qty-low' : ''}>{item.qty}</td>
-                      <td className="pkinv-price-text">P{Number(item.price || 0).toLocaleString()}</td>
-                      <td>{formatDate(item.madeDate)}</td>
-                      <td
-                        className={
-                          item.computedStatus === 'Expired'
-                            ? 'pkinv-expiry-overdue'
-                            : item.computedStatus === 'Near Expiry'
-                              ? 'pkinv-expiry-soon'
-                              : ''
-                        }
-                      >
-                        {formatDate(item.expiryDate)}
+                    <tr key={`${item.cake}-${item.madeDate}-${index}`} className={item.computedStatus === 'Expired' ? 'row-expired' : ''}>
+                      <td>
+                        <span className="pkinv-cake-name-text">{item.cake}</span>
                       </td>
                       <td>
-                        <span className={`pkinv-status-pill ${item.computedStatus.toLowerCase().replace(' ', '-')}`}>
+                        <span className={item.qty <= LOW_STOCK_QTY ? 'pkinv-qty-low' : ''}>{item.qty}</span>
+                      </td>
+                      <td>
+                        <span className="pkinv-price-text">₱{Number(item.price).toFixed(2)}</span>
+                      </td>
+                      <td>{formatDate(item.madeDate)}</td>
+                      <td>{item.madeTime || '-'}</td>
+                      <td>
+                        <span className={item.computedStatus === 'Near Expiry' ? 'pkinv-expiry-soon' : item.computedStatus === 'Expired' ? 'pkinv-expiry-overdue' : ''}>
+                          {formatDate(item.expiryDate)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`pkinv-status-pill ${item.computedStatus.toLowerCase().replace(/\s+/g, '-')}`}>
                           {item.computedStatus}
                         </span>
                       </td>
                     </tr>
                   ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="pkinv-no-data">No items match this filter.</td>
-                  </tr>
                 )}
               </tbody>
             </table>
@@ -382,35 +427,38 @@ export default function InventoryOverview({
 
           <div className="pkinv-pagination">
             <span className="pkinv-pagination-info">
-              {filteredData.length === 0
-                ? 'No results'
-                : `Showing ${(page - 1) * PER_PAGE + 1}-${Math.min(page * PER_PAGE, filteredData.length)} of ${filteredData.length}`}
+              Page {page} of {totalPages}
             </span>
             <div className="pkinv-pagination-btns">
-              <button className="pkinv-page-btn" disabled={page === 1} onClick={() => setPage((prev) => prev - 1)} type="button">
-                {'<'}
+              <button
+                className="pkinv-page-btn"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                type="button"
+              >
+                ‹
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                 <button
-                  key={p}
-                  className={`pkinv-page-btn ${page === p ? 'active' : ''}`}
-                  onClick={() => setPage(p)}
+                  key={pageNum}
+                  className={`pkinv-page-btn ${page === pageNum ? 'active' : ''}`}
+                  onClick={() => setPage(pageNum)}
                   type="button"
                 >
-                  {p}
+                  {pageNum}
                 </button>
               ))}
               <button
                 className="pkinv-page-btn"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                onClick={() => setPage((prev) => prev + 1)}
                 type="button"
               >
-                {'>'}
+                ›
               </button>
             </div>
           </div>
-        </section>
+        </div>
       </div>
 
       {isAddStockOpen && (
@@ -429,9 +477,9 @@ export default function InventoryOverview({
             <div className="add-cake-modal-body">
               <label>Cake Type</label>
               <select value={stockAddForm.cake} onChange={(event) => onChangeStockAdd('cake', event.target.value)}>
-                {cakeOptions.map((cakeName) => (
-                  <option key={`stock-add-modal-${cakeName}`} value={cakeName}>
-                    {cakeName}
+                {stockItems.map((item) => (
+                  <option key={`stock-add-modal-${item.cake}`} value={item.cake}>
+                    {item.cake}
                   </option>
                 ))}
               </select>
