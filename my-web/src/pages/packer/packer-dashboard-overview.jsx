@@ -1,13 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import {
   Truck,
   MessageSquare,
   Package,
-  CircleAlert,
   Clock3,
   CheckCircle2,
-  Filter,
+  CircleAlert,
 } from 'lucide-react';
+
+const LOW_STOCK_QTY = 5;
+const HIGH_STOCK_QTY = 16;
 
 export default function DashboardOverview({
   totals,
@@ -19,48 +21,6 @@ export default function DashboardOverview({
   onOpenDeliveryModal,
   onOpenMessages,
 }) {
-  const [isStockFilterOpen, setIsStockFilterOpen] = useState(false);
-  const [stockStatusFilter, setStockStatusFilter] = useState('All');
-  const [stockSortBy, setStockSortBy] = useState('None');
-  const [stockSearchTerm, setStockSearchTerm] = useState('');
-
-  const todayDate = new Date().toISOString().slice(0, 10);
-  const isExpired = (item) => item.status === 'Expired' || item.expiryDate < todayDate;
-
-  const filteredStockItems = useMemo(() => {
-    const filtered = stockItems.filter((item) => {
-      const matchesSearch =
-        item.cake.toLowerCase().includes(stockSearchTerm.toLowerCase()) ||
-        String(item.price).includes(stockSearchTerm) ||
-        item.expiryDate.includes(stockSearchTerm) ||
-        item.madeDate.includes(stockSearchTerm);
-      
-      if (stockStatusFilter === 'All') return matchesSearch;
-      if (stockStatusFilter === 'Expired') return matchesSearch && isExpired(item);
-      return matchesSearch && item.status === stockStatusFilter;
-    });
-
-    const sorted = [...filtered];
-    if (stockSortBy === 'Qty (Low to High)') {
-      sorted.sort((a, b) => a.qty - b.qty);
-    }
-    if (stockSortBy === 'Expiry (Soonest)') {
-      sorted.sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
-    }
-    if (stockSortBy === 'Price (High to Low)') {
-      sorted.sort((a, b) => b.price - a.price);
-    }
-
-    return sorted;
-  }, [stockItems, stockSortBy, stockStatusFilter, stockSearchTerm]);
-
-  const activeFilterCount = Number(stockStatusFilter !== 'All') + Number(stockSortBy !== 'None');
-
-  const resetStockFilters = () => {
-    setStockStatusFilter('All');
-    setStockSortBy('None');
-  };
-
   return (
     <>
       <div className="packer-heading-block">
@@ -117,51 +77,15 @@ export default function DashboardOverview({
           <h2>{totals.nearExpiryCount}</h2>
           <small>Needs fast dispatch</small>
         </article>
-
-              </div>
-
-      <div className="packer-alerts">
-        <div className="alert danger">
-          <CircleAlert size={16} />
-          <span>Red Velvet Cake - only 6 left in Main Branch</span>
-        </div>
-        <div className="alert warn">
-          <CircleAlert size={16} />
-          <span>Blueberry Cheesecake - expired in Main Branch (2 pcs)</span>
-        </div>
       </div>
+
 
       <section className="packer-table-card">
         <div className="packer-table-head">
           <h3>Main Branch Stock List</h3>
         </div>
-        {isStockFilterOpen && (
-          <div className="stock-filter-panel">
-            <label>
-              Status
-              <select value={stockStatusFilter} onChange={(event) => setStockStatusFilter(event.target.value)}>
-                <option value="All">All</option>
-                <option value="Fresh">Fresh</option>
-                <option value="Near Expiry">Near Expiry</option>
-                <option value="Expired">Expired</option>
-              </select>
-            </label>
-            <label>
-              Sort By
-              <select value={stockSortBy} onChange={(event) => setStockSortBy(event.target.value)}>
-                <option value="None">None</option>
-                <option value="Qty (Low to High)">Qty (Low to High)</option>
-                <option value="Expiry (Soonest)">Expiry (Soonest)</option>
-                <option value="Price (High to Low)">Price (High to Low)</option>
-              </select>
-            </label>
-            <button type="button" className="stock-filter-reset-btn" onClick={resetStockFilters}>
-              Reset
-            </button>
-          </div>
-        )}
-        <div className="packer-table-wrap">
-          <table>
+        <div className="packer-table-wrap dashboard-table-wrap">
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Cake Name</th>
@@ -173,16 +97,28 @@ export default function DashboardOverview({
               </tr>
             </thead>
             <tbody>
-              {filteredStockItems.length === 0 && (
+              {stockItems.length === 0 && (
                 <tr>
-                  <td colSpan={6}>No stock rows match the selected filters</td>
+                  <td colSpan={6} className="dashboard-empty-cell">
+                    <span className="dashboard-empty">
+                      <CircleAlert size={16} />
+                      No stock rows available
+                    </span>
+                  </td>
                 </tr>
               )}
-              {filteredStockItems.map((item) => (
-                <tr key={`${item.branch}-${item.cake}`}>
+              {stockItems.map((item) => (
+                <tr
+                  key={`${item.branch}-${item.cake}`}
+                  className={item.qty <= LOW_STOCK_QTY ? 'stock-row-low' : item.qty >= HIGH_STOCK_QTY ? 'stock-row-high' : ''}
+                >
                   <td>{item.cake}</td>
                   <td>PHP {item.price}</td>
-                  <td>{item.qty}</td>
+                  <td>
+                    <span className={`stock-qty-chip ${item.qty <= LOW_STOCK_QTY ? 'low' : item.qty >= HIGH_STOCK_QTY ? 'high' : 'normal'}`}>
+                      {item.qty}
+                    </span>
+                  </td>
                   <td>{item.madeDate}</td>
                   <td>{item.expiryDate}</td>
                   <td>
@@ -199,8 +135,8 @@ export default function DashboardOverview({
         <div className="packer-table-head">
           <h3>New Delivery Orders</h3>
         </div>
-        <div className="packer-table-wrap">
-          <table>
+        <div className="packer-table-wrap dashboard-table-wrap">
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Branch</th>
@@ -215,7 +151,12 @@ export default function DashboardOverview({
             <tbody>
               {pendingOrders.length === 0 && (
                 <tr>
-                  <td colSpan={7}>No pending delivery orders</td>
+                  <td colSpan={7} className="dashboard-empty-cell">
+                    <span className="dashboard-empty">
+                      <CircleAlert size={16} />
+                      No pending delivery orders
+                    </span>
+                  </td>
                 </tr>
               )}
               {pendingOrders.map((order, index) => (
@@ -240,8 +181,8 @@ export default function DashboardOverview({
         <div className="packer-table-head">
           <h3>Main Branch Custom Orders</h3>
         </div>
-        <div className="packer-table-wrap">
-          <table>
+        <div className="packer-table-wrap dashboard-table-wrap">
+          <table className="dashboard-table">
             <thead>
               <tr>
                 <th>Customer</th>
@@ -254,6 +195,16 @@ export default function DashboardOverview({
               </tr>
             </thead>
             <tbody>
+              {customOrders.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="dashboard-empty-cell">
+                    <span className="dashboard-empty">
+                      <CircleAlert size={16} />
+                      No custom orders found
+                    </span>
+                  </td>
+                </tr>
+              )}
               {customOrders.map((order) => (
                 <tr key={`${order.customer}-${order.pickup}`}>
                   <td>{order.customer}</td>
@@ -274,3 +225,4 @@ export default function DashboardOverview({
     </>
   );
 }
+

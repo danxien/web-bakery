@@ -1,9 +1,8 @@
 /* =============================================================
    salesOverview.css
-   STRUCTURAL MIRROR of reservationOverview.css / customOrders.css
-   Every spacing, radius, shadow, font-size, and color value is
-   kept consistent with the manager page system.
-   New addition: .so-breakdown-row — revenue category cards.
+   Mirrors deliveriesOverview.css structure.
+   New: date filter button + dropdown in header.
+   Removed: toolbar filter icon button + dropdown.
    ============================================================= */
 
 /* ── Animation ── */
@@ -19,9 +18,16 @@
   box-sizing: border-box;
 }
 
-/* ── Header ── */
+/* =========================================================
+   HEADER — title left, date filter button right
+   ========================================================= */
 .so-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .so-title {
@@ -38,7 +44,145 @@
 }
 
 /* =========================================================
-   SUMMARY CARDS — 3 static display cards (not clickable)
+   DATE FILTER — calendar icon button + dropdown in header
+   ========================================================= */
+.so-filter-dropdown-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.so-date-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 500;
+  /* Visible mid-grey at rest — readable on white without being harsh */
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+/* ✅ Calendar SVG inherits button color — shifts #444 → #111 on hover/open */
+.so-date-filter-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+.so-date-filter-btn:hover,
+.so-date-filter-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.so-date-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
+}
+
+.so-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+.so-dropdown-item:hover    { background: #fcf6c4; }
+.so-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+
+.so-custom-range-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.so-custom-range-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.so-custom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.so-date-input {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff9c4;
+}
+.so-date-input:focus { border-color: #f7dd30; }
+
+/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
+.so-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) saturate(100%) opacity(0.65);
+  border-radius: 6px;
+  padding: 4px;
+  background-color: transparent;
+  transition: filter 0.15s, background-color 0.15s;
+}
+.so-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.30);
+}
+.so-date-input::-webkit-calendar-picker-indicator:active {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.55);
+}
+
+.so-apply-btn {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f7dd30;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.so-apply-btn:hover    { filter: brightness(0.95); }
+.so-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   SUMMARY CARDS — 3 static display cards
    ========================================================= */
 .so-metrics-row {
   display: flex;
@@ -57,7 +201,6 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
-  /* Static display — no cursor, no hover, no transition */
 }
 
 .so-card-top {
@@ -97,7 +240,6 @@
 
 /* =========================================================
    REVENUE BREAKDOWN CARDS — clickable, filter table on click
-   Three cards: Delivery / Reservation / Custom Order
    ========================================================= */
 .so-breakdown-row {
   display: flex;
@@ -116,7 +258,6 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  /* Clickable — filters table */
   border: 2px solid transparent;
   text-align: left;
   cursor: pointer;
@@ -143,11 +284,10 @@
   color: #555;
 }
 
-/* Breakdown icon colours — one per order type */
-.so-breakdown-icon          { flex-shrink: 0; }
-.so-icon-delivery           { color: #6366f1; }
-.so-icon-reservation        { color: #22c55e; }
-.so-icon-custom-order       { color: #f59e0b; }
+.so-breakdown-icon    { flex-shrink: 0; }
+.so-icon-delivery     { color: #6366f1; }
+.so-icon-reservation  { color: #22c55e; }
+.so-icon-custom-order { color: #f59e0b; }
 
 .so-breakdown-amount {
   font-family: Georgia, serif;
@@ -163,12 +303,12 @@
 }
 
 /* =========================================================
-   TABLE CONTAINER — sidebar-safe flex column
+   TABLE CONTAINER
    ========================================================= */
 .so-table-container {
   background: #fff;
   border-radius: 12px;
-  overflow: visible;              /* allow dropdown to escape */
+  overflow: visible;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -178,15 +318,12 @@
   box-sizing: border-box;
 }
 
-/* Toolbar */
 .so-table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px 0;
   margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -206,61 +343,8 @@
   margin-left: 8px;
 }
 
-.so-filter-icon-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.so-filter-icon-btn:hover,
-.so-filter-icon-btn.open {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
-
-.so-filter-dropdown-wrapper {
-  position: relative;
-}
-
-.so-filter-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  z-index: 10000;
-  min-width: 168px;
-}
-
-.so-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 9px 16px;
-  text-align: left;
-  font-size: 0.85rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.12s;
-}
-.so-dropdown-item:hover    { background: #fcf6c4; }
-.so-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
-
 /* =========================================================
-   TABLE SCROLL WRAPPER — sidebar-safe
+   TABLE SCROLL WRAPPER
    ========================================================= */
 .so-table-scroll-wrapper {
   flex: 1;
@@ -272,16 +356,12 @@
 }
 .so-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
 .so-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
-.so-table-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 3px;
-}
+.so-table-scroll-wrapper::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 .so-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
-/* ── Table ── */
 .so-sales-table {
   width: 100%;
-  min-width: 820px;               /* prevents column crush; wrapper handles scroll */
+  min-width: 820px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -316,7 +396,7 @@
 .so-cake-name-text { font-weight: 500; }
 .so-amount-text    { font-weight: 600; color: #22c55e; }
 
-/* ── Order Type pills — one colour per source ── */
+/* ── Order Type pills ── */
 .so-type-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -325,17 +405,11 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.so-type-pill.delivery     { background: #e0e7ff; color: #3730a3; }
+.so-type-pill.reservation  { background: #d1fae5; color: #065f46; }
+.so-type-pill.custom-order { background: #fef9c3; color: #854d0e; }
 
-.so-type-pill.delivery      { background: #e0e7ff; color: #3730a3; }
-.so-type-pill.reservation   { background: #d1fae5; color: #065f46; }
-.so-type-pill.custom-order  { background: #fef9c3; color: #854d0e; }
-
-/* No data */
-.so-no-data {
-  text-align: center;
-  padding: 40px !important;
-  color: #888;
-}
+.so-no-data { text-align: center; padding: 40px !important; color: #888; }
 
 /* ── Pagination ── */
 .so-pagination {
@@ -377,4 +451,6 @@
 @media (max-width: 768px) {
   .so-metrics-row   { flex-direction: column; }
   .so-breakdown-row { flex-direction: column; }
+  .so-header        { flex-direction: column; align-items: flex-start; }
+  .so-date-dropdown { right: auto; left: 0; }
 }

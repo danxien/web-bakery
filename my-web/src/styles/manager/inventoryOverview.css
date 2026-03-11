@@ -1,8 +1,10 @@
 /* =============================================================
    inventoryOverview.css
-   Mirrors the structure of customOrders.css / reservationOverview.css.
+   Mirrors deliveriesOverview.css structure exactly.
    All spacing, radius, shadow, font-size, and color values
    are kept consistent across manager pages.
+   New: date filter button + status cards.
+   Removed: alerts section, toolbar filter dropdown.
    ============================================================= */
 
 /* ── Animation ── */
@@ -13,15 +15,21 @@
 
 .inventory-page-container {
   animation: fadeIn 0.3s ease;
-  /* Sidebar-safe: never overflow the content area */
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* ── Header ── */
+/* =========================================================
+   HEADER — title left, date filter button right
+   ========================================================= */
 .inventory-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .inventory-title {
@@ -36,6 +44,150 @@
   color: #888;
   margin: 5px 0 0 0;
 }
+
+/* =========================================================
+   DATE FILTER — calendar icon button + dropdown in header
+   ========================================================= */
+.inv-filter-dropdown-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.inv-date-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 500;
+  /* ✅ Use a visible mid-grey at rest so the icon/text read clearly
+        on the white button background without being too heavy. */
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+/* ✅ Calendar SVG: inherit the button's color so it automatically
+      shifts from #444 (rest) → #111 (hover/open) via currentColor. */
+.inv-date-filter-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+.inv-date-filter-btn:hover,
+.inv-date-filter-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.inv-date-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
+}
+
+.inv-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: background 0.12s;
+}
+.inv-dropdown-item:hover    { background: #fcf6c4; }
+.inv-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+
+.inv-custom-range-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.inv-custom-range-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.inv-custom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inv-date-input {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff9c4;
+}
+.inv-date-input:focus { border-color: #f7dd30; }
+
+/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
+.inv-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  /* Dark icon at 65% opacity — clearly visible on #fff9c4 yellow */
+  filter: brightness(0) saturate(100%) opacity(0.65);
+  border-radius: 6px;
+  padding: 4px;
+  /* Lock background so the browser can never fall back to its default gray */
+  background-color: transparent;
+  transition: filter 0.15s, background-color 0.15s;
+}
+/* Hover — full black icon + soft amber tint */
+.inv-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.30);
+}
+/* Active/clicked — deeper amber highlight, never gray */
+.inv-date-input::-webkit-calendar-picker-indicator:active {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.55);
+}
+
+.inv-apply-btn {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f7dd30;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.inv-apply-btn:hover    { filter: brightness(0.95); }
+.inv-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* =========================================================
    METRIC CARDS — static display, NOT clickable
@@ -57,7 +209,6 @@
   flex-direction: column;
   gap: 10px;
   min-width: 0;
-  /* No cursor, no hover, no transition — display-only */
 }
 
 .card-top {
@@ -96,56 +247,65 @@
 }
 
 /* =========================================================
-   ALERTS — white card wrapper + colored bar inside
+   STATUS CARDS — Clickable Filters
    ========================================================= */
-.alerts-container {
+.inv-status-cards-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.inv-status-card {
+  flex: 1 1 100px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.alert-wrapper {
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 12px;
   background: #fff;
+  border: 2px solid transparent;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  padding: 10px 12px;
-}
-
-.alert-row {
-  display: flex;
-  align-items: flex-start;   /* top-align icon with multi-line text */
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-left: 4px solid transparent;
-  line-height: 1.5;
-  /* Button reset — visually identical to the old <div>, now interactive */
-  width: 100%;
-  background: transparent;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  text-align: left;
   cursor: pointer;
-  transition: filter 0.13s;
+  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
+  text-align: center;
+  min-width: 0;
 }
-.alert-row:hover     { filter: brightness(0.95); }
-.alert-row.is-active { filter: brightness(0.90); }
+.inv-status-card:hover { filter: brightness(0.97); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10); }
 
-.alert-row.critical {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-left-color: #ef4444;
+.inv-status-card-count {
+  font-family: Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: bold;
+  line-height: 1;
 }
 
-.alert-row.warning {
-  background: #fef9c3;
-  color: #854d0e;
-  border-left-color: #eab308;
+.inv-status-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
+
+/* ── Status Card Variants ── */
+.inv-status-card--fresh .inv-status-card-count { color: #28a745; }
+.inv-status-card--fresh .inv-status-card-label { color: #28a745; }
+.inv-status-card--fresh.is-active             { border-color: #28a745; background: #d4edda; }
+
+.inv-status-card--near-expiry .inv-status-card-count { color: #ffc107; }
+.inv-status-card--near-expiry .inv-status-card-label { color: #ffc107; }
+.inv-status-card--near-expiry.is-active              { border-color: #ffc107; background: #fff8e1; }
+
+.inv-status-card--expired .inv-status-card-count { color: #dc3545; }
+.inv-status-card--expired .inv-status-card-label { color: #dc3545; }
+.inv-status-card--expired.is-active             { border-color: #dc3545; background: #fde8ea; }
+
+.inv-status-card--low-stock .inv-status-card-count { color: #fd7e14; }
+.inv-status-card--low-stock .inv-status-card-label { color: #fd7e14; }
+.inv-status-card--low-stock.is-active              { border-color: #fd7e14; background: #fff3e0; }
 
 /* =========================================================
    TABLE CONTAINER — sidebar-safe flex column
@@ -153,7 +313,7 @@
 .table-container {
   background: #fff;
   border-radius: 12px;
-  overflow: visible;              /* allow dropdown to escape */
+  overflow: visible;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -163,15 +323,12 @@
   box-sizing: border-box;
 }
 
-/* Toolbar */
 .table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px 0;
   margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -182,7 +339,6 @@
   color: #222;
 }
 
-/* Count pill — sits beside title */
 .inventory-count-pill {
   font-size: 0.78rem;
   color: #999;
@@ -191,63 +347,6 @@
   border-radius: 20px;
   margin-left: 8px;
 }
-
-/* Filter button */
-.filter-icon-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.filter-icon-btn:hover,
-.filter-icon-btn.open {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
-
-/* Dropdown */
-.filter-dropdown-wrapper {
-  position: relative;
-}
-
-.filter-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  z-index: 10000;
-  min-width: 148px;
-}
-
-.dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 9px 16px;
-  text-align: left;
-  font-size: 0.85rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.12s;
-}
-
-.dropdown-item:hover    { background: #fcf6c4; }
-.dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
 
 /* =========================================================
    TABLE SCROLL WRAPPER — sidebar-safe
@@ -262,16 +361,13 @@
 }
 .inventory-table-scroll::-webkit-scrollbar       { width: 6px; height: 6px; }
 .inventory-table-scroll::-webkit-scrollbar-track { background: transparent; }
-.inventory-table-scroll::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 3px;
-}
+.inventory-table-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 .inventory-table-scroll::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
 /* ── Table ── */
 .inventory-table {
   width: 100%;
-  min-width: 760px;              /* prevents column crush; wrapper handles scroll */
+  min-width: 760px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -299,40 +395,20 @@
   vertical-align: middle;
 }
 
-.inventory-table tbody tr:last-child td {
-  border-bottom: none;
-}
+.inventory-table tbody tr:last-child td { border-bottom: none; }
+.inventory-table tbody tr:hover         { background-color: #fffde8; }
 
-.inventory-table tbody tr:hover {
-  background-color: #fffde8;
-}
-
-/* Expired row — subtle muted tint so manager can spot at a glance */
-.inventory-table tbody tr.row-expired {
-  background-color: #fef2f2;
-}
-.inventory-table tbody tr.row-expired:hover {
-  background-color: #fee2e2;
-}
+/* Expired row — subtle muted tint */
+.inventory-table tbody tr.row-expired       { background-color: #fde8ea; }
+.inventory-table tbody tr.row-expired:hover { background-color: #f8d0d4; }
 
 /* ── Cell helpers ── */
 .cake-name-text { font-weight: 500; }
+.qty-low        { color: #fd7e14; font-weight: 700; }
+.price-text     { font-weight: 600; color: #22c55e; }
 
-/* Quantity — red + bold when at or below low stock threshold */
-.qty-low {
-  color: #dc2626;
-  font-weight: 700;
-}
-
-/* Price — green, matches revenue styling across pages */
-.price-text {
-  font-weight: 600;
-  color: #22c55e;
-}
-
-/* Expiry date — colour-coded by urgency */
-.expiry-soon    { color: #854d0e; font-weight: 600; }
-.expiry-overdue { color: #b91c1c; font-weight: 700; }
+.expiry-soon    { color: #ffc107; font-weight: 600; }
+.expiry-overdue { color: #dc3545; font-weight: 700; }
 
 /* ── Status pills ── */
 .status-pill {
@@ -343,20 +419,14 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.status-pill.fresh       { background: #d4edda; color: #28a745; }
+.status-pill.near-expiry { background: #fff8e1; color: #ffc107; }
+.status-pill.expired     { background: #fde8ea; color: #dc3545; }
 
-.status-pill.fresh       { background: #dcfce7; color: #166534; }
-.status-pill.near-expiry { background: #fef9c3; color: #854d0e; }
-.status-pill.expired     { background: #fee2e2; color: #991b1b; }
-
-/* No data */
-.no-data {
-  text-align: center;
-  padding: 40px !important;
-  color: #888;
-}
+.no-data { text-align: center; padding: 40px !important; color: #888; }
 
 /* =========================================================
-   PAGINATION — mirrors .ro-pagination from reservationOverview.css
+   PAGINATION
    ========================================================= */
 .inventory-pagination {
   display: flex;
@@ -369,15 +439,8 @@
   flex-shrink: 0;
 }
 
-.inventory-pagination-info {
-  font-size: 0.78rem;
-  color: #999;
-}
-
-.inventory-pagination-btns {
-  display: flex;
-  gap: 4px;
-}
+.inventory-pagination-info { font-size: 0.78rem; color: #999; }
+.inventory-pagination-btns { display: flex; gap: 4px; }
 
 .inventory-page-btn {
   min-width: 32px;
@@ -394,7 +457,6 @@
   justify-content: center;
   padding: 0 8px;
 }
-
 .inventory-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
 .inventory-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
 .inventory-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
@@ -403,5 +465,10 @@
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .metrics-row { flex-direction: column; }
+  .metrics-row             { flex-direction: column; }
+  .inv-status-cards-row    { gap: 8px; }
+  .inv-status-card         { flex: 1 1 80px; padding: 10px 8px; }
+  .inv-status-card-count   { font-size: 1.3rem; }
+  .inventory-header        { flex-direction: column; align-items: flex-start; }
+  .inv-date-dropdown       { right: auto; left: 0; }
 }

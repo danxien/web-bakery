@@ -1,3 +1,136 @@
+.pkdo-page-container {
+  animation: pkdo-fadeIn 0.3s ease;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes pkdo-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pkdo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.pkdo-title {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.pkdo-subtitle {
+  color: #888;
+  margin: 5px 0 0 0;
+  font-size: 1rem;
+}
+
+.pkdo-metrics-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.pkdo-metric-card {
+  flex: 1 1 200px;
+  background: #ffffff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid #ececec;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pkdo-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pkdo-metric-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.pkdo-blue-icon { color: #6366f1; }
+.pkdo-green-icon { color: #22c55e; }
+.pkdo-yellow-icon { color: #eab308; }
+
+.pkdo-card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pkdo-metric-value {
+  font-family: Georgia, serif;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #111;
+  line-height: 1.1;
+}
+
+.pkdo-metric-subtext {
+  font-size: 0.88rem;
+  color: #888;
+}
+
+.pkdo-alerts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pkdo-alert-wrapper {
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px 16px;
+  border: 1px solid #f1f1f1;
+}
+
+.pkdo-alert-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-left: 4px solid transparent;
+}
+
+.pkdo-alert-row.warning {
+  background: #eee8b8;
+  color: #8a4f07;
+  border-left-color: #e2ac00;
+}
+
+.pkdo-alert-row.info {
+  background: #d7deea;
+  color: #1b46c2;
+  border-left-color: #3b82f6;
+}
+
+.pkdo-alert-row.critical {
+  background: #efd6d9;
+  color: #bf1b1b;
+  border-left-color: #ef4444;
+}
+
 .pkdo-table-container {
   background: #fff;
   border-radius: 12px;
@@ -50,6 +183,49 @@
 
 .pkdo-filter-dropdown-wrapper {
   position: relative;
+  flex-shrink: 0;
+}
+
+.pkdo-date-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: #444;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.pkdo-date-filter-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+.pkdo-date-filter-btn:hover,
+.pkdo-date-filter-btn.open {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.pkdo-date-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
 }
 
 .pkdo-filter-icon-btn {
@@ -110,6 +286,153 @@
   color: #111;
 }
 
+.pkdo-custom-range-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.pkdo-custom-range-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.pkdo-custom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pkdo-date-input {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff9c4;
+}
+
+.pkdo-date-input:focus {
+  border-color: #f7dd30;
+}
+
+.pkdo-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) saturate(100%) opacity(0.65);
+  border-radius: 6px;
+  padding: 4px;
+  background-color: transparent;
+  transition: filter 0.15s, background-color 0.15s;
+}
+
+.pkdo-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.3);
+}
+
+.pkdo-date-input::-webkit-calendar-picker-indicator:active {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.55);
+}
+
+.pkdo-apply-btn {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f7dd30;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.pkdo-apply-btn:hover {
+  filter: brightness(0.95);
+}
+
+.pkdo-apply-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pkdo-status-cards-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.pkdo-status-card {
+  flex: 1 1 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 12px;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
+  text-align: center;
+  min-width: 0;
+}
+
+.pkdo-status-card:hover {
+  filter: brightness(0.97);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
+}
+
+.pkdo-status-card-count {
+  font-family: Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.pkdo-status-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.pkdo-status-card--pending .pkdo-status-card-count { color: #ffc107; }
+.pkdo-status-card--pending .pkdo-status-card-label { color: #ffc107; }
+.pkdo-status-card--pending.is-active { border-color: #ffc107; background: #fff8e1; }
+
+.pkdo-status-card--out-for-delivery .pkdo-status-card-count { color: #17a2b8; }
+.pkdo-status-card--out-for-delivery .pkdo-status-card-label { color: #17a2b8; }
+.pkdo-status-card--out-for-delivery.is-active { border-color: #17a2b8; background: #e0f7fa; }
+
+.pkdo-status-card--delivered .pkdo-status-card-count { color: #28a745; }
+.pkdo-status-card--delivered .pkdo-status-card-label { color: #28a745; }
+.pkdo-status-card--delivered.is-active { border-color: #28a745; background: #d4edda; }
+
+.pkdo-status-card--overdue .pkdo-status-card-count { color: #fd7e14; }
+.pkdo-status-card--overdue .pkdo-status-card-label { color: #fd7e14; }
+.pkdo-status-card--overdue.is-active { border-color: #fd7e14; background: #fff3e0; }
+
+.pkdo-status-card--cancelled .pkdo-status-card-count { color: #dc3545; }
+.pkdo-status-card--cancelled .pkdo-status-card-label { color: #dc3545; }
+.pkdo-status-card--cancelled.is-active { border-color: #dc3545; background: #fde8ea; }
+
 .pkdo-table-scroll-wrapper {
   flex: 1;
   overflow-y: auto;
@@ -139,7 +462,7 @@
 
 .pkdo-deliveries-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 960px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -151,20 +474,49 @@
 }
 
 .pkdo-deliveries-table th {
-  padding: 18px 20px;
+  padding: 14px 6px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
   font-weight: bold;
   font-family: Georgia, serif;
   color: #000;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .pkdo-deliveries-table td {
-  padding: 18px 20px;
+  padding: 14px 6px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
+}
+
+.pkdo-deliveries-table th:first-child,
+.pkdo-deliveries-table td:first-child {
+  padding-left: 20px;
+}
+
+.pkdo-deliveries-table td:last-child {
+  padding-right: 15px;
+}
+
+.pkdo-deliveries-table thead th:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 4;
+  background: #fff;
+  box-shadow: -8px 0 10px -10px rgba(0, 0, 0, 0.35);
+}
+
+.pkdo-deliveries-table tbody td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: #fff;
+  box-shadow: -8px 0 10px -10px rgba(0, 0, 0, 0.25);
+}
+
+.pkdo-deliveries-table tbody tr:hover td:last-child {
+  background: #fffde8;
 }
 
 .pkdo-deliveries-table tbody tr:last-child td {
@@ -177,6 +529,24 @@
 
 .pkdo-cake-name-text {
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pkdo-order-type {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pkdo-order-type.custom {
+  background: #ede9fe;
+  color: #5b21b6;
 }
 
 .pkdo-price-text {
@@ -191,7 +561,7 @@
 }
 
 .pkdo-address-text {
-  max-width: 200px;
+  max-width: 135px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -350,4 +720,74 @@
 .pkdo-page-btn:disabled {
   opacity: 0.38;
   cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .pkdo-metrics-row {
+    flex-direction: column;
+  }
+
+  .pkdo-status-cards-row {
+    gap: 8px;
+  }
+
+  .pkdo-status-card {
+    flex: 1 1 80px;
+    padding: 10px 8px;
+  }
+
+  .pkdo-status-card-count {
+    font-size: 1.3rem;
+  }
+
+  .pkdo-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .pkdo-date-dropdown {
+    left: 0;
+    right: auto;
+  }
+}
+
+.pkdo-alert-row {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: filter 0.13s;
+}
+
+.pkdo-alert-row:hover {
+  filter: brightness(0.97);
+}
+
+.pkdo-alert-row.active {
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.12);
+}
+
+.pkdo-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .pkdo-toolbar-actions {
+    width: 100%;
+  }
+
+  .pkdo-toolbar-actions .pkdo-filter-icon-btn,
+  .pkdo-date-filter-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pkdo-date-dropdown {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
 }

@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import PackerSidebar from './packer-sidebarmenu';
 import DashboardOverview from './packer-dashboard-overview';
 import InventoryOverview from './packer-inventory-overview';
 import DeliveriesOverview from './packer-deliveries-overview';
+import CustomOrdersOverview from './packer-custom-orders-overview';
 import PackerMessages from './packer-messages';
 import CakePrices from './packer-cake-prices';
 import PackerSettings from './packer-settings';
@@ -20,10 +21,37 @@ import '../../styles/packer/packer-sidebarmenu.css';
 import '../../styles/packer/packer-dashboard-overview.css';
 import '../../styles/packer/packer-inventory-overview.css';
 import '../../styles/packer/packer-deliveries-overview.css';
+import '../../styles/packer/packer-custom-orders-overview.css';
 import '../../styles/packer/packer-messages.css';
 import '../../styles/packer/packer-modals.css';
 import '../../styles/packer/packer-cake-prices.css';
 import '../../styles/packer/packer-settings.css';
+
+const getCurrentTimeValue = () => {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const toDateValue = (value) => {
+  if (!value || value === '-') return null;
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const computeStockStatus = (expiryDate) => {
+  const expiry = toDateValue(expiryDate);
+  if (!expiry) return 'Fresh';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return 'Expired';
+  if (diffDays <= 2) return 'Near Expiry';
+  return 'Fresh';
+};
 
 export default function PackerLandingPage({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -31,6 +59,7 @@ export default function PackerLandingPage({ onLogout }) {
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [stockItems, setStockItems] = useState(initialBranchStock);
   const [deliveryItems, setDeliveryItems] = useState(initialDeliveryToday);
+  const [customOrderItems, setCustomOrderItems] = useState(customOrders);
   const [messages, setMessages] = useState(
     inboxMessages.map((msg, index) => ({
       ...msg,
@@ -45,58 +74,39 @@ export default function PackerLandingPage({ onLogout }) {
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({
     branch: 'Main Branch',
+    orderType: 'regular',
     customer: '',
     contact: '',
     address: '',
     cake: initialBranchStock[0]?.cake || '',
+    customCakeName: '',
+    customSize: '',
+    customFlavor: '',
+    customTheme: '',
+    dedicationMessage: '',
     price: initialBranchStock[0]?.price || 0,
     qty: '',
     orderDate: new Date().toISOString().slice(0, 10),
     pickupDate: '',
+    deliveryTime: '',
     specialInstructions: '',
   });
   const [stockAddForm, setStockAddForm] = useState({
     cake: initialBranchStock[0]?.cake || '',
     qty: '',
     madeDate: new Date().toISOString().slice(0, 10),
-    madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    madeTime: getCurrentTimeValue(),
     expiryDate: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
 
-  useEffect(() => {
-    const root = document.getElementById('root');
-    if (!root) return undefined;
-
-    const prevMaxWidth = root.style.maxWidth;
-    const prevWidth = root.style.width;
-    const prevMinHeight = root.style.minHeight;
-    const prevMargin = root.style.margin;
-    const prevPadding = root.style.padding;
-    const prevTextAlign = root.style.textAlign;
-
-    root.style.maxWidth = 'none';
-    root.style.width = '100vw';
-    root.style.minHeight = '100vh';
-    root.style.margin = '0';
-    root.style.padding = '0';
-    root.style.textAlign = 'left';
-
-    return () => {
-      root.style.maxWidth = prevMaxWidth;
-      root.style.width = prevWidth;
-      root.style.minHeight = prevMinHeight;
-      root.style.margin = prevMargin;
-      root.style.padding = prevPadding;
-      root.style.textAlign = prevTextAlign;
-    };
-  }, []);
-
   const totals = useMemo(() => {
     const totalCakes = stockItems.reduce((sum, row) => sum + row.qty, 0);
-    const freshCount = stockItems.filter((row) => row.status === 'Fresh').reduce((sum, row) => sum + row.qty, 0);
+    const freshCount = stockItems
+      .filter((row) => computeStockStatus(row.expiryDate) === 'Fresh')
+      .reduce((sum, row) => sum + row.qty, 0);
     const nearExpiryCount = stockItems
-      .filter((row) => row.status === 'Near Expiry')
+      .filter((row) => computeStockStatus(row.expiryDate) === 'Near Expiry')
       .reduce((sum, row) => sum + row.qty, 0);
     
     const today = new Date().toISOString().slice(0, 10);
@@ -108,15 +118,39 @@ export default function PackerLandingPage({ onLogout }) {
       .filter((row) => row.status === 'Delivered' && row.orderDate === today)
       .reduce((sum, row) => sum + (row.price * row.qty), 0);
     
-    const customOrderCount = customOrders.length;
+    const customOrderCount = customOrderItems.length;
 
     return { totalCakes, freshCount, nearExpiryCount, deliveredToday, revenueToday, customOrderCount };
-  }, [stockItems, deliveryItems]);
+  }, [stockItems, deliveryItems, customOrderItems]);
 
   const unreadCount = messages.filter((msg) => msg.unread).length;
   const pendingOrders = deliveryItems.filter(
     (row) => row.status === 'Pending' || row.status === 'Out for Delivery' || row.status === 'In Transit'
   );
+
+  const handleAdvanceCustomOrderStatus = (rowIndex) => {
+    const target = customOrderItems[rowIndex];
+    if (!target || target.status === 'Picked Up' || target.status === 'Cancelled') return;
+
+    if (target.status === 'Pending') {
+      setCustomOrderItems((prev) =>
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Ready' } : row))
+      );
+      return;
+    }
+
+    if (target.status === 'Ready' || target.status === 'Overdue') {
+      setCustomOrderItems((prev) =>
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Picked Up' } : row))
+      );
+    }
+  };
+
+  const handleCancelCustomOrderStatus = (rowIndex) => {
+    setCustomOrderItems((prev) =>
+      prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Cancelled' } : row))
+    );
+  };
 
   const handleAddCake = () => {
     const name = newCakeName.trim();
@@ -213,35 +247,63 @@ export default function PackerLandingPage({ onLogout }) {
 
   const handleAddStockQty = () => {
     const qtyToAdd = Number(stockAddForm.qty);
-    if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
+    if (
+      !stockAddForm.cake ||
+      Number.isNaN(qtyToAdd) ||
+      qtyToAdd <= 0 ||
+      !stockAddForm.madeDate ||
+      !stockAddForm.madeTime ||
+      !stockAddForm.expiryDate
+    ) return;
 
-    const now = new Date();
-    const madeTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    setStockItems((prev) =>
-      prev.map((item) =>
-        item.cake === stockAddForm.cake
-          ? {
-              ...item,
-              qty: item.qty + qtyToAdd,
-              madeDate: stockAddForm.madeDate,
-              time: stockAddForm.madeTime || madeTime,
-              expiryDate: stockAddForm.expiryDate,
-            }
-          : item
-      )
-    );
+    setStockItems((prev) => {
+      const matchedCake = prev.find((item) => item.cake === stockAddForm.cake);
+      return [
+        ...prev,
+        {
+          branch: 'Main Branch',
+          cake: stockAddForm.cake,
+          price: matchedCake?.price || 0,
+          qty: qtyToAdd,
+          madeDate: stockAddForm.madeDate,
+          time: stockAddForm.madeTime,
+          expiryDate: stockAddForm.expiryDate,
+          status: computeStockStatus(stockAddForm.expiryDate),
+        },
+      ];
+    });
 
     setStockAddForm((prev) => ({ 
       ...prev, 
       qty: '',
       madeDate: new Date().toISOString().slice(0, 10),
-      madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      madeTime: getCurrentTimeValue(),
       expiryDate: '',
     }));
   };
 
   const handleDeliveryInput = (key, value) => {
+    if (key === 'orderType') {
+      if (value === 'custom') {
+        setDeliveryForm((prev) => ({
+          ...prev,
+          orderType: 'custom',
+          customCakeName: prev.customCakeName || prev.cake || '',
+        }));
+        return;
+      }
+
+      const fallbackCake = stockItems[0]?.cake || '';
+      const fallbackPrice = stockItems.find((item) => item.cake === fallbackCake)?.price || 0;
+      setDeliveryForm((prev) => ({
+        ...prev,
+        orderType: 'regular',
+        cake: fallbackCake,
+        price: fallbackPrice,
+      }));
+      return;
+    }
+
     if (key === 'cake') {
       const matchedCake = stockItems.find((item) => item.cake === value);
       setDeliveryForm((prev) => ({
@@ -257,10 +319,18 @@ export default function PackerLandingPage({ onLogout }) {
   const handleCreateDelivery = () => {
     const qty = Number(deliveryForm.qty);
     const price = Number(deliveryForm.price);
-    if (!deliveryForm.cake || Number.isNaN(qty) || qty <= 0 || Number.isNaN(price) || price <= 0) return;
-
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isCustom = deliveryForm.orderType === 'custom';
+    const normalizedCake = isCustom
+      ? (deliveryForm.customCakeName.trim() || 'Custom Cake Order')
+      : deliveryForm.cake;
+    if (
+      !normalizedCake ||
+      Number.isNaN(qty) ||
+      qty <= 0 ||
+      Number.isNaN(price) ||
+      price <= 0 ||
+      !deliveryForm.deliveryTime
+    ) return;
 
     setDeliveryItems((prev) => [
       ...prev,
@@ -269,13 +339,18 @@ export default function PackerLandingPage({ onLogout }) {
         customer: deliveryForm.customer.trim() || 'Walk-in Customer',
         contact: deliveryForm.contact.trim() || '-',
         address: deliveryForm.address.trim() || '-',
-        cake: deliveryForm.cake,
+        orderType: deliveryForm.orderType || 'regular',
+        cake: normalizedCake,
         price,
         qty,
-        time,
+        time: deliveryForm.deliveryTime,
         status: 'Pending',
         orderDate: deliveryForm.orderDate,
         pickupDate: deliveryForm.pickupDate || '-',
+        customSize: deliveryForm.customSize?.trim() || '-',
+        customFlavor: deliveryForm.customFlavor?.trim() || '-',
+        customTheme: deliveryForm.customTheme?.trim() || '-',
+        dedicationMessage: deliveryForm.dedicationMessage?.trim() || '-',
         specialInstructions: deliveryForm.specialInstructions.trim() || '-',
       },
     ]);
@@ -284,14 +359,21 @@ export default function PackerLandingPage({ onLogout }) {
     setIsDeliveryModalOpen(false);
     setDeliveryForm({
       branch: 'Main Branch',
+      orderType: 'regular',
       customer: '',
       contact: '',
       address: '',
       cake: stockItems[0]?.cake || '',
+      customCakeName: '',
+      customSize: '',
+      customFlavor: '',
+      customTheme: '',
+      dedicationMessage: '',
       price: stockItems[0]?.price || 0,
       qty: '',
       orderDate: new Date().toISOString().slice(0, 10),
       pickupDate: '',
+      deliveryTime: '',
       specialInstructions: '',
     });
   };
@@ -309,8 +391,21 @@ export default function PackerLandingPage({ onLogout }) {
     }
 
     if (targetDelivery.status === 'Out for Delivery' || targetDelivery.status === 'In Transit') {
-      const stockMatch = stockItems.find((item) => item.cake === targetDelivery.cake);
-      const availableQty = stockMatch?.qty || 0;
+      if (targetDelivery.orderType === 'custom') {
+        setDeliveryItems((prev) =>
+          prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Delivered' } : row))
+        );
+        setDeliveryWarning('');
+        return;
+      }
+
+      const eligibleBatches = stockItems.filter(
+        (item) =>
+          item.cake === targetDelivery.cake &&
+          Number(item.qty || 0) > 0 &&
+          computeStockStatus(item.expiryDate) !== 'Expired'
+      );
+      const availableQty = eligibleBatches.reduce((sum, item) => sum + Number(item.qty || 0), 0);
 
       if (availableQty < targetDelivery.qty) {
         setDeliveryWarning(
@@ -320,22 +415,48 @@ export default function PackerLandingPage({ onLogout }) {
         return;
       }
 
-      setStockItems((prev) =>
-        prev.map((item) =>
-          item.cake === targetDelivery.cake
-            ? {
-                ...item,
-                qty: item.qty - targetDelivery.qty,
-              }
-            : item
-        )
-      );
+      setStockItems((prev) => {
+        const next = prev.map((item) => ({ ...item }));
+        let remaining = Number(targetDelivery.qty || 0);
+
+        const sortedBatchIndexes = next
+          .map((item, index) => ({ item, index }))
+          .filter(
+            ({ item }) =>
+              item.cake === targetDelivery.cake &&
+              Number(item.qty || 0) > 0 &&
+              computeStockStatus(item.expiryDate) !== 'Expired'
+          )
+          .sort((a, b) => {
+            const aDate = toDateValue(a.item.expiryDate)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+            const bDate = toDateValue(b.item.expiryDate)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+            return aDate - bDate;
+          })
+          .map(({ index }) => index);
+
+        sortedBatchIndexes.forEach((index) => {
+          if (remaining <= 0) return;
+          const currentQty = Number(next[index].qty || 0);
+          const deductQty = Math.min(currentQty, remaining);
+          next[index].qty = currentQty - deductQty;
+          remaining -= deductQty;
+        });
+
+        return next;
+      });
 
       setDeliveryItems((prev) =>
         prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Delivered' } : row))
       );
       setDeliveryWarning('');
     }
+  };
+
+  const handleCancelDeliveryStatus = (rowIndex) => {
+    setDeliveryItems((prev) =>
+      prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Cancelled' } : row))
+    );
+    setDeliveryWarning('');
   };
 
   const getMessageCake = (messageContent) => {
@@ -360,16 +481,24 @@ export default function PackerLandingPage({ onLogout }) {
       actionKey === 'add-custom-delivery'
     ) {
       const detectedCake = getMessageCake(targetMessage.content);
+      const isCustomAction = actionKey === 'create-reservation' || actionKey === 'add-custom-delivery';
       setDeliveryForm({
         branch: 'Main Branch',
+        orderType: isCustomAction ? 'custom' : 'regular',
         customer: targetMessage.from.replace('Seller - ', '').trim() || 'Reserved Customer',
         contact: '',
         address: '',
         cake: detectedCake,
+        customCakeName: isCustomAction ? detectedCake : '',
+        customSize: '',
+        customFlavor: '',
+        customTheme: '',
+        dedicationMessage: '',
         price: stockItems.find((item) => item.cake === detectedCake)?.price || 0,
         qty: getMessageQty(targetMessage.content),
         orderDate: new Date().toISOString().slice(0, 10),
         pickupDate: '',
+        deliveryTime: '',
         specialInstructions:
           actionKey === 'convert-order' || actionKey === 'add-order-delivery'
             ? `Converted from message: ${targetMessage.content}`
@@ -436,7 +565,7 @@ export default function PackerLandingPage({ onLogout }) {
           unreadCount={unreadCount}
           stockItems={stockItems}
           pendingOrders={pendingOrders}
-          customOrders={customOrders}
+          customOrders={customOrderItems}
           getBadgeClass={getBadgeClass}
           onOpenDeliveryModal={() => setIsDeliveryModalOpen(true)}
           onOpenMessages={() => setActiveTab('messages')}
@@ -452,9 +581,6 @@ export default function PackerLandingPage({ onLogout }) {
           stockAddForm={stockAddForm}
           onChangeStockAdd={handleStockAddInput}
           onAddStock={handleAddStockQty}
-          totals={totals}
-          deliveryItems={deliveryItems}
-          customOrders={customOrders}
         />
       );
     }
@@ -464,7 +590,18 @@ export default function PackerLandingPage({ onLogout }) {
         <DeliveriesOverview
           deliveryItems={deliveryItems}
           onAdvanceStatus={handleAdvanceDeliveryStatus}
+          onCancelStatus={handleCancelDeliveryStatus}
           deliveryWarning={deliveryWarning}
+        />
+      );
+    }
+
+    if (activeTab === 'custom-orders') {
+      return (
+        <CustomOrdersOverview
+          customOrderItems={customOrderItems}
+          onAdvanceStatus={handleAdvanceCustomOrderStatus}
+          onCancelStatus={handleCancelCustomOrderStatus}
         />
       );
     }
@@ -506,7 +643,9 @@ export default function PackerLandingPage({ onLogout }) {
         packerName={packerName}
       />
 
-      <main className="packer-main-content">{renderActivePage()}</main>
+      <main className="packer-main-content">
+        <div className="packer-content-inner">{renderActivePage()}</div>
+      </main>
 
       <AddCakeModal
         isOpen={isAddCakeOpen}

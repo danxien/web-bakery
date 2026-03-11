@@ -1,34 +1,37 @@
 /* =============================================================
    customOrders.css
-   STRUCTURAL MIRROR of inventoryOverview.css
-   Every spacing, radius, shadow, font-size, color value is
-   copied verbatim from inventoryOverview.css.
-   Only class names and content-specific additions differ.
+   Mirrors deliveriesOverview.css structure exactly.
+   Only class names (.co- prefix) and custom-order-specific
+   cell styles differ.
    ============================================================= */
 
-/* ── Animation — identical to inventory ── */
-@keyframes fadeIn {
+/* ── Animation ── */
+@keyframes co-fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .co-page-container {
-  animation: fadeIn 0.3s ease;
-  /* FIX #1: Ensure page container never overflows its content area,
-     allowing the table to flex and scroll correctly regardless of
-     whether the sidebar is expanded or collapsed. */
+  animation: co-fadeIn 0.3s ease;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* ── Header — identical values to .inventory-header ── */
+/* =========================================================
+   HEADER — title left, date filter button right
+   ========================================================= */
 .co-header {
-  margin-bottom: 30px;            /* == .inventory-header */
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 .co-title {
-  font-family: Georgia, serif;    /* == .inventory-title */
+  font-family: Georgia, serif;
   font-size: 1.8rem;
   font-weight: bold;
   color: #000;
@@ -36,194 +39,48 @@
 }
 
 .co-subtitle {
-  color: #888;                    /* == .inventory-subtitle */
+  color: #888;
   margin: 5px 0 0 0;
 }
 
 /* =========================================================
-   METRIC CARDS — identical to .metrics-row / .metric-card
+   DATE FILTER — calendar icon button + dropdown in header
    ========================================================= */
-.co-metrics-row {
-  display: flex;                  /* == .metrics-row */
-  gap: 16px;
-  margin-bottom: 20px;
-  /* FIX #1: Allow cards to wrap on narrow viewports (e.g. sidebar open) */
-  flex-wrap: wrap;
-}
-
-.co-metric-card {
-  flex: 1 1 200px;                /* FIX #1: flex-shrink + basis so cards reflow when sidebar opens */
-  background: #fff;
-  padding: 18px 20px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  border: none;
-  text-align: left;
-  min-width: 0;                   /* FIX #1: Prevent overflow in flex child */
-  /* Display-only — no cursor, no hover, no transition */
-}
-
-.co-card-top {
-  display: flex;                  /* == .card-top */
-  justify-content: space-between;
-  align-items: center;
-}
-
-.co-metric-label {
-  font-size: 0.875rem;            /* == .metric-label */
-  font-weight: 600;
-  color: #333;
-}
-
-/* Icon colours — identical to .blue-icon / .green-icon / .yellow-icon */
-.co-blue-icon   { color: #6366f1; }
-.co-green-icon  { color: #22c55e; }
-.co-yellow-icon { color: #eab308; }
-
-.co-card-bottom {
-  display: flex;                  /* == .card-bottom */
-  flex-direction: column;
-  gap: 2px;
-}
-
-.co-metric-value {
-  font-family: Georgia, serif;    /* == .metric-value */
-  font-size: 1.9rem;
-  font-weight: bold;
-  color: #111;
-  line-height: 1.1;
-}
-
-.co-metric-subtext {
-  font-size: 0.78rem;             /* == .metric-subtext */
-  color: #999;
-}
-
-/* =========================================================
-   ALERTS — identical to .alerts-container / .alert-wrapper
-   ========================================================= */
-.co-alerts-container {
-  display: flex;                  /* == .alerts-container */
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.co-alert-wrapper {
-  background: #fff;               /* == .alert-wrapper */
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  padding: 10px 12px;
-}
-
-.co-alert-row {
-  display: flex;                  /* == .alert-row */
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  border-left: 4px solid transparent;
-  width: 100%;
-  background: transparent;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  text-align: left;
-  cursor: pointer;
-  transition: filter 0.13s;
-}
-.co-alert-row:hover       { filter: brightness(0.95); }
-.co-alert-row.is-active   { filter: brightness(0.90); }
-
-.co-alert-row.critical {
-  background: #fee2e2;            /* == .alert-row.critical */
-  color: #b91c1c;
-  border-left-color: #ef4444;
-}
-
-.co-alert-row.warning {
-  background: #fef9c3;            /* == .alert-row.warning */
-  color: #854d0e;
-  border-left-color: #eab308;
-}
-
-/* =========================================================
-   TABLE CONTAINER — identical to .table-container
-   FIX #1: Use min-width: 0 so the container can shrink when
-   the sidebar expands, instead of overflowing the page.
-   ========================================================= */
-.co-table-container {
-  background: #fff;               /* == .table-container */
-  border-radius: 12px;
-  overflow: visible;              /* allow dropdown to escape */
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  max-height: calc(100vh - 60px);
-  min-width: 0;                   /* FIX #1: critical — lets flex child shrink */
-  width: 100%;                    /* FIX #1: always fill available content area */
-  box-sizing: border-box;
-}
-
-/* Toolbar */
-.co-table-toolbar {
-  display: flex;                  /* == .table-toolbar */
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px 0;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 8px;
+.co-filter-dropdown-wrapper {
+  position: relative;
   flex-shrink: 0;
 }
 
-.co-table-section-title {
-  font-family: Georgia, serif;    /* == .table-section-title */
-  font-size: 1rem;
-  font-weight: bold;
-  color: #222;
-}
-
-.co-table-count-pill {
-  font-size: 0.78rem;
-  color: #999;
-  background: #f5f5f5;
-  padding: 2px 10px;
-  border-radius: 20px;
-  margin-left: 8px;
-}
-
-.co-filter-icon-btn {
-  display: flex;                  /* == .filter-icon-btn */
+.co-date-filter-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 7px;
+  padding: 8px 14px;
   border: 1px solid #ddd;
   border-radius: 8px;
   background: #fff;
-  font-size: 0.82rem;
+  font-size: 0.83rem;
   font-weight: 500;
-  color: #333;
+  color: #444;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
 }
-.co-filter-icon-btn:hover,
-.co-filter-icon-btn.open {
+
+.co-date-filter-btn svg {
+  flex-shrink: 0;
+  color: inherit;
+  stroke: currentColor;
+}
+
+.co-date-filter-btn:hover,
+.co-date-filter-btn.open {
   background: #f7dd30;
   border-color: #e5c800;
   color: #111;
 }
 
-.co-filter-dropdown-wrapper {
-  position: relative;
-}
-
-.co-filter-dropdown {
+.co-date-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -233,7 +90,7 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   z-index: 10000;
-  min-width: 148px;
+  min-width: 200px;
 }
 
 .co-dropdown-item {
@@ -251,45 +108,271 @@
 .co-dropdown-item:hover    { background: #fcf6c4; }
 .co-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
 
+.co-custom-range-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.co-custom-range-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.co-custom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.co-date-input {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff9c4;
+}
+.co-date-input:focus { border-color: #f7dd30; }
+
+.co-date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) saturate(100%) opacity(0.65);
+  border-radius: 6px;
+  padding: 4px;
+  background-color: transparent;
+  transition: filter 0.15s, background-color 0.15s;
+}
+.co-date-input::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.30);
+}
+.co-date-input::-webkit-calendar-picker-indicator:active {
+  filter: brightness(0) saturate(100%) opacity(1);
+  background-color: rgba(231, 197, 0, 0.55);
+}
+
+.co-apply-btn {
+  margin-top: 4px;
+  padding: 8px;
+  background: #f7dd30;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.co-apply-btn:hover    { filter: brightness(0.95); }
+.co-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   METRIC CARDS
+   ========================================================= */
+.co-metrics-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.co-metric-card {
+  flex: 1 1 200px;
+  background: #fff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.co-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.co-metric-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.co-blue-icon   { color: #6366f1; }
+.co-green-icon  { color: #22c55e; }
+.co-yellow-icon { color: #eab308; }
+
+.co-card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.co-metric-value {
+  font-family: Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: bold;
+  color: #111;
+  line-height: 1.1;
+}
+
+.co-metric-subtext {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+/* =========================================================
+   STATUS CARDS — Clickable Filters
+   ========================================================= */
+.co-status-cards-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.co-status-card {
+  flex: 1 1 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 12px;
+  background: #fff;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
+  text-align: center;
+  min-width: 0;
+}
+.co-status-card:hover { filter: brightness(0.97); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10); }
+
+.co-status-card-count {
+  font-family: Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.co-status-card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* ── Status Card Variants ── */
+
+.co-status-card--pending .co-status-card-count { color: #ffc107; }
+.co-status-card--pending .co-status-card-label { color: #ffc107; }
+.co-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
+
+.co-status-card--ready .co-status-card-count { color: #17a2b8; }
+.co-status-card--ready .co-status-card-label { color: #17a2b8; }
+.co-status-card--ready.is-active             { border-color: #17a2b8; background: #e0f7fa; }
+
+.co-status-card--picked-up .co-status-card-count { color: #28a745; }
+.co-status-card--picked-up .co-status-card-label { color: #28a745; }
+.co-status-card--picked-up.is-active             { border-color: #28a745; background: #d4edda; }
+
+.co-status-card--overdue .co-status-card-count { color: #fd7e14; }
+.co-status-card--overdue .co-status-card-label { color: #fd7e14; }
+.co-status-card--overdue.is-active             { border-color: #fd7e14; background: #fff3e0; }
+
+.co-status-card--cancelled .co-status-card-count { color: #dc3545; }
+.co-status-card--cancelled .co-status-card-label { color: #dc3545; }
+.co-status-card--cancelled.is-active             { border-color: #dc3545; background: #fde8ea; }
+
+/* =========================================================
+   TABLE CONTAINER
+   ========================================================= */
+.co-table-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow: visible;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.co-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 0;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.co-table-section-title {
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #222;
+}
+
+.co-table-count-pill {
+  font-size: 0.78rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+
 /* =========================================================
    TABLE SCROLL WRAPPER
-   FIX #1: The scroll wrapper is the sole element that scrolls.
-   It never forces the page to overflow — it simply clips and
-   scrolls internally. min-width: 0 is the key property that
-   allows it to shrink when the sidebar pushes it left.
    ========================================================= */
 .co-table-scroll-wrapper {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;               /* FIX #1: horizontal scroll stays inside wrapper */
-  min-width: 0;                   /* FIX #1: allows the wrapper itself to shrink */
+  overflow-x: auto;
+  min-width: 0;
   scrollbar-width: thin;
   scrollbar-color: #e5e7eb transparent;
 }
-.co-table-scroll-wrapper::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.co-table-scroll-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-.co-table-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
-  border-radius: 3px;
-}
-.co-table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #d1d5db;
-}
+.co-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
+.co-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+.co-table-scroll-wrapper::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+.co-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
-/* ── Table ── */
 .co-orders-table {
-  /* FIX #1: min-content width keeps columns at natural size;
-     the scroll wrapper handles overflow — table never bleeds out. */
   width: 100%;
-  min-width: 860px;               /* FIX #1: forces scroll rather than column crush */
+  min-width: 560px;
   border-collapse: collapse;
   text-align: left;
+  table-layout: fixed;
 }
+
+/* ── Column width distribution ── */
+.co-orders-table col.col-cake   { width: 16%; }
+.co-orders-table col.col-qty    { width: 25%; }
+.co-orders-table col.col-price  { width: 17%; }
+.co-orders-table col.col-pickup { width: 16%; }
+.co-orders-table col.col-status { width: 16%; }
+.co-orders-table col.col-action { width: 10%; }
 
 .co-orders-table thead th {
   position: sticky;
@@ -298,7 +381,7 @@
 }
 
 .co-orders-table th {
-  padding: 18px 11.5px;
+  padding: 18px 20px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
   font-weight: bold;
@@ -307,55 +390,45 @@
   white-space: nowrap;
 }
 
+/* ── Qty (col 2) and Status (col 5) centered ── */
+.co-orders-table th:nth-child(2),
+.co-orders-table td:nth-child(2),
+.co-orders-table th:nth-child(5),
+.co-orders-table td:nth-child(5) {
+  text-align: center;
+}
+
 .co-orders-table td {
-  padding: 18px 11.5px;
+  padding: 18px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
 }
 
+/* ── Symmetrical outer padding ── */
 .co-orders-table th:first-child,
 .co-orders-table td:first-child {
-  padding-left: 20px;
+  padding-left: 32px;
 }
 
+.co-orders-table th:last-child,
 .co-orders-table td:last-child {
-  padding-right: 15px;
+  padding-right: 32px;
+  text-align: right;
 }
 
-.co-orders-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.co-orders-table tbody tr:hover {
-  background-color: #fffde8;
-}
+.co-orders-table tbody tr:last-child td { border-bottom: none; }
+.co-orders-table tbody tr:hover         { background-color: #fffde8; }
 
 /* ── Cell helpers ── */
 .co-cake-name-text { font-weight: 500; }
-
 .co-price-text     { font-weight: 600; color: #22c55e; }
-
-.co-instructions-text {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-style: italic;
-  font-size: 0.8rem;
-  color: #888;
-  display: block;
-}
 
 .co-pickup-text            { font-weight: 600; font-size: 0.85rem; }
 .co-pickup-text.is-today   { color: #854d0e; }
-.co-pickup-text.is-overdue { color: #b91c1c; }
+.co-pickup-text.is-overdue { color: #fd7e14; }
 
-/* =========================================================
-   STATUS PILLS
-   Statuses: Pending | Ready | Picked Up | Overdue | Cancelled
-   Removed: In Production, Delivered (old model)
-   ========================================================= */
+/* ── Status pills ── */
 .co-status-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -364,30 +437,14 @@
   font-weight: 600;
   white-space: nowrap;
 }
+.co-status-pill.pending   { background: #fff8e1; color: #ffc107; }
+.co-status-pill.ready     { background: #e0f7fa; color: #17a2b8; }
+.co-status-pill.picked-up { background: #d4edda; color: #28a745; }
+.co-status-pill.overdue   { background: #fff3e0; color: #fd7e14; }
+.co-status-pill.cancelled { background: #fde8ea; color: #dc3545; }
 
-/* Pending — yellow: cake not yet prepared */
-.co-status-pill.pending       { background: #fef9c3; color: #854d0e; }
+.co-no-data { text-align: center !important; padding: 40px !important; color: #888; }
 
-/* Ready — blue/purple: cake done, awaiting pickup */
-.co-status-pill.ready         { background: #ede9fe; color: #5b21b6; }
-
-/* Picked Up — green: customer received cake, order complete */
-.co-status-pill.picked-up     { background: #d1fae5; color: #065f46; }
-
-/* Overdue — red: Ready but pickup date has passed */
-.co-status-pill.overdue       { background: #fee2e2; color: #991b1b; }
-
-/* Cancelled — grey: final state */
-.co-status-pill.cancelled     { background: #f3f4f6; color: #6b7280; }
-
-/* No data */
-.co-no-data {
-  text-align: center;
-  padding: 40px !important;
-  color: #888;
-}
-
-/* View button */
 .co-view-btn {
   display: inline-flex;
   align-items: center;
@@ -403,11 +460,7 @@
   transition: background 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
-.co-view-btn:hover {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
+.co-view-btn:hover { background: #f7dd30; border-color: #e5c800; color: #111; }
 
 /* ── Pagination ── */
 .co-pagination {
@@ -421,11 +474,7 @@
   flex-shrink: 0;
 }
 
-.co-pagination-info {
-  font-size: 0.78rem;
-  color: #999;
-}
-
+.co-pagination-info { font-size: 0.78rem; color: #999; }
 .co-pagination-btns { display: flex; gap: 4px; }
 
 .co-page-btn {
@@ -443,11 +492,13 @@
   justify-content: center;
   padding: 0 8px;
 }
-.co-page-btn:hover     { background: #fcf6c4; border-color: #e5c800; }
-.co-page-btn.active    { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
-.co-page-btn:disabled  { opacity: 0.38; cursor: not-allowed; }
+.co-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
+.co-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.co-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
-/* ── Modal ── */
+/* =========================================================
+   MODAL
+   ========================================================= */
 .co-modal-overlay {
   position: fixed;
   inset: 0;
@@ -484,17 +535,28 @@
   border-radius: 16px 16px 0 0;
 }
 
+/* Eyebrow label above the cake name */
+.co-modal-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa;
+  margin: 0 0 4px;
+}
+
 .co-modal-cake-name {
   font-family: Georgia, serif;
   font-size: 1.45rem;
   font-weight: bold;
   color: #000;
-  margin: 0 0 4px;
+  margin: 0;
   line-height: 1.2;
 }
 
 .co-modal-close-btn {
-  width: 32px; height: 32px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 1px solid #ddd;
   background: transparent;
@@ -511,40 +573,6 @@
 
 .co-modal-body {
   padding: 24px 28px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* FIX #2: Info grid — Status gets its own cell, properly labeled */
-.co-modal-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 24px;
-}
-
-.co-info-item              { display: flex; flex-direction: column; gap: 3px; }
-.co-info-item.full-width   { grid-column: span 2; }
-
-.co-info-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.co-info-value             { font-size: 0.88rem; color: #222; line-height: 1.4; }
-.co-info-value.price-val   { font-family: Georgia, serif; font-size: 1.15rem; font-weight: bold; color: #22c55e; }
-.co-info-value.instructions-val {
-  padding: 10px 12px;
-  background: #fefce8;
-  border-radius: 8px;
-  border-left: 3px solid #eab308;
-  font-style: italic;
-  color: #555;
-  font-size: 0.83rem;
-  line-height: 1.5;
 }
 
 .co-modal-section-title {
@@ -557,11 +585,47 @@
   border-bottom: 2px solid #fcf6c4;
 }
 
+.co-modal-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.co-info-item            { display: flex; flex-direction: column; gap: 3px; }
+.co-info-item.full-width { grid-column: span 2; }
+
+.co-info-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.co-info-value           { font-size: 0.88rem; color: #222; line-height: 1.4; }
+.co-info-value.price-val { font-family: Georgia, serif; font-size: 1.15rem; font-weight: bold; color: #22c55e; }
+
+.co-info-value.instructions-val {
+  padding: 10px 12px;
+  background: #fefce8;
+  border-radius: 8px;
+  border-left: 3px solid #eab308;
+  font-style: italic;
+  color: #555;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
 /* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .co-metrics-row     { flex-direction: column; }
-  .co-modal-info-grid { grid-template-columns: 1fr; }
+  .co-metrics-row          { flex-direction: column; }
+  .co-status-cards-row     { gap: 8px; }
+  .co-status-card          { flex: 1 1 80px; padding: 10px 8px; }
+  .co-status-card-count    { font-size: 1.3rem; }
+  .co-modal-info-grid      { grid-template-columns: 1fr; }
   .co-info-item.full-width { grid-column: span 1; }
+  .co-header               { flex-direction: column; align-items: flex-start; }
+  .co-date-dropdown        { right: auto; left: 0; }
 }

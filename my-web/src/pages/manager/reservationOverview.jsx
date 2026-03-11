@@ -1,7 +1,7 @@
 // =============================================================
 // reservationOverview.jsx
-// -------------------------------------------------------------
 // PURPOSE: Manager monitoring view for cake reservations.
+// FILTERING: Date Filter (header calendar icon) + Status Cards (clickable)
 //
 // STATUS LOGIC (Operational-Based):
 //   Pending   → Cake not yet prepared (waiting for action)
@@ -17,25 +17,71 @@
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { PackageCheck, CircleDollarSign, ClipboardList, AlertTriangle, Filter } from 'lucide-react';
+import { PackageCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/reservationsOverview.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
 const TODAY     = new Date();
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
-/* ── Helpers ─────────────────────────────────────────────── */
+/* ── Date Range Helpers ────────────────────────────────────── */
 
-// Statuses counted toward Estimated Revenue
-const REVENUE_STATUSES = ['Pending', 'Ready', 'Picked Up'];
+function getDateRange(filter, customStart, customEnd) {
+  const start = new Date(TODAY);
+  const end   = new Date(TODAY);
 
-function addDays(date, n) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + n);
-  return d;
+  switch (filter) {
+    case 'today':
+      return { start: TODAY_STR, end: TODAY_STR };
+
+    case 'week': {
+      const day = start.getDay();
+      start.setDate(start.getDate() - day);
+      end.setDate(end.getDate() + (6 - day));
+      return {
+        start: start.toISOString().split('T')[0],
+        end:   end.toISOString().split('T')[0],
+      };
+    }
+
+    case 'month':
+      return {
+        start: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1).toISOString().split('T')[0],
+        end:   new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0).toISOString().split('T')[0],
+      };
+
+    case 'custom':
+      return { start: customStart || TODAY_STR, end: customEnd || TODAY_STR };
+
+    default:
+      return { start: TODAY_STR, end: TODAY_STR };
+  }
 }
 
-// Overdue: past pickup date AND status is still 'Ready'
+function inRange(date, start, end) {
+  return date >= start && date <= end;
+}
+
+/* ── Constants ─────────────────────────────────────────────── */
+
+const REVENUE_STATUSES = ['Pending', 'Ready', 'Picked Up'];
+
+const DATE_OPTIONS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week',  label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+];
+
+const STATUS_CARDS = [
+  { key: 'Pending',   label: 'Pending' },
+  { key: 'Ready',     label: 'Ready' },
+  { key: 'Picked Up', label: 'Picked Up' },
+  { key: 'Overdue',   label: 'Overdue' },
+  { key: 'Cancelled', label: 'Cancelled' },
+];
+
+/* ── Misc Helpers ──────────────────────────────────────────── */
+
 function isOverdue(r) {
   return (
     new Date(r.pickupDate + 'T00:00:00') < TODAY &&
@@ -43,20 +89,8 @@ function isOverdue(r) {
   );
 }
 
-// Due today: Ready cake with pickup scheduled for today
 function isDueToday(r) {
   return r.pickupDate === TODAY_STR && r.status === 'Ready';
-}
-
-// Upcoming: Ready cakes with pickup within the next 3 days (not today/overdue)
-function isUpcoming(r) {
-  const pickup = new Date(r.pickupDate + 'T00:00:00');
-  const in3    = addDays(TODAY, 3);
-  return pickup > TODAY && pickup <= in3 && r.status === 'Ready';
-}
-
-function displayStatus(r) {
-  return isOverdue(r) ? 'Overdue' : r.status;
 }
 
 function totalValue(r) {
@@ -81,7 +115,7 @@ function statusPillClass(ds) {
 }
 
 function StatusPill({ reservation }) {
-  const ds = displayStatus(reservation);
+  const ds = isOverdue(reservation) ? 'Overdue' : reservation.status;
   return <span className={`ro-status-pill ${statusPillClass(ds)}`}>{ds}</span>;
 }
 
@@ -106,10 +140,7 @@ export let INIT_RESERVATIONS = [];
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-const STATUS_OPTIONS = ['All', 'Pending', 'Ready', 'Picked Up', 'Overdue', 'Cancelled'];
-
 const PER_PAGE = 6;
-const NO_QUICK = 'all';
 
 const ReservationsOverview = () => {
 
@@ -121,62 +152,101 @@ const ReservationsOverview = () => {
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
 
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [quickFilter,  setQuickFilter]  = useState(NO_QUICK);
-  const [page,         setPage]         = useState(1);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [dateFilter,   setDateFilter]   = useState('today');
+  const [customStart,  setCustomStart]  = useState('');
+  const [customEnd,    setCustomEnd]    = useState('');
+  const [dateDropOpen, setDateDropOpen] = useState(false);
+  const dateDropRef = useRef(null);
+
+  const [statusFilter,  setStatusFilter]  = useState(null);
+  const [page,          setPage]          = useState(1);
 
 
   // -----------------------------------------------------------
-  // DERIVED METRIC VALUES
-  // TODO: Backend - All values are derived from reservationsData
+  // DATE RANGE
   // -----------------------------------------------------------
-  const reservedQtyTotal = reservationsData
+  const { start: rangeStart, end: rangeEnd } = useMemo(
+    () => getDateRange(dateFilter, customStart, customEnd),
+    [dateFilter, customStart, customEnd]
+  );
+
+  const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd)
+      return `${formatDate(customStart)} – ${formatDate(customEnd)}`;
+    return DATE_OPTIONS.find(o => o.key === dateFilter)?.label || 'Today';
+  }, [dateFilter, customStart, customEnd]);
+
+
+  // -----------------------------------------------------------
+  // DATE-SCOPED RESERVATIONS (filter by pickupDate)
+  // -----------------------------------------------------------
+  const dateScoped = useMemo(
+    () => reservationsData.filter(r => inRange(r.pickupDate, rangeStart, rangeEnd)),
+    [reservationsData, rangeStart, rangeEnd]
+  );
+
+
+  // -----------------------------------------------------------
+  // SUMMARY METRICS
+  // -----------------------------------------------------------
+  const reservedQtyTotal = dateScoped
     .filter(r => r.status !== 'Cancelled')
     .reduce((sum, r) => sum + r.quantity, 0);
 
-  const estimatedRevenue = reservationsData
+  const estimatedRevenue = dateScoped
     .filter(r => REVENUE_STATUSES.includes(r.status))
     .reduce((sum, r) => sum + totalValue(r), 0);
 
-  const pendingCount  = reservationsData.filter(r => r.status === 'Pending').length;
-  const dueTodayCount = reservationsData.filter(isDueToday).length;
-  const overdueCount  = reservationsData.filter(isOverdue).length;
-  const upcomingCount = reservationsData.filter(isUpcoming).length;
+  const pendingCount = dateScoped.filter(r => r.status === 'Pending').length;
 
 
   // -----------------------------------------------------------
-  // FILTER LOGIC
+  // STATUS CARD COUNTS
+  // -----------------------------------------------------------
+  const statusCounts = useMemo(() => {
+    const counts = { Pending: 0, Ready: 0, 'Picked Up': 0, Overdue: 0, Cancelled: 0 };
+    dateScoped.forEach(r => {
+      if (isOverdue(r))            counts.Overdue++;
+      else if (r.status in counts) counts[r.status]++;
+    });
+    return counts;
+  }, [dateScoped]);
+
+
+  // -----------------------------------------------------------
+  // TABLE DATA
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = reservationsData;
-
-    if (quickFilter === 'due-today') {
-      result = result.filter(isDueToday);
-    } else if (quickFilter === 'overdue') {
-      result = result.filter(isOverdue);
-    } else if (quickFilter === 'upcoming') {
-      result = result.filter(isUpcoming);
-    } else {
-      if (statusFilter === 'Overdue') {
-        result = result.filter(isOverdue);
-      } else if (statusFilter === 'Ready') {
-        result = result.filter(r => r.status === 'Ready' && !isOverdue(r));
-      } else if (statusFilter !== 'All') {
-        result = result.filter(r => r.status === statusFilter);
-      }
-    }
-
-    return result;
-  }, [quickFilter, statusFilter, reservationsData]);
+    if (!statusFilter)              return dateScoped;
+    if (statusFilter === 'Overdue') return dateScoped.filter(isOverdue);
+    if (statusFilter === 'Ready')   return dateScoped.filter(r => r.status === 'Ready' && !isOverdue(r));
+    return dateScoped.filter(r => r.status === statusFilter);
+  }, [dateScoped, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  function activateQuick(key) {
-    setQuickFilter(prev => (prev === key ? NO_QUICK : key));
+
+  // -----------------------------------------------------------
+  // HANDLERS
+  // -----------------------------------------------------------
+  function handleDateSelect(key) {
+    setDateFilter(key);
+    setStatusFilter(null);
     setPage(1);
+    if (key !== 'custom') setDateDropOpen(false);
+  }
+
+  function handleStatusCard(key) {
+    setStatusFilter(prev => prev === key ? null : key);
+    setPage(1);
+  }
+
+  function applyCustomRange() {
+    if (customStart && customEnd) {
+      setDateDropOpen(false);
+      setPage(1);
+    }
   }
 
 
@@ -185,14 +255,13 @@ const ReservationsOverview = () => {
   // -----------------------------------------------------------
   useEffect(() => {
     // TODO: Backend - Fetch reservations on mount
-    // Example:
     // const fetchReservations = async () => {
     //   try {
     //     setLoading(true);
     //     const response = await fetch('/api/reservations');
     //     const data = await response.json();
     //     setReservationsData(data.reservations);
-    //     INIT_RESERVATIONS = data.reservations; // Keep export in sync for salesOverview
+    //     INIT_RESERVATIONS = data.reservations;
     //   } catch (err) {
     //     setError('Failed to load reservation data.');
     //   } finally {
@@ -203,12 +272,14 @@ const ReservationsOverview = () => {
     setLoading(false);
 
     const handler = e => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
-        setDropdownOpen(false);
+      if (dateDropRef.current && !dateDropRef.current.contains(e.target))
+        setDateDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => { setPage(1); }, [statusFilter, dateFilter, customStart, customEnd]);
 
 
   // -----------------------------------------------------------
@@ -221,16 +292,71 @@ const ReservationsOverview = () => {
     <div className="ro-page-container">
 
       {/* =====================================================
-          1. HEADER
+          1. HEADER + DATE FILTER
           ===================================================== */}
       <div className="ro-header">
-        <h1 className="ro-title">Reservation Overview</h1>
-        <p className="ro-subtitle">Monitor all cake reservations and upcoming pickup schedules</p>
+        <div>
+          <h1 className="ro-title">Reservation Overview</h1>
+          <p className="ro-subtitle">Monitor all cake reservations and upcoming pickup schedules</p>
+        </div>
+
+        <div className="ro-filter-dropdown-wrapper" ref={dateDropRef}>
+          <button
+            className={`ro-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+            onClick={() => setDateDropOpen(p => !p)}
+            title="Filter by date range"
+          >
+            {/* ✅ Calendar icon — matches inventory & delivery pattern */}
+            <Calendar size={16} strokeWidth={2} color="currentColor" />
+            <span>{dateLabel}</span>
+            <ChevronDown size={12} />
+          </button>
+
+          {dateDropOpen && (
+            <div className="ro-date-dropdown">
+              {DATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  className={`ro-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                  onClick={() => handleDateSelect(opt.key)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+
+              <div className="ro-custom-range-section">
+                <span className="ro-custom-range-title">Custom Range</span>
+                <label className="ro-custom-label">From</label>
+                <input
+                  type="date"
+                  className="ro-date-input"
+                  value={customStart}
+                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                />
+                <label className="ro-custom-label">To</label>
+                <input
+                  type="date"
+                  className="ro-date-input"
+                  value={customEnd}
+                  min={customStart}
+                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                />
+                <button
+                  className="ro-apply-btn"
+                  onClick={applyCustomRange}
+                  disabled={!customStart || !customEnd}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
 
       {/* =====================================================
-          2. METRIC CARDS
+          2. SUMMARY METRIC CARDS
           ===================================================== */}
       <div className="ro-metrics-row">
 
@@ -273,108 +399,34 @@ const ReservationsOverview = () => {
 
 
       {/* =====================================================
-          3. ALERTS
+          3. STATUS CARDS (Clickable Filters)
           ===================================================== */}
-      <div className="ro-alerts-container">
-
-        <div className="ro-alert-wrapper">
+      <div className="ro-status-cards-row">
+        {STATUS_CARDS.map(card => (
           <button
-            className={`ro-alert-row warning ${quickFilter === 'due-today' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('due-today')}
+            key={card.key}
+            className={`ro-status-card ro-status-card--${card.key.toLowerCase().replace(/\s+/g, '-')} ${statusFilter === card.key ? 'is-active' : ''}`}
+            onClick={() => handleStatusCard(card.key)}
           >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{dueTodayCount}</strong>
-              {' '}reservation{dueTodayCount !== 1 ? 's' : ''} ready for pick-up today — awaiting customer
-            </span>
+            <span className="ro-status-card-count">{statusCounts[card.key] ?? 0}</span>
+            <span className="ro-status-card-label">{card.label}</span>
           </button>
-        </div>
-
-        <div className="ro-alert-wrapper">
-          <button
-            className={`ro-alert-row critical ${quickFilter === 'overdue' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('overdue')}
-          >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{overdueCount}</strong>
-              {' '}overdue reservation{overdueCount !== 1 ? 's' : ''} — Ready but pick-up date has passed
-            </span>
-          </button>
-        </div>
-
-        <div className="ro-alert-wrapper">
-          <button
-            className={`ro-alert-row info ${quickFilter === 'upcoming' ? 'is-active' : ''}`}
-            onClick={() => activateQuick('upcoming')}
-          >
-            <AlertTriangle size={16} />
-            <span>
-              <strong>{upcomingCount}</strong>
-              {' '}upcoming pickup{upcomingCount !== 1 ? 's' : ''} within the next 3 days — plan preparation
-            </span>
-          </button>
-        </div>
-
+        ))}
       </div>
 
 
       {/* =====================================================
-          4. TABLE
+          4. RESERVATIONS TABLE
           ===================================================== */}
       <div className="ro-table-container">
 
         <div className="ro-table-toolbar">
-
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="ro-table-section-title">Reservations List</span>
             <span className="ro-table-count-pill">
               {filteredData.length} reservation{filteredData.length !== 1 ? 's' : ''}
-              {quickFilter !== NO_QUICK && ' · filtered'}
+              {statusFilter && ` · ${statusFilter}`}
             </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-
-            <div className="ro-filter-dropdown-wrapper" ref={dropdownRef}>
-              <button
-                className={`ro-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-                onClick={() => setDropdownOpen(prev => !prev)}
-                title="Filter by status"
-              >
-                <Filter size={14} />
-                <span>{statusFilter === 'All' ? 'Filter' : statusFilter}</span>
-              </button>
-
-              {dropdownOpen && (
-                <div className="ro-filter-dropdown">
-                  {STATUS_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      className={`ro-dropdown-item ${statusFilter === opt && quickFilter === NO_QUICK ? 'selected' : ''}`}
-                      onClick={() => {
-                        setStatusFilter(opt);
-                        setQuickFilter(NO_QUICK);
-                        setDropdownOpen(false);
-                        setPage(1);
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {quickFilter !== NO_QUICK && (
-              <button
-                className="ro-filter-icon-btn"
-                onClick={() => { setQuickFilter(NO_QUICK); setPage(1); }}
-              >
-                ✕ Clear
-              </button>
-            )}
-
           </div>
         </div>
 
@@ -396,7 +448,6 @@ const ReservationsOverview = () => {
               {paged.length > 0 ? paged.map((r, idx) => {
                 const overdue  = isOverdue(r);
                 const dueToday = isDueToday(r);
-                const upcoming = isUpcoming(r);
                 return (
                   <tr key={idx}>
                     <td><span className="ro-cake-name-text">{r.cakeType}</span></td>
@@ -406,7 +457,7 @@ const ReservationsOverview = () => {
                     <td>{r.customer}</td>
                     <td>{formatDate(r.reservationDate)}</td>
                     <td>
-                      <span className={`ro-pickup-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : upcoming ? 'is-upcoming' : ''}`}>
+                      <span className={`ro-pickup-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
                         {formatDate(r.pickupDate)}
                       </span>
                     </td>

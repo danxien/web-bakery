@@ -1,9 +1,9 @@
 // =============================================================
 // salesOverview.jsx
-// -------------------------------------------------------------
 // PURPOSE: Manager financial view — completed sales only.
 //          Aggregates confirmed revenue from Deliveries,
 //          Reservations, and Custom Orders.
+// FILTERING: Date Filter (header calendar icon) + Breakdown Cards (clickable)
 //
 // SALES DEFINITION:
 //   Delivery     → Status = 'Delivered'
@@ -16,8 +16,9 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  CircleDollarSign, ShoppingCart, PackageCheck, Filter,
+  CircleDollarSign, ShoppingCart, PackageCheck,
   Truck, CalendarCheck, ClipboardList,
+  Calendar, ChevronDown,
 } from 'lucide-react';
 import '../../styles/manager/salesOverview.css';
 
@@ -37,7 +38,55 @@ const ORDER_TYPES = {
   'Custom Order': { label: 'Custom Order', css: 'custom-order', Icon: ClipboardList },
 };
 
-/* ── Helpers ─────────────────────────────────────────────── */
+/* ── Date Range Helpers ────────────────────────────────────── */
+
+const TODAY     = new Date();
+const TODAY_STR = TODAY.toISOString().split('T')[0];
+
+function getDateRange(filter, customStart, customEnd) {
+  const start = new Date(TODAY);
+  const end   = new Date(TODAY);
+
+  switch (filter) {
+    case 'today':
+      return { start: TODAY_STR, end: TODAY_STR };
+
+    case 'week': {
+      const day = start.getDay();
+      start.setDate(start.getDate() - day);
+      end.setDate(end.getDate() + (6 - day));
+      return {
+        start: start.toISOString().split('T')[0],
+        end:   end.toISOString().split('T')[0],
+      };
+    }
+
+    case 'month':
+      return {
+        start: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1).toISOString().split('T')[0],
+        end:   new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0).toISOString().split('T')[0],
+      };
+
+    case 'custom':
+      return { start: customStart || TODAY_STR, end: customEnd || TODAY_STR };
+
+    default:
+      return { start: TODAY_STR, end: TODAY_STR };
+  }
+}
+
+function inRange(date, start, end) {
+  return date >= start && date <= end;
+}
+
+/* ── Misc Helpers ──────────────────────────────────────────── */
+
+const DATE_OPTIONS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week',  label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+];
+
 function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', {
     month: 'short', day: 'numeric', year: 'numeric',
@@ -109,10 +158,7 @@ const buildSalesData = () => [
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-const TYPE_OPTIONS = ['All', 'Delivery', 'Reservation', 'Custom Order'];
-
 const PER_PAGE = 7;
-const NO_QUICK = 'all';
 
 const SalesOverview = () => {
 
@@ -121,57 +167,95 @@ const SalesOverview = () => {
   // TODO: Backend - Replace with fetched sales data
   // On mount: fetch from /api/sales, setSalesData(response.data)
   // -----------------------------------------------------------
-  const [salesData,    setSalesData]    = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
+  const [salesData, setSalesData] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
 
-  const [typeFilter,   setTypeFilter]   = useState('All');
-  const [quickFilter,  setQuickFilter]  = useState(NO_QUICK);
-  const [page,         setPage]         = useState(1);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [dateFilter,   setDateFilter]   = useState('today');
+  const [customStart,  setCustomStart]  = useState('');
+  const [customEnd,    setCustomEnd]    = useState('');
+  const [dateDropOpen, setDateDropOpen] = useState(false);
+  const dateDropRef = useRef(null);
+
+  const [typeFilter, setTypeFilter] = useState(null);
+  const [page,       setPage]       = useState(1);
 
 
   // -----------------------------------------------------------
-  // DERIVED METRIC VALUES
-  // TODO: Backend - All values are derived from salesData
+  // DATE RANGE
   // -----------------------------------------------------------
-  const totalRevenue      = salesData.reduce((sum, s) => sum + s.amount, 0);
-  const totalTransactions = salesData.length;
-  const totalCakesSold    = salesData.reduce((sum, s) => sum + s.qty, 0);
+  const { start: rangeStart, end: rangeEnd } = useMemo(
+    () => getDateRange(dateFilter, customStart, customEnd),
+    [dateFilter, customStart, customEnd]
+  );
 
-  const breakdown = (() => {
+  const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd)
+      return `${formatDate(customStart)} – ${formatDate(customEnd)}`;
+    return DATE_OPTIONS.find(o => o.key === dateFilter)?.label || 'Today';
+  }, [dateFilter, customStart, customEnd]);
+
+
+  // -----------------------------------------------------------
+  // DATE-SCOPED SALES
+  // -----------------------------------------------------------
+  const dateScoped = useMemo(
+    () => salesData.filter(s => inRange(s.completionDate, rangeStart, rangeEnd)),
+    [salesData, rangeStart, rangeEnd]
+  );
+
+
+  // -----------------------------------------------------------
+  // SUMMARY METRICS (from dateScoped)
+  // -----------------------------------------------------------
+  const totalRevenue      = dateScoped.reduce((sum, s) => sum + s.amount, 0);
+  const totalTransactions = dateScoped.length;
+  const totalCakesSold    = dateScoped.reduce((sum, s) => sum + s.qty, 0);
+
+  const breakdown = useMemo(() => {
     const result = {};
     Object.keys(ORDER_TYPES).forEach(type => {
-      result[type] = salesData
-        .filter(s => s.orderType === type)
-        .reduce((sum, s) => sum + s.amount, 0);
+      result[type] = {
+        amount: dateScoped.filter(s => s.orderType === type).reduce((sum, s) => sum + s.amount, 0),
+        count:  dateScoped.filter(s => s.orderType === type).length,
+      };
     });
     return result;
-  })();
+  }, [dateScoped]);
 
 
   // -----------------------------------------------------------
-  // FILTER LOGIC
+  // TABLE DATA (dateScoped + typeFilter)
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    let result = salesData;
-
-    if (quickFilter !== NO_QUICK) {
-      result = result.filter(s => s.orderType === quickFilter);
-    } else if (typeFilter !== 'All') {
-      result = result.filter(s => s.orderType === typeFilter);
-    }
-
-    return result;
-  }, [quickFilter, typeFilter, salesData]);
+    if (!typeFilter) return dateScoped;
+    return dateScoped.filter(s => s.orderType === typeFilter);
+  }, [dateScoped, typeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  function activateQuick(key) {
-    setQuickFilter(prev => (prev === key ? NO_QUICK : key));
+
+  // -----------------------------------------------------------
+  // HANDLERS
+  // -----------------------------------------------------------
+  function handleDateSelect(key) {
+    setDateFilter(key);
+    setTypeFilter(null);
     setPage(1);
+    if (key !== 'custom') setDateDropOpen(false);
+  }
+
+  function handleBreakdownCard(type) {
+    setTypeFilter(prev => prev === type ? null : type);
+    setPage(1);
+  }
+
+  function applyCustomRange() {
+    if (customStart && customEnd) {
+      setDateDropOpen(false);
+      setPage(1);
+    }
   }
 
 
@@ -184,7 +268,6 @@ const SalesOverview = () => {
     //   setSalesData(buildSalesData());
     //
     // Option B: Direct API call (recommended for production)
-    // Example:
     // const fetchSales = async () => {
     //   try {
     //     setLoading(true);
@@ -201,12 +284,14 @@ const SalesOverview = () => {
     setLoading(false);
 
     const handler = e => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
-        setDropdownOpen(false);
+      if (dateDropRef.current && !dateDropRef.current.contains(e.target))
+        setDateDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  useEffect(() => { setPage(1); }, [typeFilter, dateFilter, customStart, customEnd]);
 
 
   // -----------------------------------------------------------
@@ -219,11 +304,66 @@ const SalesOverview = () => {
     <div className="so-page-container">
 
       {/* =====================================================
-          1. HEADER
+          1. HEADER + DATE FILTER
           ===================================================== */}
       <div className="so-header">
-        <h1 className="so-title">Sales Overview</h1>
-        <p className="so-subtitle">Completed transactions only — Delivered and Picked Up orders</p>
+        <div>
+          <h1 className="so-title">Sales Overview</h1>
+          <p className="so-subtitle">Completed transactions only — Delivered and Picked Up orders</p>
+        </div>
+
+        <div className="so-filter-dropdown-wrapper" ref={dateDropRef}>
+          <button
+            className={`so-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+            onClick={() => setDateDropOpen(p => !p)}
+            title="Filter by date range"
+          >
+            {/* ✅ Calendar icon — matches all other manager pages */}
+            <Calendar size={16} strokeWidth={2} color="currentColor" />
+            <span>{dateLabel}</span>
+            <ChevronDown size={12} />
+          </button>
+
+          {dateDropOpen && (
+            <div className="so-date-dropdown">
+              {DATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  className={`so-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                  onClick={() => handleDateSelect(opt.key)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+
+              <div className="so-custom-range-section">
+                <span className="so-custom-range-title">Custom Range</span>
+                <label className="so-custom-label">From</label>
+                <input
+                  type="date"
+                  className="so-date-input"
+                  value={customStart}
+                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                />
+                <label className="so-custom-label">To</label>
+                <input
+                  type="date"
+                  className="so-date-input"
+                  value={customEnd}
+                  min={customStart}
+                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                />
+                <button
+                  className="so-apply-btn"
+                  onClick={applyCustomRange}
+                  disabled={!customStart || !customEnd}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
 
@@ -277,18 +417,18 @@ const SalesOverview = () => {
         {Object.entries(ORDER_TYPES).map(([type, { label, css, Icon }]) => (
           <button
             key={type}
-            className={`so-breakdown-card ${quickFilter === type ? 'is-active' : ''}`}
-            onClick={() => activateQuick(type)}
+            className={`so-breakdown-card ${typeFilter === type ? 'is-active' : ''}`}
+            onClick={() => handleBreakdownCard(type)}
           >
             <div className="so-breakdown-top">
               <Icon size={16} className={`so-breakdown-icon so-icon-${css}`} />
               <span className="so-breakdown-label">{label}</span>
             </div>
             <span className="so-breakdown-amount">
-              ₱{(breakdown[type] || 0).toLocaleString()}
+              ₱{(breakdown[type]?.amount || 0).toLocaleString()}
             </span>
             <span className="so-breakdown-subtext">
-              {salesData.filter(s => s.orderType === type).length} transaction{salesData.filter(s => s.orderType === type).length !== 1 ? 's' : ''}
+              {breakdown[type]?.count ?? 0} transaction{(breakdown[type]?.count ?? 0) !== 1 ? 's' : ''}
             </span>
           </button>
         ))}
@@ -301,56 +441,12 @@ const SalesOverview = () => {
       <div className="so-table-container">
 
         <div className="so-table-toolbar">
-
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="so-table-section-title">Sales Records</span>
             <span className="so-table-count-pill">
               {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
-              {(quickFilter !== NO_QUICK || typeFilter !== 'All') && ' · filtered'}
+              {typeFilter && ` · ${typeFilter}`}
             </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-
-            <div className="so-filter-dropdown-wrapper" ref={dropdownRef}>
-              <button
-                className={`so-filter-icon-btn ${dropdownOpen ? 'open' : ''}`}
-                onClick={() => setDropdownOpen(prev => !prev)}
-                title="Filter by order type"
-              >
-                <Filter size={14} />
-                <span>{typeFilter === 'All' ? 'Filter' : typeFilter}</span>
-              </button>
-
-              {dropdownOpen && (
-                <div className="so-filter-dropdown">
-                  {TYPE_OPTIONS.map(opt => (
-                    <button
-                      key={opt}
-                      className={`so-dropdown-item ${typeFilter === opt && quickFilter === NO_QUICK ? 'selected' : ''}`}
-                      onClick={() => {
-                        setTypeFilter(opt);
-                        setQuickFilter(NO_QUICK);
-                        setDropdownOpen(false);
-                        setPage(1);
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {quickFilter !== NO_QUICK && (
-              <button
-                className="so-filter-icon-btn"
-                onClick={() => { setQuickFilter(NO_QUICK); setPage(1); }}
-              >
-                ✕ Clear
-              </button>
-            )}
-
           </div>
         </div>
 

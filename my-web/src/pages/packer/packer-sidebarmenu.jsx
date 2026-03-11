@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Boxes,
   Truck,
+  ClipboardList,
   MessageSquare,
   Wallet,
   Settings,
@@ -14,6 +15,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'inventory', label: 'Inventory', icon: Boxes },
   { id: 'deliveries', label: 'Deliveries', icon: Truck },
+  { id: 'custom-orders', label: 'Custom Orders', icon: ClipboardList },
   { id: 'cake-prices', label: 'Cake Prices', icon: Wallet },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
 ];
@@ -69,13 +71,9 @@ export default function PackerSidebar({
             >
               <Icon size={20} />
               {/* Labels and unread numbers only show when NOT minimized */}
-              {!isMinimized && (
-                <>
-                  <span>{item.label}</span>
-                  {item.id === 'messages' && unreadCount > 0 && (
-                    <span className="packer-badge">{unreadCount}</span>
-                  )}
-                </>
+              {!isMinimized && <span>{item.label}</span>}
+              {item.id === 'messages' && unreadCount > 0 && (
+                <span className="packer-badge">{unreadCount}</span>
               )}
             </button>
           );
