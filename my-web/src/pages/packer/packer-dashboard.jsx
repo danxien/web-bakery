@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import PackerSidebar from './packer-sidebarmenu';
-import Dashboard from './packer-dashboard-overview';
+import DashboardOverview from './packer-dashboard-overview';
 import InventoryOverview from './packer-inventory-overview';
 import DeliveriesOverview from './packer-deliveries-overview';
 import PackerMessages from './packer-messages';
@@ -52,7 +52,7 @@ export default function PackerLandingPage({ onLogout }) {
     price: initialBranchStock[0]?.price || 0,
     qty: '',
     orderDate: new Date().toISOString().slice(0, 10),
-    pickupDate: '',
+    deliveryDateTime: '',
     specialInstructions: '',
   });
   const [stockAddForm, setStockAddForm] = useState({
@@ -92,30 +92,9 @@ export default function PackerLandingPage({ onLogout }) {
     };
   }, []);
 
-  const totals = useMemo(() => {
-    const totalCakes = stockItems.reduce((sum, row) => sum + row.qty, 0);
-    const freshCount = stockItems.filter((row) => row.status === 'Fresh').reduce((sum, row) => sum + row.qty, 0);
-    const nearExpiryCount = stockItems
-      .filter((row) => row.status === 'Near Expiry')
-      .reduce((sum, row) => sum + row.qty, 0);
-    
-    const today = new Date().toISOString().slice(0, 10);
-    const deliveredToday = deliveryItems
-      .filter((row) => row.status === 'Delivered' && row.orderDate === today)
-      .reduce((sum, row) => sum + row.qty, 0);
-    
-    const revenueToday = deliveryItems
-      .filter((row) => row.status === 'Delivered' && row.orderDate === today)
-      .reduce((sum, row) => sum + (row.price * row.qty), 0);
-    
-    const customOrderCount = customOrders.length;
-
-    return { totalCakes, freshCount, nearExpiryCount, deliveredToday, revenueToday, customOrderCount };
-  }, [stockItems, deliveryItems]);
-
   const unreadCount = messages.filter((msg) => msg.unread).length;
   const pendingOrders = deliveryItems.filter(
-    (row) => row.status === 'Pending' || row.status === 'Out for Delivery' || row.status === 'In Transit'
+    (row) => row.status === 'Pending' || row.status === 'Ready' || row.status === 'Out for Delivery' || row.status === 'In Transit'
   );
 
   const handleAddCake = () => {
@@ -257,10 +236,17 @@ export default function PackerLandingPage({ onLogout }) {
   const handleCreateDelivery = () => {
     const qty = Number(deliveryForm.qty);
     const price = Number(deliveryForm.price);
-    if (!deliveryForm.cake || Number.isNaN(qty) || qty <= 0 || Number.isNaN(price) || price <= 0) return;
-
-    const now = new Date();
-    const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const deliveryDateTime = deliveryForm.deliveryDateTime || '';
+    const [datePart, timePart] = deliveryDateTime.split('T');
+    if (
+      !deliveryForm.cake ||
+      Number.isNaN(qty) ||
+      qty <= 0 ||
+      Number.isNaN(price) ||
+      price <= 0 ||
+      !datePart ||
+      !timePart
+    ) return;
 
     setDeliveryItems((prev) => [
       ...prev,
@@ -272,10 +258,10 @@ export default function PackerLandingPage({ onLogout }) {
         cake: deliveryForm.cake,
         price,
         qty,
-        time,
+        time: timePart,
         status: 'Pending',
         orderDate: deliveryForm.orderDate,
-        pickupDate: deliveryForm.pickupDate || '-',
+        pickupDate: datePart,
         specialInstructions: deliveryForm.specialInstructions.trim() || '-',
       },
     ]);
@@ -291,24 +277,24 @@ export default function PackerLandingPage({ onLogout }) {
       price: stockItems[0]?.price || 0,
       qty: '',
       orderDate: new Date().toISOString().slice(0, 10),
-      pickupDate: '',
+      deliveryDateTime: '',
       specialInstructions: '',
     });
   };
 
   const handleAdvanceDeliveryStatus = (rowIndex) => {
     const targetDelivery = deliveryItems[rowIndex];
-    if (!targetDelivery || targetDelivery.status === 'Delivered') return;
+    if (!targetDelivery || targetDelivery.status === 'Out for Delivery') return;
 
     if (targetDelivery.status === 'Pending') {
       setDeliveryWarning('');
       setDeliveryItems((prev) =>
-        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Out for Delivery' } : row))
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Ready' } : row))
       );
       return;
     }
 
-    if (targetDelivery.status === 'Out for Delivery' || targetDelivery.status === 'In Transit') {
+    if (targetDelivery.status === 'Ready' || targetDelivery.status === 'In Transit') {
       const stockMatch = stockItems.find((item) => item.cake === targetDelivery.cake);
       const availableQty = stockMatch?.qty || 0;
 
@@ -332,7 +318,7 @@ export default function PackerLandingPage({ onLogout }) {
       );
 
       setDeliveryItems((prev) =>
-        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Delivered' } : row))
+        prev.map((row, index) => (index === rowIndex ? { ...row, status: 'Out for Delivery' } : row))
       );
       setDeliveryWarning('');
     }
@@ -432,14 +418,9 @@ export default function PackerLandingPage({ onLogout }) {
     if (activeTab === 'dashboard') {
       return (
         <DashboardOverview
-          totals={totals}
-          unreadCount={unreadCount}
           stockItems={stockItems}
-          pendingOrders={pendingOrders}
+          deliveryItems={deliveryItems}
           customOrders={customOrders}
-          getBadgeClass={getBadgeClass}
-          onOpenDeliveryModal={() => setIsDeliveryModalOpen(true)}
-          onOpenMessages={() => setActiveTab('messages')}
         />
       );
     }
@@ -462,6 +443,7 @@ export default function PackerLandingPage({ onLogout }) {
           deliveryItems={deliveryItems}
           onAdvanceStatus={handleAdvanceDeliveryStatus}
           deliveryWarning={deliveryWarning}
+          onOpenDeliveryModal={() => setIsDeliveryModalOpen(true)}
         />
       );
     }

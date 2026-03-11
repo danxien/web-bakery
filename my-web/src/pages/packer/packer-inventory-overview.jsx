@@ -1,24 +1,9 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Calendar, ChevronDown, Download, Layers, Package, Plus, X } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Download, PackageX, Plus, X } from 'lucide-react';
 import { exportRowsToCsv } from '../../utils/exportCsv';
 
 const LOW_STOCK_QTY = 5;
 const PER_PAGE = 6;
-
-const DATE_OPTIONS = [
-  { value: 'all', label: 'All Dates' },
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'This Week' },
-  { value: 'month', label: 'This Month' },
-  { value: 'custom', label: 'Custom Range' },
-];
-
-const STATUS_CARDS = [
-  { key: 'Fresh', label: 'Fresh' },
-  { key: 'Near Expiry', label: 'Near Expiry' },
-  { key: 'Expired', label: 'Expired' },
-  { key: 'Low Stock', label: 'Low Stock' },
-];
 
 const toDate = (value) => {
   if (!value || value === '-') return null;
@@ -45,51 +30,6 @@ const computeStatus = (expiryDate) => {
   return 'Fresh';
 };
 
-const isWithinPeriod = (targetDate, period, customStart, customEnd) => {
-  if (!targetDate) return false;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (period === 'today') {
-    return targetDate.getTime() === today.getTime();
-  }
-
-  if (period === 'week') {
-    const start = new Date(today);
-    const day = start.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-    start.setDate(start.getDate() + diffToMonday);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
-
-    return targetDate >= start && targetDate <= end;
-  }
-
-  if (period === 'month') {
-    return targetDate.getMonth() === today.getMonth() && targetDate.getFullYear() === today.getFullYear();
-  }
-
-  if (period === 'custom') {
-    const start = toDate(customStart);
-    const end = toDate(customEnd);
-    if (!start || !end) return true;
-
-    const customStartDate = new Date(start);
-    customStartDate.setHours(0, 0, 0, 0);
-
-    const customEndDate = new Date(end);
-    customEndDate.setHours(23, 59, 59, 999);
-
-    return targetDate >= customStartDate && targetDate <= customEndDate;
-  }
-
-  return true;
-};
-
 const isLowStock = (item) => item.qty <= LOW_STOCK_QTY && item.computedStatus !== 'Expired';
 
 export default function InventoryOverview({
@@ -100,13 +40,9 @@ export default function InventoryOverview({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
-  const [dateFilter, setDateFilter] = useState('all');
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
-  const [isDateDropOpen, setIsDateDropOpen] = useState(false);
-  const dateDropRef = useRef(null);
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState('all');
 
   const setNowMadeTime = () => {
     const now = new Date();
@@ -124,26 +60,7 @@ export default function InventoryOverview({
     [stockItems]
   );
 
-  const dateLabel = useMemo(() => {
-    if (dateFilter === 'custom' && customStart && customEnd) {
-      return `${formatDate(customStart)} - ${formatDate(customEnd)}`;
-    }
-    return DATE_OPTIONS.find((option) => option.value === dateFilter)?.label || 'All Dates';
-  }, [customEnd, customStart, dateFilter]);
-
-  const dateScoped = useMemo(
-    () =>
-      inventoryRows.filter((item) => {
-        const d = toDate(item.expiryDate);
-        return d && isWithinPeriod(d, dateFilter, customStart, customEnd);
-      }),
-    [customEnd, customStart, dateFilter, inventoryRows]
-  );
-
-  const totalCakeTypes = useMemo(
-    () => new Set(dateScoped.map((item) => item.cake.toLowerCase())).size,
-    [dateScoped]
-  );
+  const dateScoped = inventoryRows;
 
   const totalCakesInStock = useMemo(
     () => dateScoped.reduce((sum, item) => sum + Number(item.qty || 0), 0),
@@ -165,11 +82,7 @@ export default function InventoryOverview({
 
     if (searchTerm.trim()) {
       const needle = searchTerm.toLowerCase();
-      rows = rows.filter((item) =>
-        item.cake.toLowerCase().includes(needle) ||
-        String(item.price).includes(needle) ||
-        item.expiryDate.includes(needle)
-      );
+      rows = rows.filter((item) => item.cake.toLowerCase().includes(needle));
     }
 
     if (statusFilter) {
@@ -178,30 +91,22 @@ export default function InventoryOverview({
         : rows.filter((item) => item.computedStatus === statusFilter);
     }
 
+    if (viewMode === 'critical') {
+      rows = rows.filter((item) =>
+        isLowStock(item) ||
+        item.computedStatus === 'Near Expiry' ||
+        item.computedStatus === 'Expired'
+      );
+    }
+
     return rows;
-  }, [dateScoped, searchTerm, statusFilter]);
+  }, [dateScoped, searchTerm, statusFilter, viewMode]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const handleDateSelect = (value) => {
-    setDateFilter(value);
-    setStatusFilter(null);
-    setPage(1);
-    if (value !== 'custom') {
-      setIsDateDropOpen(false);
-    }
-  };
-
-  const handleStatusCard = (value) => {
+  const handleSummaryFilter = (value) => {
     setStatusFilter((prev) => (prev === value ? null : value));
-    setPage(1);
-  };
-
-  const applyCustomRange = () => {
-    if (!customStart || !customEnd) return;
-    setDateFilter('custom');
-    setIsDateDropOpen(false);
     setPage(1);
   };
 
@@ -231,19 +136,15 @@ export default function InventoryOverview({
   };
 
   useEffect(() => {
-    const handler = (event) => {
-      if (dateDropRef.current && !dateDropRef.current.contains(event.target)) {
-        setIsDateDropOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  useEffect(() => {
     setPage(1);
-  }, [customEnd, customStart, dateFilter, searchTerm, statusFilter]);
+  }, [searchTerm, statusFilter, viewMode]);
+
+  const getRowClass = (item) => {
+    if (item.computedStatus === 'Expired') return 'row-expired';
+    if (item.computedStatus === 'Near Expiry') return 'row-near-expiry';
+    if (isLowStock(item)) return 'row-low-stock';
+    return '';
+  };
 
   return (
     <>
@@ -253,100 +154,45 @@ export default function InventoryOverview({
             <h1 className="pkinv-title">Inventory Overview</h1>
             <p className="pkinv-subtitle">Monitor stock levels and expiry dates</p>
           </div>
+        </div>
 
-          <div className="pkinv-filter-dropdown-wrapper" ref={dateDropRef}>
-            <button
-              className={`pkinv-date-filter-btn ${isDateDropOpen ? 'open' : ''}`}
-              onClick={() => setIsDateDropOpen((prev) => !prev)}
-              title="Filter by date"
-              type="button"
-            >
-              <Calendar size={16} />
-              <span>{dateLabel}</span>
-              <ChevronDown size={13} />
-            </button>
-
-            {isDateDropOpen && (
-              <div className="pkinv-date-dropdown">
-                {DATE_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`pkinv-dropdown-item ${dateFilter === option.value ? 'selected' : ''}`}
-                    onClick={() => handleDateSelect(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-
-                <div className="pkinv-custom-range-section">
-                  <span className="pkinv-custom-range-title">Custom Range</span>
-                  <label className="pkinv-custom-label">From</label>
-                  <input
-                    type="date"
-                    className="pkinv-date-input"
-                    value={customStart}
-                    onChange={(event) => {
-                      setCustomStart(event.target.value);
-                      setDateFilter('custom');
-                    }}
-                  />
-                  <label className="pkinv-custom-label">To</label>
-                  <input
-                    type="date"
-                    className="pkinv-date-input"
-                    value={customEnd}
-                    min={customStart}
-                    onChange={(event) => {
-                      setCustomEnd(event.target.value);
-                      setDateFilter('custom');
-                    }}
-                  />
-                  <button type="button" className="pkinv-apply-btn" onClick={applyCustomRange} disabled={!customStart || !customEnd}>
-                    Apply
-                  </button>
-                </div>
-              </div>
-            )}
+        <div className="pkinv-summary-row">
+          <div className="pkinv-summary-card pkinv-summary-card--total">
+            <span className="pkinv-summary-label">Total Stock</span>
+            <span className="pkinv-summary-value">{totalCakesInStock}</span>
           </div>
-        </div>
-
-        <div className="pkinv-metrics-row">
-          <article className="pkinv-metric-card">
-            <div className="pkinv-card-top">
-              <span className="pkinv-metric-label">Total Cake Types</span>
-              <Layers size={20} className="pkinv-blue-icon" />
-            </div>
-            <div className="pkinv-card-bottom">
-              <span className="pkinv-metric-value">{totalCakeTypes}</span>
-              <span className="pkinv-metric-subtext">Unique cake varieties</span>
-            </div>
-          </article>
-
-          <article className="pkinv-metric-card">
-            <div className="pkinv-card-top">
-              <span className="pkinv-metric-label">Total Cakes in Stock</span>
-              <Package size={20} className="pkinv-green-icon" />
-            </div>
-            <div className="pkinv-card-bottom">
-              <span className="pkinv-metric-value">{totalCakesInStock}</span>
-              <span className="pkinv-metric-subtext">Units across all batches</span>
-            </div>
-          </article>
-        </div>
-
-        <div className="pkinv-status-cards-row">
-          {STATUS_CARDS.map((card) => (
-            <button
-              key={card.key}
-              className={`pkinv-status-card pkinv-status-card--${card.key.toLowerCase().replace(/\s+/g, '-')} ${statusFilter === card.key ? 'is-active' : ''}`}
-              onClick={() => handleStatusCard(card.key)}
-              type="button"
-            >
-              <span className="pkinv-status-card-count">{statusCounts[card.key] ?? 0}</span>
-              <span className="pkinv-status-card-label">{card.label}</span>
-            </button>
-          ))}
+          <button
+            type="button"
+            className={`pkinv-summary-card pkinv-summary-card--low ${statusFilter === 'Low Stock' ? 'is-active' : ''}`}
+            onClick={() => handleSummaryFilter('Low Stock')}
+          >
+            <span className="pkinv-summary-label">Low Stock</span>
+            <span className="pkinv-summary-value">{statusCounts['Low Stock']}</span>
+          </button>
+          <button
+            type="button"
+            className={`pkinv-summary-card pkinv-summary-card--fresh ${statusFilter === 'Fresh' ? 'is-active' : ''}`}
+            onClick={() => handleSummaryFilter('Fresh')}
+          >
+            <span className="pkinv-summary-label">Fresh</span>
+            <span className="pkinv-summary-value">{statusCounts.Fresh}</span>
+          </button>
+          <button
+            type="button"
+            className={`pkinv-summary-card pkinv-summary-card--near ${statusFilter === 'Near Expiry' ? 'is-active' : ''}`}
+            onClick={() => handleSummaryFilter('Near Expiry')}
+          >
+            <span className="pkinv-summary-label">Near Expiry</span>
+            <span className="pkinv-summary-value">{statusCounts['Near Expiry']}</span>
+          </button>
+          <button
+            type="button"
+            className={`pkinv-summary-card pkinv-summary-card--expired ${statusFilter === 'Expired' ? 'is-active' : ''}`}
+            onClick={() => handleSummaryFilter('Expired')}
+          >
+            <span className="pkinv-summary-label">Expired</span>
+            <span className="pkinv-summary-value">{statusCounts.Expired}</span>
+          </button>
         </div>
 
         <div className="pkinv-table-container">
@@ -354,6 +200,22 @@ export default function InventoryOverview({
             <div>
               <span className="pkinv-table-section-title">Stock Items</span>
               <span className="pkinv-table-count-pill">{filteredData.length} items</span>
+            </div>
+            <div className="pkinv-view-toggle">
+              <button
+                type="button"
+                className={`pkinv-toggle-btn ${viewMode === 'all' ? 'active' : ''}`}
+                onClick={() => setViewMode('all')}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={`pkinv-toggle-btn ${viewMode === 'critical' ? 'active' : ''}`}
+                onClick={() => setViewMode('critical')}
+              >
+                Critical
+              </button>
             </div>
             <div className="pkinv-toolbar-actions">
               <input
@@ -391,12 +253,15 @@ export default function InventoryOverview({
                 {paged.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="pkinv-no-data">
-                      No inventory items found
+                      <div className="pkinv-empty-state">
+                        <PackageX size={34} />
+                        <p>No inventory items found</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   paged.map((item, index) => (
-                    <tr key={`${item.cake}-${item.madeDate}-${index}`} className={item.computedStatus === 'Expired' ? 'row-expired' : ''}>
+                    <tr key={`${item.cake}-${item.madeDate}-${index}`} className={getRowClass(item)}>
                       <td>
                         <span className="pkinv-cake-name-text">{item.cake}</span>
                       </td>
@@ -407,7 +272,7 @@ export default function InventoryOverview({
                         <span className="pkinv-price-text">₱{Number(item.price).toFixed(2)}</span>
                       </td>
                       <td>{formatDate(item.madeDate)}</td>
-                      <td>{item.madeTime || '-'}</td>
+                      <td>{item.madeTime || item.time || '-'}</td>
                       <td>
                         <span className={item.computedStatus === 'Near Expiry' ? 'pkinv-expiry-soon' : item.computedStatus === 'Expired' ? 'pkinv-expiry-overdue' : ''}>
                           {formatDate(item.expiryDate)}

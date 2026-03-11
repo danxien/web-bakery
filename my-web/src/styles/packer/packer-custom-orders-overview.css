@@ -346,6 +346,42 @@
   flex-wrap: wrap;
 }
 
+.pkco-search-input {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  font-size: 0.82rem;
+  min-width: 220px;
+}
+
+.pkco-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #a50213;
+  background: var(--pack-red);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkco-add-btn:hover {
+  border-color: #87000c;
+  background: #be0516;
+}
+
+.pkco-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .pkco-filter-icon-btn {
   display: flex;
   align-items: center;

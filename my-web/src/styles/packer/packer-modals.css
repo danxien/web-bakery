@@ -113,6 +113,12 @@
   font-size: 0.95rem;
 }
 
+.add-cake-modal-body input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.95;
+}
+
 .add-cake-modal-body input:disabled {
   background: #f0e9bf;
   color: #444444;

@@ -181,6 +181,42 @@
   margin-left: 8px;
 }
 
+.pkdo-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pkdo-search-input {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #fff;
+  font-size: 0.82rem;
+  min-width: 220px;
+}
+
+.pkdo-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #a50213;
+  background: var(--pack-red);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.pkdo-add-btn:hover {
+  border-color: #87000c;
+  background: #be0516;
+}
+
 .pkdo-filter-dropdown-wrapper {
   position: relative;
   flex-shrink: 0;
@@ -645,6 +681,11 @@
 .pkdo-status-pill.out-for-delivery {
   background: #e0e7ff;
   color: #3730a3;
+}
+
+.pkdo-status-pill.ready {
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .pkdo-status-pill.delivered {
