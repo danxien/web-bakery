@@ -63,16 +63,12 @@
   background: #fff;
   font-size: 0.83rem;
   font-weight: 500;
-  /* ✅ Use a visible mid-grey at rest so the icon/text read clearly
-        on the white button background without being too heavy. */
   color: #444;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
-/* ✅ Calendar SVG: inherit the button's color so it automatically
-      shifts from #444 (rest) → #111 (hover/open) via currentColor. */
 .inv-date-filter-btn svg {
   flex-shrink: 0;
   color: inherit;
@@ -155,20 +151,16 @@
 /* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
 .inv-date-input::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  /* Dark icon at 65% opacity — clearly visible on #fff9c4 yellow */
   filter: brightness(0) saturate(100%) opacity(0.65);
   border-radius: 6px;
   padding: 4px;
-  /* Lock background so the browser can never fall back to its default gray */
   background-color: transparent;
   transition: filter 0.15s, background-color 0.15s;
 }
-/* Hover — full black icon + soft amber tint */
 .inv-date-input::-webkit-calendar-picker-indicator:hover {
   filter: brightness(0) saturate(100%) opacity(1);
   background-color: rgba(231, 197, 0, 0.30);
 }
-/* Active/clicked — deeper amber highlight, never gray */
 .inv-date-input::-webkit-calendar-picker-indicator:active {
   filter: brightness(0) saturate(100%) opacity(1);
   background-color: rgba(231, 197, 0, 0.55);

@@ -6,7 +6,7 @@
 // STATUS LOGIC (Operational-Based):
 //   Pending   → Cake not yet prepared (waiting for action)
 //   Ready     → Cake prepared, awaiting customer pickup
-//   Picked Up → Customer collected cake, order complete
+//   Picked Up → Customer collected cake, order complete ✓ SALES
 //   Overdue   → Auto: Today > PickupDate AND status === 'Ready'
 //   Cancelled → Final state
 //
@@ -14,13 +14,16 @@
 //   Pending → Ready → Picked Up
 //   Pending → Cancelled
 //   Ready   → Overdue → Picked Up | Cancelled
+//
+// SALES CONNECTION:
+//   IF status === 'Picked Up' → transaction is included in salesOverview.jsx
+//   salesOverview reads INIT_RESERVATIONS and filters by status === 'Picked Up'
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { PackageCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/reservationsOverview.css';
 
-// TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
 const TODAY     = new Date();
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
@@ -64,7 +67,8 @@ function inRange(date, start, end) {
 
 /* ── Constants ─────────────────────────────────────────────── */
 
-// Revenue is counted only for active statuses (excluding Cancelled)
+// Estimated revenue counts non-cancelled active reservations.
+// For Sales, only 'Picked Up' status is used by salesOverview.jsx.
 const REVENUE_STATUSES = ['Pending', 'Ready', 'Picked Up'];
 
 const DATE_OPTIONS = [
@@ -117,9 +121,16 @@ function StatusPill({ reservation }) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   TODO: Backend - Export reservations data for salesOverview.jsx
-   Replace this empty array with the fetched API response.
-   Expected shape per reservation:
+   SHARED DATA BRIDGE — consumed by salesOverview.jsx
+   salesOverview reads this array and filters by status === 'Picked Up'
+   to compute Reservation Sales Revenue (completionDate = pickupDate).
+
+   TODO: Backend — Remove this export once salesOverview.jsx
+   fetches sales data independently via GET /api/sales.
+   On mount (see useEffect below), populate via GET /api/reservations
+   and sync: INIT_RESERVATIONS = data.reservations
+
+   Expected shape per record:
    {
      cakeType:        string  — cake product name
      quantity:        number
@@ -128,78 +139,17 @@ function StatusPill({ reservation }) {
      contact:         string  — customer contact number
      seller:          string
      reservationDate: string  — YYYY-MM-DD
-     pickupDate:      string  — YYYY-MM-DD
+     pickupDate:      string  — YYYY-MM-DD (Sales completionDate)
      status:          'Pending' | 'Ready' | 'Picked Up' | 'Cancelled'
      instructions:    string  — special notes (optional)
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_RESERVATIONS = [
-  {
-    cakeType:        'Chocolate Fudge Cake',
-    quantity:        2,
-    price:           850,
-    customer:        'Ana Reyes',
-    contact:         '09171234567',
-    seller:          'staff',
-    reservationDate: '2026-03-09',
-    pickupDate:      '2026-03-11',
-    status:          'Ready',
-    instructions:    'No nuts. Please write "Happy Birthday Ana" on top.',
-  },
-  {
-    cakeType:        'Ube Macapuno Cake',
-    quantity:        1,
-    price:           950,
-    customer:        'Carlo Mendoza',
-    contact:         '09209876543',
-    seller:          'staff',
-    reservationDate: '2026-03-09',
-    pickupDate:      '2026-03-11',
-    status:          'Pending',
-    instructions:    '',
-  },
-  {
-    cakeType:        'Bento Cake',
-    quantity:        3,
-    price:           450,
-    customer:        'Sofia dela Cruz',
-    contact:         '09561122334',
-    seller:          'staff',
-    reservationDate: '2026-03-10',
-    pickupDate:      '2026-03-11',
-    status:          'Picked Up',
-    instructions:    'One with candles, two plain.',
-  },
-  {
-    cakeType:        'Mango Cream Cake',
-    quantity:        1,
-    price:           780,
-    customer:        'Ramon Villanueva',
-    contact:         '09321234321',
-    seller:          'staff',
-    reservationDate: '2026-03-08',
-    pickupDate:      '2026-03-11',
-    status:          'Cancelled',
-    instructions:    '',
-  },
-  {
-    cakeType:        'Red Velvet Cake',
-    quantity:        1,
-    price:           900,
-    customer:        'Liza Corpuz',
-    contact:         '09184445556',
-    seller:          'staff',
-    reservationDate: '2026-03-07',
-    pickupDate:      '2026-03-10',
-    status:          'Ready',
-    instructions:    'Extra cream cheese frosting on the side.',
-  },
-];
+
+// TODO: Backend will provide completed transactions here
+export let INIT_RESERVATIONS = [];
 
 /* ──────────────────────────────────────────────────────────────
    RESERVATION DETAIL MODAL
-   Table shows: Cake Type · Qty · Price · Pick-Up Date · Status · Action
-   Modal shows: Order Info + Customer Info + Schedule + Instructions
 ────────────────────────────────────────────────────────────── */
 function ReservationDetailModal({ reservation, onClose }) {
   return (
@@ -302,9 +252,10 @@ const ReservationsOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace empty array with fetched reservations data
+  // TODO: Backend — Replace initial [] with data populated in
+  //   useEffect below via GET /api/reservations.
   // -----------------------------------------------------------
-  const [reservationsData, setReservationsData] = useState(INIT_RESERVATIONS);
+  const [reservationsData, setReservationsData] = useState([]);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
 
@@ -314,8 +265,8 @@ const ReservationsOverview = () => {
   const [dateDropOpen, setDateDropOpen] = useState(false);
   const dateDropRef = useRef(null);
 
-  const [statusFilter, setStatusFilter] = useState(null);
-  const [page,         setPage]         = useState(1);
+  const [statusFilter,     setStatusFilter]     = useState(null);
+  const [page,             setPage]             = useState(1);
   const [modalReservation, setModalReservation] = useState(null);
 
 
@@ -411,21 +362,23 @@ const ReservationsOverview = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch reservations on mount
-    // const fetchReservations = async () => {
+    // TODO: Backend — Fetch reservations on mount:
+    //
+    // const load = async () => {
     //   try {
     //     setLoading(true);
-    //     const response = await fetch('/api/reservations');
-    //     const data = await response.json();
+    //     const res  = await fetch('/api/reservations');
+    //     const data = await res.json();
     //     setReservationsData(data.reservations);
-    //     INIT_RESERVATIONS = data.reservations;
+    //     INIT_RESERVATIONS = data.reservations; // sync bridge for salesOverview
     //   } catch (err) {
     //     setError('Failed to load reservation data.');
     //   } finally {
     //     setLoading(false);
     //   }
     // };
-    // fetchReservations();
+    // load();
+
     setLoading(false);
 
     const handler = e => {
@@ -580,8 +533,7 @@ const ReservationsOverview = () => {
 
       {/* =====================================================
           4. RESERVATIONS TABLE
-          Visible columns: Cake Type · Qty · Price · Customer Name ·
-                           Pick-Up Date · Status · Action
+          Visible columns: Cake Type · Qty · Price · Pick-Up Date · Status · Action
           Hidden from table (shown only in modal):
             Contact Number, Reservation Date, Special Instructions
           ===================================================== */}

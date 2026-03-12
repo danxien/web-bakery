@@ -285,13 +285,13 @@
 .co-status-card--pending .co-status-card-label { color: #ffc107; }
 .co-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
 
-.co-status-card--ready .co-status-card-count { color: #17a2b8; }
-.co-status-card--ready .co-status-card-label { color: #17a2b8; }
-.co-status-card--ready.is-active             { border-color: #17a2b8; background: #e0f7fa; }
+.co-status-card--out-for-delivery .co-status-card-count { color: #6366f1; }
+.co-status-card--out-for-delivery .co-status-card-label { color: #6366f1; }
+.co-status-card--out-for-delivery.is-active             { border-color: #6366f1; background: #eef2ff; }
 
-.co-status-card--picked-up .co-status-card-count { color: #28a745; }
-.co-status-card--picked-up .co-status-card-label { color: #28a745; }
-.co-status-card--picked-up.is-active             { border-color: #28a745; background: #d4edda; }
+.co-status-card--delivered .co-status-card-count { color: #28a745; }
+.co-status-card--delivered .co-status-card-label { color: #28a745; }
+.co-status-card--delivered.is-active             { border-color: #28a745; background: #d4edda; }
 
 .co-status-card--overdue .co-status-card-count { color: #fd7e14; }
 .co-status-card--overdue .co-status-card-label { color: #fd7e14; }
@@ -367,12 +367,12 @@
 }
 
 /* ── Column width distribution ── */
-.co-orders-table col.col-cake   { width: 16%; }
-.co-orders-table col.col-qty    { width: 25%; }
-.co-orders-table col.col-price  { width: 17%; }
-.co-orders-table col.col-pickup { width: 16%; }
-.co-orders-table col.col-status { width: 16%; }
-.co-orders-table col.col-action { width: 10%; }
+.co-orders-table col.col-cake     { width: 16%; }
+.co-orders-table col.col-qty      { width: 25%; }
+.co-orders-table col.col-price    { width: 17%; }
+.co-orders-table col.col-delivery { width: 16%; }
+.co-orders-table col.col-status   { width: 16%; }
+.co-orders-table col.col-action   { width: 10%; }
 
 .co-orders-table thead th {
   position: sticky;
@@ -424,9 +424,9 @@
 .co-cake-name-text { font-weight: 500; }
 .co-price-text     { font-weight: 600; color: #22c55e; }
 
-.co-pickup-text            { font-weight: 600; font-size: 0.85rem; }
-.co-pickup-text.is-today   { color: #854d0e; }
-.co-pickup-text.is-overdue { color: #fd7e14; }
+.co-delivery-text            { font-weight: 600; font-size: 0.85rem; }
+.co-delivery-text.is-today   { color: #854d0e; }
+.co-delivery-text.is-overdue { color: #fd7e14; }
 
 /* ── Status pills ── */
 .co-status-pill {
@@ -436,12 +436,13 @@
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
+  text-align: center;
 }
-.co-status-pill.pending   { background: #fff8e1; color: #ffc107; }
-.co-status-pill.ready     { background: #e0f7fa; color: #17a2b8; }
-.co-status-pill.picked-up { background: #d4edda; color: #28a745; }
-.co-status-pill.overdue   { background: #fff3e0; color: #fd7e14; }
-.co-status-pill.cancelled { background: #fde8ea; color: #dc3545; }
+.co-status-pill.pending          { background: #fff8e1; color: #d97706; }
+.co-status-pill.out-for-delivery { background: #eef2ff; color: #4338ca; padding: 4px 10px; }
+.co-status-pill.delivered        { background: #d4edda; color: #28a745; }
+.co-status-pill.overdue          { background: #fff3e0; color: #fd7e14; }
+.co-status-pill.cancelled        { background: #fde8ea; color: #dc3545; }
 
 .co-no-data { text-align: center !important; padding: 40px !important; color: #888; }
 
@@ -516,8 +517,15 @@
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
 }
+.co-modal::-webkit-scrollbar       { width: 6px; }
+.co-modal::-webkit-scrollbar-track { background: transparent; }
+.co-modal::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 
 .co-modal-header {
   display: flex;
@@ -533,7 +541,6 @@
   border-radius: 16px 16px 0 0;
 }
 
-/* Eyebrow label above the cake name */
 .co-modal-eyebrow {
   font-size: 0.72rem;
   font-weight: 700;
@@ -604,14 +611,12 @@
   letter-spacing: 0.07em;
 }
 
-/* Base value style — same for every status */
 .co-info-value {
   font-size: 0.88rem;
   color: #222;
   line-height: 1.4;
 }
 
-/* Price value variant */
 .co-info-value.price-val {
   font-family: Georgia, serif;
   font-size: 1.15rem;
@@ -619,7 +624,6 @@
   color: #22c55e;
 }
 
-/* Instructions value variant */
 .co-info-value.instructions-val {
   padding: 10px 12px;
   background: #fefce8;

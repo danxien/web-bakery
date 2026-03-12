@@ -1,23 +1,22 @@
 // =============================================================
 // deliveriesOverview.jsx
-// PURPOSE: Manager monitoring view for customer delivery orders.
-// FILTERING: Date Filter (header calendar icon) + Status Cards (clickable)
+// PURPOSE: Manager read-only view of incoming cake stock deliveries.
+//          Delivery records are created by the Packer role and
+//          fetched here via API. The manager cannot add or edit records.
 //
-// STATUS LOGIC (Operational-Based):
-//   Pending          → Order placed, not yet dispatched
-//   Out for Delivery → Currently in transit
-//   Delivered        → Customer received order, complete
-//   Overdue          → Auto: Today > DeliveryDate AND status !== 'Delivered' | 'Cancelled'
-//   Cancelled        → Final state
+// CONNECTION LOGIC (Deliveries → Inventory):
+//   INIT_DELIVERIES and INVENTORY_STATE are exported as module-level
+//   refs so InventoryOverview.jsx can derive live inventory from them.
+//   When the backend is connected, both refs are populated on mount
+//   from the API and InventoryOverview switches to its own API call.
 //
-// WORKFLOW:
-//   Pending → Out for Delivery → Delivered
-//   Pending → Cancelled
-//   Out for Delivery → Overdue → Delivered | Cancelled
+// DATE FILTER: Today | This Week | This Month | Custom Range
+// SUMMARY CARDS: Total Deliveries · Total Cakes Delivered
+// TABLE COLUMNS: Delivery Date · Cake Type · Price · Quantity · Expiry Date
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Truck, CircleDollarSign, PackageCheck, Calendar, ChevronDown } from 'lucide-react';
+import { Truck, PackageCheck, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/deliveriesOverview.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
@@ -64,40 +63,15 @@ function inRange(date, start, end) {
 
 /* ── Constants ─────────────────────────────────────────────── */
 
-// Revenue counted for all active statuses (excluding Cancelled)
-const REVENUE_STATUSES = ['Pending', 'Out for Delivery', 'Delivered'];
-
 const DATE_OPTIONS = [
   { key: 'today', label: 'Today' },
   { key: 'week',  label: 'This Week' },
   { key: 'month', label: 'This Month' },
 ];
 
-const STATUS_CARDS = [
-  { key: 'Pending',          label: 'Pending' },
-  { key: 'Out for Delivery', label: 'Out for Delivery' },
-  { key: 'Delivered',        label: 'Delivered' },
-  { key: 'Overdue',          label: 'Overdue' },
-  { key: 'Cancelled',        label: 'Cancelled' },
-];
+const PER_PAGE = 6;
 
 /* ── Misc Helpers ──────────────────────────────────────────── */
-
-function isOverdue(d) {
-  return (
-    new Date(d.deliveryDate + 'T00:00:00') < TODAY &&
-    d.status !== 'Delivered' &&
-    d.status !== 'Cancelled'
-  );
-}
-
-function isDueToday(d) {
-  return (
-    d.deliveryDate === TODAY_STR &&
-    d.status !== 'Delivered' &&
-    d.status !== 'Cancelled'
-  );
-}
 
 function formatDate(s) {
   return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', {
@@ -105,214 +79,36 @@ function formatDate(s) {
   });
 }
 
-function statusPillClass(ds) {
-  const map = {
-    Pending:            'pending',
-    'Out for Delivery': 'out-for-delivery',
-    Delivered:          'delivered',
-    Overdue:            'overdue',
-    Cancelled:          'cancelled',
-  };
-  return map[ds] || 'pending';
-}
-
-function StatusPill({ delivery }) {
-  const ds = isOverdue(delivery) ? 'Overdue' : delivery.status;
-  return <span className={`do-status-pill ${statusPillClass(ds)}`}>{ds}</span>;
-}
-
 /* ──────────────────────────────────────────────────────────────
-   TODO: Backend - Export deliveries data for salesOverview.jsx
-   Replace this mock array with the fetched API response.
-   Expected shape per delivery:
-   {
-     cakeType:     string  — cake product name
-     quantity:     number
-     price:        number  — total order price (₱)
-     customer:     string
-     contact:      string  — customer contact number
-     address:      string  — delivery address
-     orderDate:    string  — YYYY-MM-DD
-     deliveryDate: string  — YYYY-MM-DD
-     status:       'Pending' | 'Out for Delivery' | 'Delivered' | 'Cancelled'
-     instructions: string  — special notes (optional)
-   }
+   SHARED EXPORTS — consumed by InventoryOverview.jsx
+   These module-level refs act as an in-memory bridge until
+   a real backend is wired in.
+
+   TODO: Backend — Remove both exports once InventoryOverview
+   calls GET /api/inventory directly. At that point this file
+   becomes fully self-contained.
 ────────────────────────────────────────────────────────────── */
-export let INIT_DELIVERIES = [
-  {
-    cakeType:     'Chocolate Fudge Cake',
-    quantity:     1,
-    price:        950,
-    customer:     'Maria Santos',
-    contact:      '09171234567',
-    address:      'Blk 4 Lot 12, Sampaguita St., Calamba, Laguna',
-    orderDate:    '2026-03-09',
-    deliveryDate: '2026-03-11',
-    status:       'Out for Delivery',
-    instructions: 'Please call before arriving. Leave at the gate if no answer.',
-  },
-  {
-    cakeType:     'Ube Macapuno Cake',
-    quantity:     1,
-    price:        1100,
-    customer:     'Jose Reyes',
-    contact:      '09209876543',
-    address:      '23 Marigold Ave., Brgy. Parian, Calamba, Laguna',
-    orderDate:    '2026-03-09',
-    deliveryDate: '2026-03-11',
-    status:       'Pending',
-    instructions: '',
-  },
-  {
-    cakeType:     'Bento Cake',
-    quantity:     2,
-    price:        900,
-    customer:     'Ana dela Cruz',
-    contact:      '09561122334',
-    address:      '8 Rosal St., Brgy. Real, Calamba, Laguna',
-    orderDate:    '2026-03-08',
-    deliveryDate: '2026-03-11',
-    status:       'Delivered',
-    instructions: 'Fragile. Handle with care.',
-  },
-  {
-    cakeType:     'Mango Cream Cake',
-    quantity:     1,
-    price:        850,
-    customer:     'Ramon Villanueva',
-    contact:      '09321234321',
-    address:      '15 Ilang-Ilang St., Brgy. Halang, Calamba, Laguna',
-    orderDate:    '2026-03-07',
-    deliveryDate: '2026-03-11',
-    status:       'Cancelled',
-    instructions: '',
-  },
-  {
-    cakeType:     'Red Velvet Cake',
-    quantity:     1,
-    price:        980,
-    customer:     'Liza Corpuz',
-    contact:      '09184445556',
-    address:      '3 Sampaguita Rd., Brgy. Bucal, Calamba, Laguna',
-    orderDate:    '2026-03-07',
-    deliveryDate: '2026-03-10',
-    status:       'Out for Delivery',
-    instructions: 'Extra cream cheese frosting packed separately.',
-  },
-];
 
-/* ──────────────────────────────────────────────────────────────
-   DELIVERY DETAIL MODAL
-   Table shows: Cake Type · Qty · Price · Delivery Date · Status · Action
-   Modal shows: Order Info + Customer Info + Delivery Info + Instructions
-────────────────────────────────────────────────────────────── */
-function DeliveryDetailModal({ delivery, onClose }) {
-  return (
-    <div className="do-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="do-modal">
+// TODO: Backend — Populated from GET /api/inventory on mount.
+// Shape: { [cakeType: string]: { quantity: number, expiryDate: string, pricePerCake: number } }
+export let INVENTORY_STATE = {};
 
-        <div className="do-modal-header">
-          <div>
-            <p className="do-modal-eyebrow">Delivery Details</p>
-            <h2 className="do-modal-cake-name">{delivery.cakeType}</h2>
-          </div>
-          <button className="do-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-
-        <div className="do-modal-body">
-
-          {/* ── Section 1: Order Information ── */}
-          <h3 className="do-modal-section-title">Order Information</h3>
-          <div className="do-modal-info-grid">
-
-            <div className="do-info-item">
-              <span className="do-info-label">Cake Type</span>
-              <span className="do-info-value">{delivery.cakeType}</span>
-            </div>
-
-            <div className="do-info-item">
-              <span className="do-info-label">Quantity</span>
-              <span className="do-info-value">{delivery.quantity} pc{delivery.quantity > 1 ? 's' : ''}</span>
-            </div>
-
-            <div className="do-info-item">
-              <span className="do-info-label">Total Price</span>
-              <span className="do-info-value price-val">₱{delivery.price.toLocaleString()}</span>
-            </div>
-
-            <div className="do-info-item">
-              <span className="do-info-label">Status</span>
-              <span className="do-info-value"><StatusPill delivery={delivery} /></span>
-            </div>
-
-          </div>
-
-          {/* ── Section 2: Customer Information ── */}
-          <h3 className="do-modal-section-title" style={{ marginTop: 22 }}>Customer Information</h3>
-          <div className="do-modal-info-grid">
-
-            <div className="do-info-item">
-              <span className="do-info-label">Customer Name</span>
-              <span className="do-info-value">{delivery.customer}</span>
-            </div>
-
-            <div className="do-info-item">
-              <span className="do-info-label">Contact Number</span>
-              <span className="do-info-value">{delivery.contact || '—'}</span>
-            </div>
-
-          </div>
-
-          {/* ── Section 3: Delivery Information ── */}
-          <h3 className="do-modal-section-title" style={{ marginTop: 22 }}>Delivery Information</h3>
-          <div className="do-modal-info-grid">
-
-            <div className="do-info-item">
-              <span className="do-info-label">Order Date</span>
-              <span className="do-info-value">{formatDate(delivery.orderDate)}</span>
-            </div>
-
-            <div className="do-info-item">
-              <span className="do-info-label">Delivery Date</span>
-              <span className="do-info-value">{formatDate(delivery.deliveryDate)}</span>
-            </div>
-
-            <div className="do-info-item full-width">
-              <span className="do-info-label">Delivery Address</span>
-              <span className="do-info-value instructions-val">{delivery.address}</span>
-            </div>
-
-          </div>
-
-          {/* ── Section 4: Special Instructions ── */}
-          <h3 className="do-modal-section-title" style={{ marginTop: 22 }}>Special Instructions</h3>
-          <div className="do-modal-info-grid">
-            <div className="do-info-item full-width">
-              <span className="do-info-value instructions-val">
-                {delivery.instructions || 'No special instructions provided.'}
-              </span>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
-}
+// TODO: Backend — Populated from GET /api/stock-deliveries on mount.
+// Shape per record: { id, deliveryDate, cakeType, pricePerCake, quantity, expiryDate }
+export let INIT_DELIVERIES = [];
 
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
-const PER_PAGE = 6;
-
 const DeliveryOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace INIT_DELIVERIES with fetched data
+  // TODO: Backend — Replace initial [] with data fetched in
+  //   useEffect below via GET /api/stock-deliveries.
   // -----------------------------------------------------------
-  const [deliveriesData, setDeliveriesData] = useState(INIT_DELIVERIES);
+  const [deliveriesData, setDeliveriesData] = useState([]);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState(null);
 
@@ -322,9 +118,7 @@ const DeliveryOverview = () => {
   const [dateDropOpen, setDateDropOpen] = useState(false);
   const dateDropRef = useRef(null);
 
-  const [statusFilter,  setStatusFilter]  = useState(null);
-  const [page,          setPage]          = useState(1);
-  const [modalDelivery, setModalDelivery] = useState(null);
+  const [page, setPage] = useState(1);
 
 
   // -----------------------------------------------------------
@@ -343,9 +137,9 @@ const DeliveryOverview = () => {
 
 
   // -----------------------------------------------------------
-  // DATE-SCOPED DELIVERIES (filter by deliveryDate)
+  // FILTERED DATA (filter by deliveryDate)
   // -----------------------------------------------------------
-  const dateScoped = useMemo(
+  const filteredData = useMemo(
     () => deliveriesData.filter(d => inRange(d.deliveryDate, rangeStart, rangeEnd)),
     [deliveriesData, rangeStart, rangeEnd]
   );
@@ -354,39 +148,13 @@ const DeliveryOverview = () => {
   // -----------------------------------------------------------
   // SUMMARY METRICS
   // -----------------------------------------------------------
-  const totalDeliveryOrders = dateScoped.length;
-
-  const estimatedRevenue = dateScoped
-    .filter(d => REVENUE_STATUSES.includes(d.status))
-    .reduce((sum, d) => sum + d.price, 0);
-
-  const totalCakesDelivered = dateScoped
-    .filter(d => d.status === 'Delivered')
-    .reduce((sum, d) => sum + d.quantity, 0);
+  const totalDeliveries     = filteredData.length;
+  const totalCakesDelivered = filteredData.reduce((sum, d) => sum + d.quantity, 0);
 
 
   // -----------------------------------------------------------
-  // STATUS CARD COUNTS
+  // PAGINATION
   // -----------------------------------------------------------
-  const statusCounts = useMemo(() => {
-    const counts = { Pending: 0, 'Out for Delivery': 0, Delivered: 0, Overdue: 0, Cancelled: 0 };
-    dateScoped.forEach(d => {
-      if (isOverdue(d))            counts.Overdue++;
-      else if (d.status in counts) counts[d.status]++;
-    });
-    return counts;
-  }, [dateScoped]);
-
-
-  // -----------------------------------------------------------
-  // TABLE DATA
-  // -----------------------------------------------------------
-  const filteredData = useMemo(() => {
-    if (!statusFilter)              return dateScoped;
-    if (statusFilter === 'Overdue') return dateScoped.filter(isOverdue);
-    return dateScoped.filter(d => d.status === statusFilter && !isOverdue(d));
-  }, [dateScoped, statusFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
   const paged      = filteredData.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
@@ -396,14 +164,8 @@ const DeliveryOverview = () => {
   // -----------------------------------------------------------
   function handleDateSelect(key) {
     setDateFilter(key);
-    setStatusFilter(null);
     setPage(1);
     if (key !== 'custom') setDateDropOpen(false);
-  }
-
-  function handleStatusCard(key) {
-    setStatusFilter(prev => prev === key ? null : key);
-    setPage(1);
   }
 
   function applyCustomRange() {
@@ -418,21 +180,30 @@ const DeliveryOverview = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch deliveries on mount
-    // const fetchDeliveries = async () => {
+    // TODO: Backend — Fetch packer-submitted deliveries and current
+    // inventory state on mount:
+    //
+    // const load = async () => {
     //   try {
     //     setLoading(true);
-    //     const response = await fetch('/api/deliveries');
-    //     const data = await response.json();
-    //     setDeliveriesData(data.deliveries);
-    //     INIT_DELIVERIES = data.deliveries;
+    //     const [delivRes, invRes] = await Promise.all([
+    //       fetch('/api/stock-deliveries'),
+    //       fetch('/api/inventory'),
+    //     ]);
+    //     const delivData = await delivRes.json();
+    //     const invData   = await invRes.json();
+    //
+    //     setDeliveriesData(delivData.deliveries);
+    //     INIT_DELIVERIES = delivData.deliveries;   // bridge for InventoryOverview
+    //     INVENTORY_STATE = invData.inventory;      // bridge for InventoryOverview
     //   } catch (err) {
-    //     setError('Failed to load delivery data.');
+    //     setError('Failed to load stock delivery data.');
     //   } finally {
     //     setLoading(false);
     //   }
     // };
-    // fetchDeliveries();
+    // load();
+
     setLoading(false);
 
     const handler = e => {
@@ -443,29 +214,25 @@ const DeliveryOverview = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  useEffect(() => { setPage(1); }, [statusFilter, dateFilter, customStart, customEnd]);
+  useEffect(() => { setPage(1); }, [dateFilter, customStart, customEnd]);
 
 
   // -----------------------------------------------------------
   // RENDER
   // -----------------------------------------------------------
-  if (loading) return <div className="do-page-container"><p>Loading deliveries...</p></div>;
+  if (loading) return <div className="do-page-container"><p>Loading stock deliveries...</p></div>;
   if (error)   return <div className="do-page-container"><p>{error}</p></div>;
 
   return (
     <div className="do-page-container">
-
-      {modalDelivery && (
-        <DeliveryDetailModal delivery={modalDelivery} onClose={() => setModalDelivery(null)} />
-      )}
 
       {/* =====================================================
           1. HEADER + DATE FILTER
           ===================================================== */}
       <div className="do-header">
         <div>
-          <h1 className="do-title">Customer Deliveries</h1>
-          <p className="do-subtitle">Monitor all delivery orders, status updates, and overdue alerts</p>
+          <h1 className="do-title">Stock Deliveries</h1>
+          <p className="do-subtitle">Incoming cake stock recorded by the Packer</p>
         </div>
 
         <div className="do-filter-dropdown-wrapper" ref={dateDropRef}>
@@ -529,23 +296,12 @@ const DeliveryOverview = () => {
 
         <div className="do-metric-card">
           <div className="do-card-top">
-            <span className="do-metric-label">Total Delivery Orders</span>
+            <span className="do-metric-label">Total Deliveries</span>
             <Truck className="do-blue-icon" size={20} />
           </div>
           <div className="do-card-bottom">
-            <span className="do-metric-value">{totalDeliveryOrders}</span>
-            <span className="do-metric-subtext">All delivery transactions</span>
-          </div>
-        </div>
-
-        <div className="do-metric-card">
-          <div className="do-card-top">
-            <span className="do-metric-label">Estimated Revenue</span>
-            <CircleDollarSign className="do-green-icon" size={20} />
-          </div>
-          <div className="do-card-bottom">
-            <span className="do-metric-value">₱{estimatedRevenue.toLocaleString()}</span>
-            <span className="do-metric-subtext">Excl. Cancelled orders</span>
+            <span className="do-metric-value">{totalDeliveries}</span>
+            <span className="do-metric-subtext">Stock delivery records</span>
           </div>
         </div>
 
@@ -557,7 +313,7 @@ const DeliveryOverview = () => {
           <div className="do-card-bottom">
             <span className="do-metric-value">{totalCakesDelivered}</span>
             <span className="do-metric-subtext">
-              {totalCakesDelivered === 1 ? 'Cake successfully delivered' : 'Cakes successfully delivered'}
+              {totalCakesDelivered === 1 ? 'Cake received into stock' : 'Cakes received into stock'}
             </span>
           </div>
         </div>
@@ -566,36 +322,16 @@ const DeliveryOverview = () => {
 
 
       {/* =====================================================
-          3. STATUS CARDS (Clickable Filters)
-          ===================================================== */}
-      <div className="do-status-cards-row">
-        {STATUS_CARDS.map(card => (
-          <button
-            key={card.key}
-            className={`do-status-card do-status-card--${card.key.toLowerCase().replace(/\s+/g, '-')} ${statusFilter === card.key ? 'is-active' : ''}`}
-            onClick={() => handleStatusCard(card.key)}
-          >
-            <span className="do-status-card-count">{statusCounts[card.key] ?? 0}</span>
-            <span className="do-status-card-label">{card.label}</span>
-          </button>
-        ))}
-      </div>
-
-
-      {/* =====================================================
-          4. DELIVERIES TABLE
-          Visible columns: Cake Type · Qty · Price · Delivery Date · Status · Action
-          Hidden from table (shown only in modal):
-            Customer Name, Contact Number, Address, Order Date, Instructions
+          3. STOCK DELIVERIES TABLE
+          Columns: Delivery Date · Cake Type · Price · Quantity · Expiry Date
           ===================================================== */}
       <div className="do-table-container">
 
         <div className="do-table-toolbar">
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span className="do-table-section-title">Deliveries List</span>
+            <span className="do-table-section-title">Stock Delivery Records</span>
             <span className="do-table-count-pill">
-              {filteredData.length} order{filteredData.length !== 1 ? 's' : ''}
-              {statusFilter && ` · ${statusFilter}`}
+              {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
             </span>
           </div>
         </div>
@@ -603,52 +339,34 @@ const DeliveryOverview = () => {
         <div className="do-table-scroll-wrapper">
           <table className="do-deliveries-table">
             <colgroup>
+              <col className="col-delivery-date" />
               <col className="col-cake" />
-              <col className="col-qty" />
               <col className="col-price" />
-              <col className="col-delivery" />
-              <col className="col-status" />
-              <col className="col-action" />
+              <col className="col-qty" />
+              <col className="col-expiry" />
             </colgroup>
             <thead>
               <tr>
-                <th>Cake Type</th>
-                <th>Qty</th>
-                <th>Price</th>
                 <th>Delivery Date</th>
-                <th>Status</th>
-                <th></th>
+                <th>Cake Type</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Expiry Date</th>
               </tr>
             </thead>
             <tbody>
-              {paged.length > 0 ? paged.map((d, idx) => {
-                const overdue  = isOverdue(d);
-                const dueToday = isDueToday(d);
-                return (
-                  <tr key={idx}>
-                    <td><span className="do-cake-name-text">{d.cakeType}</span></td>
-                    <td>{d.quantity}</td>
-                    <td><span className="do-price-text">₱{d.price.toLocaleString()}</span></td>
-                    <td>
-                      <span className={`do-date-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
-                        {formatDate(d.deliveryDate)}
-                      </span>
-                    </td>
-                    <td><StatusPill delivery={d} /></td>
-                    <td>
-                      <button
-                        className="do-view-btn"
-                        onClick={e => { e.stopPropagation(); setModalDelivery(d); }}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                );
-              }) : (
+              {paged.length > 0 ? paged.map((d) => (
+                <tr key={d.id}>
+                  <td><span className="do-date-text">{formatDate(d.deliveryDate)}</span></td>
+                  <td><span className="do-cake-name-text">{d.cakeType}</span></td>
+                  <td><span className="do-price-text">₱{(d.pricePerCake ?? 0).toLocaleString()}</span></td>
+                  <td><span className="do-qty-badge">+{d.quantity}</span></td>
+                  <td><span className="do-expiry-text">{formatDate(d.expiryDate)}</span></td>
+                </tr>
+              )) : (
                 <tr>
-                  <td colSpan={6} className="do-no-data">
-                    No delivery orders match the current filter.
+                  <td colSpan={5} className="do-no-data">
+                    No stock deliveries recorded for this period.
                   </td>
                 </tr>
               )}

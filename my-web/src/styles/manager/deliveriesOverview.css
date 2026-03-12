@@ -1,8 +1,7 @@
 /* =============================================================
    deliveriesOverview.css
-   Mirrors reservationsOverview.css structure exactly.
-   Only class names (.do- prefix) and delivery-specific
-   status pill colors differ.
+   Stock Delivery page styles.
+   Maintains .do- prefix throughout.
    ============================================================= */
 
 /* ── Animation ── */
@@ -19,7 +18,7 @@
 }
 
 /* =========================================================
-   HEADER — title left, date filter button right
+   HEADER — title left, actions right
    ========================================================= */
 .do-header {
   display: flex;
@@ -44,7 +43,7 @@
 }
 
 /* =========================================================
-   DATE FILTER — calendar icon button + dropdown in header
+   DATE FILTER — calendar icon button + dropdown
    ========================================================= */
 .do-filter-dropdown-wrapper {
   position: relative;
@@ -184,7 +183,7 @@
 .do-metrics-row {
   display: flex;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
@@ -234,72 +233,6 @@
   font-size: 0.78rem;
   color: #999;
 }
-
-/* =========================================================
-   STATUS CARDS — Clickable Filters
-   ========================================================= */
-.do-status-cards-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.do-status-card {
-  flex: 1 1 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 14px 12px;
-  background: #fff;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
-  text-align: center;
-  min-width: 0;
-}
-.do-status-card:hover { filter: brightness(0.97); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10); }
-
-.do-status-card-count {
-  font-family: Georgia, serif;
-  font-size: 1.6rem;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.do-status-card-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-/* ── Status Card Variants ── */
-
-.do-status-card--pending .do-status-card-count { color: #ffc107; }
-.do-status-card--pending .do-status-card-label { color: #ffc107; }
-.do-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
-
-.do-status-card--out-for-delivery .do-status-card-count { color: #17a2b8; }
-.do-status-card--out-for-delivery .do-status-card-label { color: #17a2b8; }
-.do-status-card--out-for-delivery.is-active             { border-color: #17a2b8; background: #e0f7fa; }
-
-.do-status-card--delivered .do-status-card-count { color: #28a745; }
-.do-status-card--delivered .do-status-card-label { color: #28a745; }
-.do-status-card--delivered.is-active             { border-color: #28a745; background: #d4edda; }
-
-.do-status-card--overdue .do-status-card-count { color: #fd7e14; }
-.do-status-card--overdue .do-status-card-label { color: #fd7e14; }
-.do-status-card--overdue.is-active             { border-color: #fd7e14; background: #fff3e0; }
-
-.do-status-card--cancelled .do-status-card-count { color: #dc3545; }
-.do-status-card--cancelled .do-status-card-label { color: #dc3545; }
-.do-status-card--cancelled.is-active             { border-color: #dc3545; background: #fde8ea; }
 
 /* =========================================================
    TABLE CONTAINER
@@ -366,13 +299,12 @@
   table-layout: fixed;
 }
 
-/* ── Column width distribution (6 cols, no horizontal scroll) ── */
-.do-deliveries-table col.col-cake     { width: 16%; }
-.do-deliveries-table col.col-qty      { width: 25%; }
-.do-deliveries-table col.col-price    { width: 17%; }
-.do-deliveries-table col.col-delivery { width: 16%; }
-.do-deliveries-table col.col-status   { width: 16%; }
-.do-deliveries-table col.col-action   { width: 10%; }
+/* ── Column widths (5 cols) ── */
+.do-deliveries-table col.col-delivery-date { width: 23%; }
+.do-deliveries-table col.col-cake          { width: 20%; }
+.do-deliveries-table col.col-price         { width: 15%; }
+.do-deliveries-table col.col-qty           { width: 25%; }
+.do-deliveries-table col.col-expiry        { width: 17%; }
 
 .do-deliveries-table thead th {
   position: sticky;
@@ -390,11 +322,11 @@
   white-space: nowrap;
 }
 
-/* ── Qty (col 2) and Status (col 5) centered ── */
-.do-deliveries-table th:nth-child(2),
-.do-deliveries-table td:nth-child(2),
-.do-deliveries-table th:nth-child(5),
-.do-deliveries-table td:nth-child(5) {
+/* ── Price (col 3) and Qty (col 4) centered ── */
+.do-deliveries-table th:nth-child(3),
+.do-deliveries-table td:nth-child(3),
+.do-deliveries-table th:nth-child(4),
+.do-deliveries-table td:nth-child(4) {
   text-align: center;
 }
 
@@ -408,13 +340,12 @@
 /* ── Symmetrical outer padding ── */
 .do-deliveries-table th:first-child,
 .do-deliveries-table td:first-child {
-  padding-left: 32px;
+  padding-left: 42px;
 }
 
 .do-deliveries-table th:last-child,
 .do-deliveries-table td:last-child {
   padding-right: 32px;
-  text-align: right;
 }
 
 .do-deliveries-table tbody tr:last-child td { border-bottom: none; }
@@ -422,45 +353,36 @@
 
 /* ── Cell helpers ── */
 .do-cake-name-text { font-weight: 500; }
-.do-price-text     { font-weight: 600; color: #22c55e; }
 
-.do-date-text            { font-weight: 600; font-size: 0.85rem; }
-.do-date-text.is-today   { color: #854d0e; }
-.do-date-text.is-overdue { color: #fd7e14; }
+.do-price-text {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #16a34a;
+}
 
-/* ── Status pills ── */
-.do-status-pill {
+.do-date-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.do-expiry-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #fd7e14;
+}
+
+.do-qty-badge {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: #d4edda;
+  color: #4338ca;
   white-space: nowrap;
 }
-.do-status-pill.pending          { background: #fff8e1; color: #ffc107; }
-.do-status-pill.out-for-delivery { background: #e0f7fa; color: #17a2b8; }
-.do-status-pill.delivered        { background: #d4edda; color: #28a745; }
-.do-status-pill.overdue          { background: #fff3e0; color: #fd7e14; }
-.do-status-pill.cancelled        { background: #fde8ea; color: #dc3545; }
 
 .do-no-data { text-align: center !important; padding: 40px !important; color: #888; }
-
-.do-view-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: #555;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-.do-view-btn:hover { background: #f7dd30; border-color: #e5c800; color: #111; }
 
 /* ── Pagination ── */
 .do-pagination {
@@ -497,146 +419,11 @@
 .do-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* =========================================================
-   MODAL
-   ========================================================= */
-.do-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 16px;
-}
-
-.do-modal {
-  background: #fff;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 580px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-}
-
-.do-modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 28px 28px 20px;
-  border-bottom: 2px solid #fcf6c4;
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 1;
-  border-radius: 16px 16px 0 0;
-}
-
-.do-modal-eyebrow {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #aaa;
-  margin: 0 0 4px;
-}
-
-.do-modal-cake-name {
-  font-family: Georgia, serif;
-  font-size: 1.45rem;
-  font-weight: bold;
-  color: #000;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.do-modal-close-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  background: transparent;
-  color: #999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background 0.15s;
-  flex-shrink: 0;
-  font-size: 1rem;
-}
-.do-modal-close-btn:hover { background: #fee2e2; color: #b91c1c; border-color: transparent; }
-
-.do-modal-body {
-  padding: 24px 28px 32px;
-}
-
-.do-modal-section-title {
-  font-family: Georgia, serif;
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: #222;
-  margin: 0 0 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #fcf6c4;
-}
-
-/* =========================================================
-   MODAL INFO GRID
-   Identical layout for ALL statuses — no inline overrides.
-   ========================================================= */
-.do-modal-info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 24px;
-}
-
-.do-info-item            { display: flex; flex-direction: column; gap: 3px; }
-.do-info-item.full-width { grid-column: span 2; }
-
-.do-info-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: #aaa;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-.do-info-value {
-  font-size: 0.88rem;
-  color: #222;
-  line-height: 1.4;
-}
-
-.do-info-value.price-val {
-  font-family: Georgia, serif;
-  font-size: 1.15rem;
-  font-weight: bold;
-  color: #22c55e;
-}
-
-.do-info-value.instructions-val {
-  padding: 10px 12px;
-  background: #fefce8;
-  border-radius: 8px;
-  border-left: 3px solid #eab308;
-  font-style: italic;
-  color: #555;
-  font-size: 0.83rem;
-  line-height: 1.5;
-}
-
-/* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .do-metrics-row          { flex-direction: column; }
-  .do-status-cards-row     { gap: 8px; }
-  .do-status-card          { flex: 1 1 80px; padding: 10px 8px; }
-  .do-status-card-count    { font-size: 1.3rem; }
-  .do-modal-info-grid      { grid-template-columns: 1fr; }
-  .do-info-item.full-width { grid-column: span 1; }
-  .do-header               { flex-direction: column; align-items: flex-start; }
-  .do-date-dropdown        { right: auto; left: 0; }
+  .do-metrics-row    { flex-direction: column; }
+  .do-header         { flex-direction: column; align-items: flex-start; }
+  .do-header-actions { width: 100%; justify-content: flex-start; }
+  .do-date-dropdown  { right: auto; left: 0; }
 }

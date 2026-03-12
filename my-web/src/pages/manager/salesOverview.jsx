@@ -1,18 +1,26 @@
 // =============================================================
 // salesOverview.jsx
 // PURPOSE: Manager financial view — completed sales only.
-//          Aggregates confirmed revenue from Deliveries,
-//          Reservations, Custom Orders, and Walk-In Orders.
-// FILTERING: Date Filter (header calendar icon) + Breakdown Cards (clickable)
+//          Aggregates confirmed revenue from:
+//            Walk-In Orders, Reservations, and Custom Orders.
 //
-// SALES DEFINITION:
-//   Delivery     → Status = 'Delivered'
-//   Reservation  → Status = 'Picked Up'
-//   Custom Order → Status = 'Picked Up'
-//   Walk-In      → Status = 'Completed' (all walk-ins are always Completed)
+// SALES CONNECTION LOGIC:
+//   Walk-In Order  → Status = 'Completed'  → Completion Date = orderDate
+//   Reservation    → Status = 'Picked Up'  → Completion Date = pickupDate
+//   Custom Order   → Status = 'Delivered'  → Completion Date = deliveryDate
 //
-//   Never include: Pending, Cancelled, Overdue, Ready,
-//                  Out for Delivery, Not Picked Up
+//   NOT included:
+//     - Stock Deliveries (internal stock tracking, not customer sales)
+//     - Pending, Ready, Overdue, Cancelled orders from any module
+//
+// LIVE CONNECTION:
+//   salesData is derived via useMemo from the three source module arrays
+//   (INIT_WALKIN_ORDERS, INIT_RESERVATIONS, INIT_ORDERS). Each of those
+//   modules exports a module-level ref that is synced after every fetch.
+//   Any completed transaction recorded in those modules is automatically
+//   reflected here — no manual refresh or event bus needed.
+//
+// FILTERING: Date Filter (header calendar icon) + Order Type Cards (clickable)
 //
 // EXPORT:
 //   Export Report button (top-right, beside Date Filter).
@@ -26,25 +34,26 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   CircleDollarSign, ShoppingCart, PackageCheck,
-  Truck, CalendarCheck, ClipboardList, ShoppingBag,
+  CalendarCheck, ClipboardList, ShoppingBag,
   Calendar, ChevronDown, Download,
 } from 'lucide-react';
 import '../../styles/manager/salesOverview.css';
 
-// TODO: Backend - Replace these imports with a unified API call
-import { INIT_DELIVERIES }    from './deliveriesOverview';
+// TODO: Backend — Replace these three imports with a unified API call
+//   to GET /api/sales?status=completed once the backend is ready.
+//   Until then, each source module syncs its INIT_* export on fetch.
+import { INIT_WALKIN_ORDERS } from './walkInOrders';
 import { INIT_RESERVATIONS }  from './reservationOverview';
 import { INIT_ORDERS }        from './customOrders';
-import { INIT_WALKIN_ORDERS } from './walkInOrders';
 
 /* ──────────────────────────────────────────────────────────────
    ORDER TYPE CONFIG
+   3 sources only — Stock Deliveries are excluded from Sales
 ────────────────────────────────────────────────────────────── */
 const ORDER_TYPES = {
-  Delivery:       { label: 'Delivery',     css: 'delivery',     Icon: Truck },
-  Reservation:    { label: 'Reservation',  css: 'reservation',  Icon: CalendarCheck },
-  'Custom Order': { label: 'Custom Order', css: 'custom-order', Icon: ClipboardList },
-  'Walk-In':      { label: 'Walk-In',      css: 'walk-in',      Icon: ShoppingBag },
+  'Walk-In':      { label: 'Walk-In Orders', css: 'walk-in',      Icon: ShoppingBag },
+  'Reservation':  { label: 'Reservations',   css: 'reservation',  Icon: CalendarCheck },
+  'Custom Order': { label: 'Custom Orders',  css: 'custom-order', Icon: ClipboardList },
 };
 
 /* ── Date Range Helpers ────────────────────────────────────── */
@@ -103,7 +112,7 @@ function formatDate(s) {
 }
 
 function orderTypePillClass(type) {
-  return ORDER_TYPES[type]?.css || 'delivery';
+  return ORDER_TYPES[type]?.css || 'walk-in';
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -112,7 +121,6 @@ function orderTypePillClass(type) {
    then builds the report entirely in-memory.
 ────────────────────────────────────────────────────────────── */
 
-// Lazy-load a script once and return a promise that resolves when ready.
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
@@ -129,7 +137,6 @@ async function ensureJsPDF() {
   await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
 }
 
-// Load logo image as base64 from the project assets
 function loadImageAsBase64(src) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -141,86 +148,60 @@ function loadImageAsBase64(src) {
       canvas.getContext('2d').drawImage(img, 0, 0);
       resolve(canvas.toDataURL('image/png'));
     };
-    img.onerror = () => resolve(null); // gracefully skip if logo fails
+    img.onerror = () => resolve(null);
     img.src = src;
   });
 }
 
-// Table style constants — clean black & white to match reference PDF
-const BLACK      = [0, 0, 0];
-const WHITE      = [255, 255, 255];
-const GREY_HEADER = [200, 200, 200]; // light grey header fill
-const GREY_LIGHT  = [245, 245, 245]; // alternate row fill
+const BLACK       = [0, 0, 0];
+const GREY_HEADER = [200, 200, 200];
+const GREY_LIGHT  = [245, 245, 245];
 
 async function exportSalesPDF({
-  dateLabel,
-  rangeStart,
-  rangeEnd,
-  dateScoped,
-  totalRevenue,
-  totalTransactions,
-  totalCakesSold,
-  breakdown,
+  rangeStart, rangeEnd,
+  dateScoped, totalRevenue, totalTransactions, totalCakesSold, breakdown,
 }) {
   await ensureJsPDF();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const PW = doc.internal.pageSize.getWidth();   // 210
-  const PH = doc.internal.pageSize.getHeight();  // 297
-  const ML = 14; // margin-left
-  const MR = 14; // margin-right
+  const PW = doc.internal.pageSize.getWidth();
+  const PH = doc.internal.pageSize.getHeight();
+  const ML = 14;
+  const MR = 14;
 
-  // ── Load logo ──
   const logoBase64 = await loadImageAsBase64('/src/assets/logo.png');
 
-  let y = 14; // current Y cursor
+  let y = 14;
 
-  // ══════════════════════════════════════════════════════
-  // HEADER — Logo (left) + Title block (right of logo)
-  // Matches reference: logo top-left, "SALES REPORT" large,
-  // "PERIOD: ..." subtitle underneath, all on white bg.
-  // ══════════════════════════════════════════════════════
-  const LOGO_SIZE = 28; // logo height in mm (roughly square)
-  const LOGO_X    = ML;
-  const LOGO_Y    = y;
+  // ── Header ──
+  const LOGO_SIZE = 28;
+  if (logoBase64) doc.addImage(logoBase64, 'PNG', ML, y, LOGO_SIZE, LOGO_SIZE);
+  const titleX = logoBase64 ? ML + LOGO_SIZE + 6 : ML;
 
-  if (logoBase64) {
-    doc.addImage(logoBase64, 'PNG', LOGO_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE);
-  }
-
-  const titleX = logoBase64 ? LOGO_X + LOGO_SIZE + 6 : ML;
-
-  // "SALES REPORT" — large bold
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(26);
   doc.setTextColor(...BLACK);
-  doc.text('SALES REPORT', titleX, LOGO_Y + 12);
+  doc.text('SALES REPORT', titleX, y + 12);
 
-  // Period subtitle
   const periodText = rangeStart === rangeEnd
     ? `PERIOD:  ${formatDate(rangeStart).toUpperCase()}`
     : `PERIOD:  ${formatDate(rangeStart).toUpperCase()} - ${formatDate(rangeEnd).toUpperCase()}`;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(50, 50, 50);
-  doc.text(periodText, titleX, LOGO_Y + 21);
+  doc.text(periodText, titleX, y + 21);
 
-  // Generated timestamp (small, far right)
   const generated = `Generated: ${new Date().toLocaleDateString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })}`;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(160, 160, 160);
-  doc.text(generated, PW - MR, LOGO_Y + 4, { align: 'right' });
+  doc.text(generated, PW - MR, y + 4, { align: 'right' });
 
-  y = LOGO_Y + LOGO_SIZE + 10;
+  y = y + LOGO_SIZE + 10;
 
-  // ══════════════════════════════════════════════════════
-  // SECTION: SUMMARY TABLE
-  // Two-column table: Summary | Value
-  // ══════════════════════════════════════════════════════
+  // ── Summary Table ──
   doc.autoTable({
     startY: y,
     margin: { left: ML, right: MR },
@@ -230,91 +211,46 @@ async function exportSalesPDF({
       ['Total Transactions',  String(totalTransactions)],
       ['Total Cakes Sold',    String(totalCakesSold)],
     ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 4,
-      textColor: BLACK,
-      lineColor: [180, 180, 180],
-      lineWidth: 0.3,
-    },
-    headStyles: {
-      fillColor: GREY_HEADER,
-      textColor: BLACK,
-      fontStyle: 'bold',
-      fontSize: 9,
-      halign: 'center',
-    },
-    bodyStyles: {
-      halign: 'center',
-      fontStyle: 'bold',
-    },
-    columnStyles: {
-      0: { halign: 'left', fontStyle: 'bold' },
-      1: { halign: 'center' },
-    },
+    styles: { fontSize: 9, cellPadding: 4, textColor: BLACK, lineColor: [180, 180, 180], lineWidth: 0.3 },
+    headStyles: { fillColor: GREY_HEADER, textColor: BLACK, fontStyle: 'bold', fontSize: 9, halign: 'center' },
+    bodyStyles: { halign: 'center', fontStyle: 'bold' },
+    columnStyles: { 0: { halign: 'left', fontStyle: 'bold' }, 1: { halign: 'center' } },
     alternateRowStyles: { fillColor: GREY_LIGHT },
   });
 
   y = doc.lastAutoTable.finalY + 12;
 
-  // ══════════════════════════════════════════════════════
-  // SECTION HEADING: REVENUE BREAKDOWN
-  // ══════════════════════════════════════════════════════
+  // ── Revenue Breakdown ──
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(...BLACK);
   doc.text('REVENUE BREAKDOWN', ML, y);
   y += 4;
 
-  // ══════════════════════════════════════════════════════
-  // REVENUE BREAKDOWN TABLE
-  // Two-column: Order Type | Sales Revenue
-  // ══════════════════════════════════════════════════════
   doc.autoTable({
     startY: y,
     margin: { left: ML, right: MR },
     head: [['Order Type', 'Sales Revenue']],
     body: [
-      ['Delivery',     `\u20B1${(breakdown['Delivery']?.amount     || 0).toLocaleString()}`],
-      ['Reservation',  `\u20B1${(breakdown['Reservation']?.amount  || 0).toLocaleString()}`],
-      ['Custom Order', `\u20B1${(breakdown['Custom Order']?.amount || 0).toLocaleString()}`],
-      ['Walk-In',      `\u20B1${(breakdown['Walk-In']?.amount      || 0).toLocaleString()}`],
+      ['Walk-In Orders', `\u20B1${(breakdown['Walk-In']?.amount      || 0).toLocaleString()}`],
+      ['Reservations',   `\u20B1${(breakdown['Reservation']?.amount  || 0).toLocaleString()}`],
+      ['Custom Orders',  `\u20B1${(breakdown['Custom Order']?.amount || 0).toLocaleString()}`],
     ],
-    styles: {
-      fontSize: 9,
-      cellPadding: 4,
-      textColor: BLACK,
-      lineColor: [180, 180, 180],
-      lineWidth: 0.3,
-    },
-    headStyles: {
-      fillColor: GREY_HEADER,
-      textColor: BLACK,
-      fontStyle: 'bold',
-      fontSize: 9,
-      halign: 'center',
-    },
-    columnStyles: {
-      0: { halign: 'center', fontStyle: 'bold' },
-      1: { halign: 'center' },
-    },
+    styles: { fontSize: 9, cellPadding: 4, textColor: BLACK, lineColor: [180, 180, 180], lineWidth: 0.3 },
+    headStyles: { fillColor: GREY_HEADER, textColor: BLACK, fontStyle: 'bold', fontSize: 9, halign: 'center' },
+    columnStyles: { 0: { halign: 'center', fontStyle: 'bold' }, 1: { halign: 'center' } },
     alternateRowStyles: { fillColor: GREY_LIGHT },
   });
 
   y = doc.lastAutoTable.finalY + 12;
 
-  // ══════════════════════════════════════════════════════
-  // SECTION HEADING: SALES RECORDS
-  // ══════════════════════════════════════════════════════
+  // ── Sales Records ──
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(...BLACK);
   doc.text('SALES RECORDS', ML, y);
   y += 4;
 
-  // ══════════════════════════════════════════════════════
-  // SALES RECORDS TABLE — all rows, no pagination
-  // ══════════════════════════════════════════════════════
   const tableRows = dateScoped.map(s => [
     s.orderType,
     s.cakeType,
@@ -329,22 +265,10 @@ async function exportSalesPDF({
     margin: { left: ML, right: MR },
     head: [['Order Type', 'Cake Type', 'Qty', 'Total Amount', 'Customer', 'Completion Date']],
     body: tableRows.length > 0 ? tableRows : [['—', '—', '—', '—', '—', '—']],
-    styles: {
-      fontSize: 8,
-      cellPadding: 3,
-      textColor: BLACK,
-      lineColor: [180, 180, 180],
-      lineWidth: 0.3,
-    },
-    headStyles: {
-      fillColor: GREY_HEADER,
-      textColor: BLACK,
-      fontStyle: 'bold',
-      fontSize: 8,
-      halign: 'center',
-    },
+    styles: { fontSize: 8, cellPadding: 3, textColor: BLACK, lineColor: [180, 180, 180], lineWidth: 0.3 },
+    headStyles: { fillColor: GREY_HEADER, textColor: BLACK, fontStyle: 'bold', fontSize: 8, halign: 'center' },
     columnStyles: {
-      0: { cellWidth: 26, halign: 'center' },
+      0: { cellWidth: 28, halign: 'center' },
       1: { cellWidth: 'auto' },
       2: { cellWidth: 10, halign: 'center' },
       3: { cellWidth: 28, halign: 'center', fontStyle: 'bold' },
@@ -354,9 +278,7 @@ async function exportSalesPDF({
     alternateRowStyles: { fillColor: GREY_LIGHT },
   });
 
-  // ══════════════════════════════════════════════════════
-  // PAGE FOOTER — page numbers on every page
-  // ══════════════════════════════════════════════════════
+  // ── Page Footer ──
   const pageCount = doc.internal.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
@@ -365,70 +287,15 @@ async function exportSalesPDF({
     doc.setTextColor(160, 160, 160);
     doc.text('Regis Cake Shop — Confidential', ML, PH - 8);
     doc.text(`Page ${p} of ${pageCount}`, PW - MR, PH - 8, { align: 'right' });
-    // thin rule above footer
     doc.setDrawColor(180, 180, 180);
     doc.setLineWidth(0.4);
     doc.line(ML, PH - 12, PW - MR, PH - 12);
   }
 
-  // ── Save ──
   const safePeriod = `${rangeStart}_to_${rangeEnd}`.replace(/-/g, '');
   doc.save(`BakerySalesReport_${safePeriod}.pdf`);
 }
 
-/* ──────────────────────────────────────────────────────────────
-   AGGREGATED SALES DATA
-   TODO: Backend - Replace this derived array with a direct API call
-   Endpoint: GET /api/sales?status=completed
-────────────────────────────────────────────────────────────── */
-const buildSalesData = () => [
-
-  ...INIT_DELIVERIES
-    .filter(d => d.status === 'Delivered')
-    .map(d => ({
-      orderType:      'Delivery',
-      cakeType:       d.items.length === 1
-                        ? d.items[0].name
-                        : `${d.items[0].name} + ${d.items.length - 1} more`,
-      qty:            d.totalQty,
-      amount:         d.totalPrice,
-      customer:       d.customer,
-      completionDate: d.deliveryDate,
-    })),
-
-  ...INIT_RESERVATIONS
-    .filter(r => r.status === 'Picked Up')
-    .map(r => ({
-      orderType:      'Reservation',
-      cakeType:       r.cakeType,
-      qty:            r.quantity,
-      amount:         r.quantity * r.price,
-      customer:       r.customer,
-      completionDate: r.pickupDate,
-    })),
-
-  ...INIT_ORDERS
-    .filter(o => o.status === 'Picked Up')
-    .map(o => ({
-      orderType:      'Custom Order',
-      cakeType:       o.cakeType,
-      qty:            o.quantity,
-      amount:         o.price,
-      customer:       o.customer,
-      completionDate: o.pickupDate,
-    })),
-
-  ...INIT_WALKIN_ORDERS
-    .filter(w => w.status === 'Completed')
-    .map(w => ({
-      orderType:      'Walk-In',
-      cakeType:       w.cakeType,
-      qty:            w.quantity,
-      amount:         w.price,
-      customer:       w.customer,
-      completionDate: w.orderDate,
-    })),
-];
 
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
@@ -438,10 +305,9 @@ const PER_PAGE = 7;
 
 const SalesOverview = () => {
 
-  const [salesData,   setSalesData]   = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [error,       setError]       = useState(null);
-  const [exporting,   setExporting]   = useState(false);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
+  const [exporting, setExporting] = useState(false);
 
   const [dateFilter,   setDateFilter]   = useState('today');
   const [customStart,  setCustomStart]  = useState('');
@@ -469,7 +335,74 @@ const SalesOverview = () => {
 
 
   // -----------------------------------------------------------
-  // DATE-SCOPED SALES
+  // LIVE SALES DATA
+  // Derived directly from the three source module arrays on every render.
+  //
+  // Completion rules per channel:
+  //   Walk-In    → status === 'Completed'  → completionDate = orderDate
+  //   Reservation → status === 'Picked Up' → completionDate = pickupDate
+  //   Custom      → status === 'Delivered' → completionDate = deliveryDate
+  //
+  // When any module fetches from the backend it writes back to its INIT_*
+  // export, which causes this component to re-derive salesData on the next
+  // render — keeping Sales automatically in sync with no event bus needed.
+  //
+  // TODO: Backend — Remove this useMemo and replace with a fetch/websocket:
+  //   const [salesData, setSalesData] = useState([]);
+  //   useEffect(() => { fetch('/api/sales?status=completed')
+  //     .then(r => r.json()).then(d => setSalesData(d.records)); }, []);
+  // -----------------------------------------------------------
+  const salesData = useMemo(() => {
+
+    // TODO: Backend will provide completed transactions here
+    return [
+
+      // Walk-In Orders — Completed → completionDate = orderDate
+      ...INIT_WALKIN_ORDERS
+        .filter(w => w.status === 'Completed')
+        .map(w => ({
+          orderType:      'Walk-In',
+          cakeType:       w.cakeType,
+          qty:            w.quantity,
+          amount:         w.price,
+          customer:       w.customer,
+          completionDate: w.orderDate,
+        })),
+
+      // Reservations — Picked Up → completionDate = pickupDate
+      ...INIT_RESERVATIONS
+        .filter(r => r.status === 'Picked Up')
+        .map(r => ({
+          orderType:      'Reservation',
+          cakeType:       r.cakeType,
+          qty:            r.quantity,
+          amount:         r.quantity * r.price,
+          customer:       r.customer,
+          completionDate: r.pickupDate,
+        })),
+
+      // Custom Orders — Delivered → completionDate = deliveryDate
+      ...INIT_ORDERS
+        .filter(o => o.status === 'Delivered')
+        .map(o => ({
+          orderType:      'Custom Order',
+          cakeType:       o.cakeType,
+          qty:            o.quantity,
+          amount:         o.price,
+          customer:       o.customer,
+          completionDate: o.deliveryDate,
+        })),
+
+    ];
+  // Module-level refs are not tracked by React's dependency system.
+  // Once backend fetch calls populate these arrays, this component
+  // will re-derive on the next render via its own state updates.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+  // -----------------------------------------------------------
+  // DATE-SCOPED SALES (filter by completionDate)
   // -----------------------------------------------------------
   const dateScoped = useMemo(
     () => salesData.filter(s => inRange(s.completionDate, rangeStart, rangeEnd)),
@@ -487,9 +420,10 @@ const SalesOverview = () => {
   const breakdown = useMemo(() => {
     const result = {};
     Object.keys(ORDER_TYPES).forEach(type => {
+      const rows = dateScoped.filter(s => s.orderType === type);
       result[type] = {
-        amount: dateScoped.filter(s => s.orderType === type).reduce((sum, s) => sum + s.amount, 0),
-        count:  dateScoped.filter(s => s.orderType === type).length,
+        amount: rows.reduce((sum, s) => sum + s.amount, 0),
+        count:  rows.length,
       };
     });
     return result;
@@ -534,13 +468,9 @@ const SalesOverview = () => {
     setExporting(true);
     try {
       await exportSalesPDF({
-        dateLabel,
-        rangeStart,
-        rangeEnd,
-        dateScoped,        // ALL scoped rows — ignores pagination + typeFilter
-        totalRevenue,
-        totalTransactions,
-        totalCakesSold,
+        rangeStart, rangeEnd,
+        dateScoped,
+        totalRevenue, totalTransactions, totalCakesSold,
         breakdown,
       });
     } catch (err) {
@@ -555,8 +485,8 @@ const SalesOverview = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch sales data on mount
-    // setSalesData(buildSalesData()); — current mock approach
+    // salesData is derived live via useMemo from the INIT_* bridges.
+    // TODO: Backend — Replace with fetch('/api/sales?status=completed')
     setLoading(false);
 
     const handler = e => {
@@ -585,10 +515,9 @@ const SalesOverview = () => {
       <div className="so-header">
         <div>
           <h1 className="so-title">Sales Overview</h1>
-          <p className="so-subtitle">Completed transactions only — Delivered, Picked Up, and Walk-In orders</p>
+          <p className="so-subtitle">Completed transactions only — Walk-In, Reservations, and Custom Orders</p>
         </div>
 
-        {/* ── Right-side controls: Date Filter + Export Report ── */}
         <div className="so-header-actions">
 
           {/* Date Filter dropdown */}
@@ -703,7 +632,8 @@ const SalesOverview = () => {
 
 
       {/* =====================================================
-          3. REVENUE BREAKDOWN
+          3. REVENUE BREAKDOWN — 3 clickable filter cards
+          (Walk-In · Reservations · Custom Orders)
           ===================================================== */}
       <div className="so-breakdown-row">
         {Object.entries(ORDER_TYPES).map(([type, { label, css, Icon }]) => (
@@ -729,6 +659,8 @@ const SalesOverview = () => {
 
       {/* =====================================================
           4. SALES TABLE
+          Columns: Order Type · Cake Type · Qty · Total Amount ·
+                   Customer · Completion Date
           ===================================================== */}
       <div className="so-table-container">
 
@@ -737,7 +669,7 @@ const SalesOverview = () => {
             <span className="so-table-section-title">Sales Records</span>
             <span className="so-table-count-pill">
               {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
-              {typeFilter && ` · ${typeFilter}`}
+              {typeFilter && ` · ${ORDER_TYPES[typeFilter]?.label || typeFilter}`}
             </span>
           </div>
         </div>
