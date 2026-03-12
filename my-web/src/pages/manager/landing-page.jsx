@@ -4,6 +4,7 @@ import { useState } from "react";
 import Sidebar              from "./sidebarmenu";
 import Dashboard            from "./dashboard";
 import InventoryOverview    from "./inventoryOverview";
+import WalkInOrders          from "./walkInOrders";
 import SalesOverview        from "./salesOverview";
 import CustomOrders         from "./customOrders";
 import UserManagement       from "./userManagement";
@@ -48,6 +49,8 @@ export default function ManagerLandingPage({ onLogout, initialName = 'Manager' }
         return <CustomOrders />;
       case "reservations":
         return <ReservationsOverview />;
+      case "walkIn":
+        return <WalkInOrders />;
       case "users":
         return <UserManagement />;
       case "settings":

@@ -1,8 +1,7 @@
 /* =============================================================
    reservationsOverview.css
-   Mirrors deliveriesOverview.css structure exactly.
-   Only class names (.ro- prefix) and reservation-specific
-   status pill colors differ.
+   Mirrors customOrders.css structure exactly.
+   Only class names (.ro- prefix) differ.
    ============================================================= */
 
 /* ── Animation ── */
@@ -61,14 +60,12 @@
   background: #fff;
   font-size: 0.83rem;
   font-weight: 500;
-  /* Visible mid-grey at rest — readable on white without being harsh */
   color: #444;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
-/* ✅ Calendar SVG inherits button color — shifts #444 → #111 on hover/open */
 .ro-date-filter-btn svg {
   flex-shrink: 0;
   color: inherit;
@@ -148,7 +145,6 @@
 }
 .ro-date-input:focus { border-color: #f7dd30; }
 
-/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
 .ro-date-input::-webkit-calendar-picker-indicator {
   cursor: pointer;
   filter: brightness(0) saturate(100%) opacity(0.65);
@@ -282,29 +278,24 @@
   white-space: nowrap;
 }
 
-/* ── Status Card Variants — updated semantic palette ── */
+/* ── Status Card Variants ── */
 
-/* Pending — Yellow/Amber #ffc107: cake not yet prepared, action needed */
 .ro-status-card--pending .ro-status-card-count { color: #ffc107; }
 .ro-status-card--pending .ro-status-card-label { color: #ffc107; }
 .ro-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
 
-/* Ready — Teal/Light Blue #17a2b8: cake prepared, awaiting pickup */
 .ro-status-card--ready .ro-status-card-count { color: #17a2b8; }
 .ro-status-card--ready .ro-status-card-label { color: #17a2b8; }
 .ro-status-card--ready.is-active             { border-color: #17a2b8; background: #e0f7fa; }
 
-/* Picked Up — Green #28a745: completed, revenue counted */
 .ro-status-card--picked-up .ro-status-card-count { color: #28a745; }
 .ro-status-card--picked-up .ro-status-card-label { color: #28a745; }
 .ro-status-card--picked-up.is-active             { border-color: #28a745; background: #d4edda; }
 
-/* Overdue — Orange #fd7e14: missed pickup, urgent follow-up */
 .ro-status-card--overdue .ro-status-card-count { color: #fd7e14; }
 .ro-status-card--overdue .ro-status-card-label { color: #fd7e14; }
 .ro-status-card--overdue.is-active             { border-color: #fd7e14; background: #fff3e0; }
 
-/* Cancelled — Red #dc3545: no action needed, excluded from revenue */
 .ro-status-card--cancelled .ro-status-card-count { color: #dc3545; }
 .ro-status-card--cancelled .ro-status-card-label { color: #dc3545; }
 .ro-status-card--cancelled.is-active             { border-color: #dc3545; background: #fde8ea; }
@@ -368,10 +359,19 @@
 
 .ro-reservations-table {
   width: 100%;
-  min-width: 960px;
+  min-width: 620px;
   border-collapse: collapse;
   text-align: left;
+  table-layout: fixed;
 }
+
+/* ── Column width distribution (7 cols, no horizontal scroll) ── */
+.ro-reservations-table col.col-cake   { width: 16%; }
+.ro-reservations-table col.col-qty    { width: 25%; }
+.ro-reservations-table col.col-price  { width: 17%; }
+.ro-reservations-table col.col-pickup { width: 16%; }
+.ro-reservations-table col.col-status { width: 16%; }
+.ro-reservations-table col.col-action { width: 10%; }
 
 .ro-reservations-table thead th {
   position: sticky;
@@ -389,11 +389,31 @@
   white-space: nowrap;
 }
 
+/* ── Qty (col 2) and Status (col 6) centered ── */
+.ro-reservations-table th:nth-child(2),
+.ro-reservations-table td:nth-child(2),
+.ro-reservations-table th:nth-child(5),
+.ro-reservations-table td:nth-child(5) {
+  text-align: center;
+}
+
 .ro-reservations-table td {
   padding: 18px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
+}
+
+/* ── Symmetrical outer padding ── */
+.ro-reservations-table th:first-child,
+.ro-reservations-table td:first-child {
+  padding-left: 32px;
+}
+
+.ro-reservations-table th:last-child,
+.ro-reservations-table td:last-child {
+  padding-right: 32px;
+  text-align: right;
 }
 
 .ro-reservations-table tbody tr:last-child td { border-bottom: none; }
@@ -407,7 +427,7 @@
 .ro-pickup-text.is-today   { color: #854d0e; }
 .ro-pickup-text.is-overdue { color: #fd7e14; }
 
-/* ── Status pills — match updated card palette ── */
+/* ── Status pills ── */
 .ro-status-pill {
   display: inline-block;
   padding: 4px 12px;
@@ -422,7 +442,24 @@
 .ro-status-pill.overdue   { background: #fff3e0; color: #fd7e14; }
 .ro-status-pill.cancelled { background: #fde8ea; color: #dc3545; }
 
-.ro-no-data { text-align: center; padding: 40px !important; color: #888; }
+.ro-no-data { text-align: center !important; padding: 40px !important; color: #888; }
+
+.ro-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.ro-view-btn:hover { background: #f7dd30; border-color: #e5c800; color: #111; }
 
 /* ── Pagination ── */
 .ro-pagination {
@@ -459,6 +496,137 @@
 .ro-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* =========================================================
+   MODAL
+   ========================================================= */
+.ro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.ro-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.ro-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 28px 20px;
+  border-bottom: 2px solid #fcf6c4;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+  border-radius: 16px 16px 0 0;
+}
+
+.ro-modal-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa;
+  margin: 0 0 4px;
+}
+
+.ro-modal-cake-name {
+  font-family: Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ro-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: transparent;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.ro-modal-close-btn:hover { background: #fee2e2; color: #b91c1c; border-color: transparent; }
+
+.ro-modal-body {
+  padding: 24px 28px 32px;
+}
+
+.ro-modal-section-title {
+  font-family: Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #222;
+  margin: 0 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #fcf6c4;
+}
+
+/* =========================================================
+   MODAL INFO GRID
+   Identical layout for ALL statuses — no inline overrides.
+   ========================================================= */
+.ro-modal-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.ro-info-item            { display: flex; flex-direction: column; gap: 3px; }
+.ro-info-item.full-width { grid-column: span 2; }
+
+.ro-info-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.ro-info-value {
+  font-size: 0.88rem;
+  color: #222;
+  line-height: 1.4;
+}
+
+.ro-info-value.price-val {
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #22c55e;
+}
+
+.ro-info-value.instructions-val {
+  padding: 10px 12px;
+  background: #fefce8;
+  border-radius: 8px;
+  border-left: 3px solid #eab308;
+  font-style: italic;
+  color: #555;
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+/* =========================================================
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
@@ -466,6 +634,8 @@
   .ro-status-cards-row     { gap: 8px; }
   .ro-status-card          { flex: 1 1 80px; padding: 10px 8px; }
   .ro-status-card-count    { font-size: 1.3rem; }
+  .ro-modal-info-grid      { grid-template-columns: 1fr; }
+  .ro-info-item.full-width { grid-column: span 1; }
   .ro-header               { flex-direction: column; align-items: flex-start; }
   .ro-date-dropdown        { right: auto; left: 0; }
 }

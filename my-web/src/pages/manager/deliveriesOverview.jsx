@@ -2,6 +2,18 @@
 // deliveriesOverview.jsx
 // PURPOSE: Manager monitoring view for customer delivery orders.
 // FILTERING: Date Filter (header calendar icon) + Status Cards (clickable)
+//
+// STATUS LOGIC (Operational-Based):
+//   Pending          → Order placed, not yet dispatched
+//   Out for Delivery → Currently in transit
+//   Delivered        → Customer received order, complete
+//   Overdue          → Auto: Today > DeliveryDate AND status !== 'Delivered' | 'Cancelled'
+//   Cancelled        → Final state
+//
+// WORKFLOW:
+//   Pending → Out for Delivery → Delivered
+//   Pending → Cancelled
+//   Out for Delivery → Overdue → Delivered | Cancelled
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -46,12 +58,13 @@ function getDateRange(filter, customStart, customEnd) {
   }
 }
 
-function inRange(deliveryDate, start, end) {
-  return deliveryDate >= start && deliveryDate <= end;
+function inRange(date, start, end) {
+  return date >= start && date <= end;
 }
 
 /* ── Constants ─────────────────────────────────────────────── */
 
+// Revenue counted for all active statuses (excluding Cancelled)
 const REVENUE_STATUSES = ['Pending', 'Out for Delivery', 'Delivered'];
 
 const DATE_OPTIONS = [
@@ -78,7 +91,7 @@ function isOverdue(d) {
   );
 }
 
-function isDeliveryToday(d) {
+function isDueToday(d) {
   return (
     d.deliveryDate === TODAY_STR &&
     d.status !== 'Delivered' &&
@@ -92,26 +105,15 @@ function formatDate(s) {
   });
 }
 
-function formatCakeType(items) {
-  if (!items || items.length === 0) return '—';
-  if (items.length === 1) return items[0].name;
-  return `${items[0].name} + ${items.length - 1} more`;
-}
-
-function fullCakeList(items) {
-  if (!items || items.length === 0) return '—';
-  return items.map(i => `${i.name} ×${i.qty}`).join(', ');
-}
-
-function statusPillClass(status) {
+function statusPillClass(ds) {
   const map = {
     Pending:            'pending',
     'Out for Delivery': 'out-for-delivery',
     Delivered:          'delivered',
-    Cancelled:          'cancelled',
     Overdue:            'overdue',
+    Cancelled:          'cancelled',
   };
-  return map[status] || 'pending';
+  return map[ds] || 'pending';
 }
 
 function StatusPill({ delivery }) {
@@ -121,96 +123,177 @@ function StatusPill({ delivery }) {
 
 /* ──────────────────────────────────────────────────────────────
    TODO: Backend - Export deliveries data for salesOverview.jsx
-   Replace this empty array with the fetched API response.
+   Replace this mock array with the fetched API response.
    Expected shape per delivery:
    {
-     items:        [{ name: string, qty: number }]
-     totalQty:     number
-     totalPrice:   number
+     cakeType:     string  — cake product name
+     quantity:     number
+     price:        number  — total order price (₱)
      customer:     string
-     contact:      string
-     address:      string
+     contact:      string  — customer contact number
+     address:      string  — delivery address
+     orderDate:    string  — YYYY-MM-DD
      deliveryDate: string  — YYYY-MM-DD
      status:       'Pending' | 'Out for Delivery' | 'Delivered' | 'Cancelled'
+     instructions: string  — special notes (optional)
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_DELIVERIES = [];
+export let INIT_DELIVERIES = [
+  {
+    cakeType:     'Chocolate Fudge Cake',
+    quantity:     1,
+    price:        950,
+    customer:     'Maria Santos',
+    contact:      '09171234567',
+    address:      'Blk 4 Lot 12, Sampaguita St., Calamba, Laguna',
+    orderDate:    '2026-03-09',
+    deliveryDate: '2026-03-11',
+    status:       'Out for Delivery',
+    instructions: 'Please call before arriving. Leave at the gate if no answer.',
+  },
+  {
+    cakeType:     'Ube Macapuno Cake',
+    quantity:     1,
+    price:        1100,
+    customer:     'Jose Reyes',
+    contact:      '09209876543',
+    address:      '23 Marigold Ave., Brgy. Parian, Calamba, Laguna',
+    orderDate:    '2026-03-09',
+    deliveryDate: '2026-03-11',
+    status:       'Pending',
+    instructions: '',
+  },
+  {
+    cakeType:     'Bento Cake',
+    quantity:     2,
+    price:        900,
+    customer:     'Ana dela Cruz',
+    contact:      '09561122334',
+    address:      '8 Rosal St., Brgy. Real, Calamba, Laguna',
+    orderDate:    '2026-03-08',
+    deliveryDate: '2026-03-11',
+    status:       'Delivered',
+    instructions: 'Fragile. Handle with care.',
+  },
+  {
+    cakeType:     'Mango Cream Cake',
+    quantity:     1,
+    price:        850,
+    customer:     'Ramon Villanueva',
+    contact:      '09321234321',
+    address:      '15 Ilang-Ilang St., Brgy. Halang, Calamba, Laguna',
+    orderDate:    '2026-03-07',
+    deliveryDate: '2026-03-11',
+    status:       'Cancelled',
+    instructions: '',
+  },
+  {
+    cakeType:     'Red Velvet Cake',
+    quantity:     1,
+    price:        980,
+    customer:     'Liza Corpuz',
+    contact:      '09184445556',
+    address:      '3 Sampaguita Rd., Brgy. Bucal, Calamba, Laguna',
+    orderDate:    '2026-03-07',
+    deliveryDate: '2026-03-10',
+    status:       'Out for Delivery',
+    instructions: 'Extra cream cheese frosting packed separately.',
+  },
+];
 
 /* ──────────────────────────────────────────────────────────────
    DELIVERY DETAIL MODAL
+   Table shows: Cake Type · Qty · Price · Delivery Date · Status · Action
+   Modal shows: Order Info + Customer Info + Delivery Info + Instructions
 ────────────────────────────────────────────────────────────── */
 function DeliveryDetailModal({ delivery, onClose }) {
-  const overdue  = isOverdue(delivery);
-  const dueToday = isDeliveryToday(delivery);
-
   return (
     <div className="do-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="do-modal">
 
         <div className="do-modal-header">
-          <h2 className="do-modal-title">{formatCakeType(delivery.items)}</h2>
+          <div>
+            <p className="do-modal-eyebrow">Delivery Details</p>
+            <h2 className="do-modal-cake-name">{delivery.cakeType}</h2>
+          </div>
           <button className="do-modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         <div className="do-modal-body">
-          <h3 className="do-modal-section-title">Delivery Information</h3>
+
+          {/* ── Section 1: Order Information ── */}
+          <h3 className="do-modal-section-title">Order Information</h3>
           <div className="do-modal-info-grid">
+
+            <div className="do-info-item">
+              <span className="do-info-label">Cake Type</span>
+              <span className="do-info-value">{delivery.cakeType}</span>
+            </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Quantity</span>
+              <span className="do-info-value">{delivery.quantity} pc{delivery.quantity > 1 ? 's' : ''}</span>
+            </div>
+
+            <div className="do-info-item">
+              <span className="do-info-label">Total Price</span>
+              <span className="do-info-value price-val">₱{delivery.price.toLocaleString()}</span>
+            </div>
 
             <div className="do-info-item">
               <span className="do-info-label">Status</span>
               <span className="do-info-value"><StatusPill delivery={delivery} /></span>
             </div>
 
+          </div>
+
+          {/* ── Section 2: Customer Information ── */}
+          <h3 className="do-modal-section-title" style={{ marginTop: 22 }}>Customer Information</h3>
+          <div className="do-modal-info-grid">
+
             <div className="do-info-item">
-              <span className="do-info-label">Customer</span>
+              <span className="do-info-label">Customer Name</span>
               <span className="do-info-value">{delivery.customer}</span>
             </div>
 
             <div className="do-info-item">
-              <span className="do-info-label">Total Price</span>
-              <span className="do-info-value do-price-val">₱{delivery.totalPrice.toLocaleString()}</span>
-            </div>
-
-            <div className="do-info-item">
-              <span className="do-info-label">Total Quantity</span>
-              <span className="do-info-value">{delivery.totalQty} pc{delivery.totalQty > 1 ? 's' : ''}</span>
-            </div>
-
-            <div className="do-info-item">
               <span className="do-info-label">Contact Number</span>
-              <span className="do-info-value">{delivery.contact}</span>
+              <span className="do-info-value">{delivery.contact || '—'}</span>
+            </div>
+
+          </div>
+
+          {/* ── Section 3: Delivery Information ── */}
+          <h3 className="do-modal-section-title" style={{ marginTop: 22 }}>Delivery Information</h3>
+          <div className="do-modal-info-grid">
+
+            <div className="do-info-item">
+              <span className="do-info-label">Order Date</span>
+              <span className="do-info-value">{formatDate(delivery.orderDate)}</span>
             </div>
 
             <div className="do-info-item">
               <span className="do-info-label">Delivery Date</span>
-              <span className="do-info-value" style={{
-                color:      overdue  ? '#b91c1c' : dueToday ? '#854d0e' : undefined,
-                fontWeight: (overdue || dueToday) ? 700 : undefined,
-              }}>
-                {formatDate(delivery.deliveryDate)}
-                {overdue  && '  ⚠ Overdue'}
-                {dueToday && '  ⚠ Due Today'}
-              </span>
+              <span className="do-info-value">{formatDate(delivery.deliveryDate)}</span>
             </div>
 
             <div className="do-info-item full-width">
               <span className="do-info-label">Delivery Address</span>
-              <span className="do-info-value do-address-val">{delivery.address}</span>
-            </div>
-
-            <div className="do-info-item full-width">
-              <span className="do-info-label">Order Items</span>
-              <div className="do-items-list">
-                {delivery.items.map((item, idx) => (
-                  <div key={idx} className="do-item-row">
-                    <span className="do-item-name">{item.name}</span>
-                    <span className="do-item-qty">×{item.qty}</span>
-                  </div>
-                ))}
-              </div>
+              <span className="do-info-value instructions-val">{delivery.address}</span>
             </div>
 
           </div>
+
+          {/* ── Section 4: Special Instructions ── */}
+          <h3 className="do-modal-section-title" style={{ marginTop: 22 }}>Special Instructions</h3>
+          <div className="do-modal-info-grid">
+            <div className="do-info-item full-width">
+              <span className="do-info-value instructions-val">
+                {delivery.instructions || 'No special instructions provided.'}
+              </span>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -227,9 +310,9 @@ const DeliveryOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace empty array with fetched deliveries data
+  // TODO: Backend - Replace INIT_DELIVERIES with fetched data
   // -----------------------------------------------------------
-  const [deliveriesData, setDeliveriesData] = useState([]);
+  const [deliveriesData, setDeliveriesData] = useState(INIT_DELIVERIES);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState(null);
 
@@ -260,7 +343,7 @@ const DeliveryOverview = () => {
 
 
   // -----------------------------------------------------------
-  // DATE-SCOPED DELIVERIES
+  // DATE-SCOPED DELIVERIES (filter by deliveryDate)
   // -----------------------------------------------------------
   const dateScoped = useMemo(
     () => deliveriesData.filter(d => inRange(d.deliveryDate, rangeStart, rangeEnd)),
@@ -275,11 +358,11 @@ const DeliveryOverview = () => {
 
   const estimatedRevenue = dateScoped
     .filter(d => REVENUE_STATUSES.includes(d.status))
-    .reduce((sum, d) => sum + d.totalPrice, 0);
+    .reduce((sum, d) => sum + d.price, 0);
 
   const totalCakesDelivered = dateScoped
     .filter(d => d.status === 'Delivered')
-    .reduce((sum, d) => sum + d.totalQty, 0);
+    .reduce((sum, d) => sum + d.quantity, 0);
 
 
   // -----------------------------------------------------------
@@ -391,7 +474,6 @@ const DeliveryOverview = () => {
             onClick={() => setDateDropOpen(p => !p)}
             title="Filter by date range"
           >
-            {/* ✅ Calendar icon — matches inventoryOverview pattern */}
             <Calendar size={16} strokeWidth={2} color="currentColor" />
             <span>{dateLabel}</span>
             <ChevronDown size={12} />
@@ -502,6 +584,9 @@ const DeliveryOverview = () => {
 
       {/* =====================================================
           4. DELIVERIES TABLE
+          Visible columns: Cake Type · Qty · Price · Delivery Date · Status · Action
+          Hidden from table (shown only in modal):
+            Customer Name, Contact Number, Address, Order Date, Instructions
           ===================================================== */}
       <div className="do-table-container">
 
@@ -517,14 +602,19 @@ const DeliveryOverview = () => {
 
         <div className="do-table-scroll-wrapper">
           <table className="do-deliveries-table">
+            <colgroup>
+              <col className="col-cake" />
+              <col className="col-qty" />
+              <col className="col-price" />
+              <col className="col-delivery" />
+              <col className="col-status" />
+              <col className="col-action" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Cake Type</th>
                 <th>Qty</th>
-                <th>Total Price</th>
-                <th>Customer Name</th>
-                <th>Contact</th>
-                <th>Delivery Address</th>
+                <th>Price</th>
                 <th>Delivery Date</th>
                 <th>Status</th>
                 <th></th>
@@ -533,21 +623,12 @@ const DeliveryOverview = () => {
             <tbody>
               {paged.length > 0 ? paged.map((d, idx) => {
                 const overdue  = isOverdue(d);
-                const dueToday = isDeliveryToday(d);
+                const dueToday = isDueToday(d);
                 return (
                   <tr key={idx}>
-                    <td>
-                      <span className="do-cake-name-text" title={fullCakeList(d.items)}>
-                        {formatCakeType(d.items)}
-                      </span>
-                    </td>
-                    <td>{d.totalQty}</td>
-                    <td><span className="do-price-text">₱{d.totalPrice.toLocaleString()}</span></td>
-                    <td>{d.customer}</td>
-                    <td><span className="do-contact-text">{d.contact}</span></td>
-                    <td>
-                      <span className="do-address-text" title={d.address}>{d.address}</span>
-                    </td>
+                    <td><span className="do-cake-name-text">{d.cakeType}</span></td>
+                    <td>{d.quantity}</td>
+                    <td><span className="do-price-text">₱{d.price.toLocaleString()}</span></td>
                     <td>
                       <span className={`do-date-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
                         {formatDate(d.deliveryDate)}
@@ -566,7 +647,7 @@ const DeliveryOverview = () => {
                 );
               }) : (
                 <tr>
-                  <td colSpan={9} className="do-no-data">
+                  <td colSpan={6} className="do-no-data">
                     No delivery orders match the current filter.
                   </td>
                 </tr>

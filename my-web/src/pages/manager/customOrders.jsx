@@ -143,11 +143,25 @@ export let INIT_ORDERS = [
     price:        1500,
     customer:     'Kimberly Luceñada',
     contact:      '09123456789',
-    orderDate:    '2026-03-06',
-    pickupDate:   '2026-03-06',
-    status:       'Pending',
+    orderDate:    '2026-03-08',
+    pickupDate:   '2026-03-11',
+    status:       'Ready',
     createdBy:    'staff',
     lastUpdated:  '2026-06-01T10:00:00',
+    timeline:     [],
+  },
+  {
+    cakeType:     'Custom Wedding Cake',
+    instructions: 'Three-tier white fondant cake with floral accents and pearl details.',
+    quantity:     1,
+    price:        4500,
+    customer:     'Maria Santos',
+    contact:      '09987654321',
+    orderDate:    '2026-03-08',
+    pickupDate:   '2026-03-12',
+    status:       'Ready',
+    createdBy:    'staff',
+    lastUpdated:  '2026-03-10T14:30:00',
     timeline:     [],
   },
 ];
@@ -159,9 +173,6 @@ export let INIT_ORDERS = [
                 Order Date · Special Instructions
 ────────────────────────────────────────────────────────────── */
 function OrderDetailModal({ order, onClose }) {
-  const overdue  = isOverdue(order);
-  const dueToday = isDueToday(order);
-
   return (
     <div className="co-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="co-modal">
@@ -229,14 +240,7 @@ function OrderDetailModal({ order, onClose }) {
 
             <div className="co-info-item">
               <span className="co-info-label">Pick-Up Date</span>
-              <span className="co-info-value" style={{
-                color:      overdue ? '#fd7e14' : dueToday ? '#854d0e' : undefined,
-                fontWeight: (overdue || dueToday) ? 700 : undefined,
-              }}>
-                {formatDate(order.pickupDate)}
-                {overdue  && '  ⚠ Overdue'}
-                {dueToday && '  ⚠ Due Today'}
-              </span>
+              <span className="co-info-value">{formatDate(order.pickupDate)}</span>
             </div>
 
           </div>
