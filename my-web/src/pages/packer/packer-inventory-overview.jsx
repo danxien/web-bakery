@@ -44,13 +44,6 @@ export default function InventoryOverview({
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState('all');
 
-  const setNowMadeTime = () => {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    onChangeStockAdd('madeTime', `${hours}:${minutes}`);
-  };
-
   const inventoryRows = useMemo(
     () =>
       stockItems.map((item) => ({
@@ -116,7 +109,6 @@ export default function InventoryOverview({
       { key: 'qty', label: 'Quantity' },
       { key: 'price', label: 'Price' },
       { key: 'madeDate', label: 'Made Date' },
-      { key: 'madeTime', label: 'Made Time' },
       { key: 'expiryDate', label: 'Expiry Date' },
       { key: 'computedStatus', label: 'Status' },
     ];
@@ -130,7 +122,7 @@ export default function InventoryOverview({
 
   const handleAddStockSubmit = () => {
     const qty = Number(stockAddForm.qty);
-    if (!stockAddForm.cake || Number.isNaN(qty) || qty <= 0 || !stockAddForm.madeDate || !stockAddForm.madeTime || !stockAddForm.expiryDate) return;
+    if (!stockAddForm.cake || Number.isNaN(qty) || qty <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
     onAddStock();
     setIsAddStockOpen(false);
   };
@@ -244,7 +236,6 @@ export default function InventoryOverview({
                   <th>Quantity</th>
                   <th>Price</th>
                   <th>Made Date</th>
-                  <th>Made Time</th>
                   <th>Expiry Date</th>
                   <th>Status</th>
                 </tr>
@@ -252,7 +243,7 @@ export default function InventoryOverview({
               <tbody>
                 {paged.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="pkinv-no-data">
+                    <td colSpan={6} className="pkinv-no-data">
                       <div className="pkinv-empty-state">
                         <PackageX size={34} />
                         <p>No inventory items found</p>
@@ -272,7 +263,6 @@ export default function InventoryOverview({
                         <span className="pkinv-price-text">₱{Number(item.price).toFixed(2)}</span>
                       </td>
                       <td>{formatDate(item.madeDate)}</td>
-                      <td>{item.madeTime || item.time || '-'}</td>
                       <td>
                         <span className={item.computedStatus === 'Near Expiry' ? 'pkinv-expiry-soon' : item.computedStatus === 'Expired' ? 'pkinv-expiry-overdue' : ''}>
                           {formatDate(item.expiryDate)}
@@ -364,18 +354,6 @@ export default function InventoryOverview({
                 value={stockAddForm.madeDate}
                 onChange={(event) => onChangeStockAdd('madeDate', event.target.value)}
               />
-
-              <label>Made Time</label>
-              <div className="inventory-modal-time-row">
-                <input
-                  type="time"
-                  value={stockAddForm.madeTime || ''}
-                  onChange={(event) => onChangeStockAdd('madeTime', event.target.value)}
-                />
-                <button type="button" className="time-now-btn" onClick={setNowMadeTime}>
-                  Now
-                </button>
-              </div>
 
               <label>Expiry Date</label>
               <input

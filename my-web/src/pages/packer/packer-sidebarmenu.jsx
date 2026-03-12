@@ -14,7 +14,7 @@ import logo from '../../assets/logo.png';
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'inventory', label: 'Inventory', icon: Boxes },
-  { id: 'deliveries', label: 'Deliveries', icon: Truck },
+{ id: 'deliveries', label: 'Stock Deliveries', icon: Truck },
   { id: 'custom-orders', label: 'Custom Orders', icon: ClipboardList },
   { id: 'cake-prices', label: 'Cake Prices', icon: Wallet },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
