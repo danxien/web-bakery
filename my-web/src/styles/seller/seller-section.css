@@ -348,13 +348,15 @@
 }
 
 .seller-modal-box {
-  width: 450px;
+  width: 600px;
   padding: 25px;
   border-radius: 15px;
   background-color: var(--color-bg-main);
   font-family: var(--font-main);
   color: var(--color-text-dark);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;       
+  overflow-y: auto; 
 }
 
 .seller-modal-header {
@@ -500,8 +502,8 @@ select.seller-modal-input {
 .seller-cancel-sale-btn:hover  { background-color: var(--color-primary); }
 
 .seller-custom-order-modal {
-  width: 95%;
-  max-width: 500px;
+  width: 600px;           
+  max-width: 95vw;
 }
 
 .seller-compact-total {
