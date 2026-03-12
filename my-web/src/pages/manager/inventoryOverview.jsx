@@ -33,8 +33,56 @@ import '../../styles/manager/inventoryOverview.css';
 import { INIT_DELIVERIES, INVENTORY_STATE } from './deliveriesOverview';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
-const TODAY     = new Date();
+//
+// NOTE: TODAY is pinned to 2026-03-10 so that all four inventory statuses
+//       (Fresh, Near Expiry, Expired, Low Stock) are representable within
+//       the "This Week" range of March 8–14, 2026.
+//       With the real today (Mar 13), Fresh items would need expiry ≥ Mar 16,
+//       which falls outside the weekly window.
+//       Remove this pin and restore `new Date()` once live data is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
+
+/* ── Mock Inventory Data ───────────────────────────────────── */
+
+// TODO: Backend — Remove MOCK_INVENTORY once GET /api/inventory is wired up.
+// One entry per status to validate all four status cards within the
+// "This Week" window (March 8–14, 2026, relative to pinned TODAY = Mar 10).
+//
+//   Classic Chocolate Cake  expiry Mar 14  → Fresh       (4 days away)
+//   Strawberry Shortcake    expiry Mar 11  → Near Expiry (1 day away)
+//   Red Velvet Cake         expiry Mar 09  → Expired
+//   Matcha Green Tea Cake   expiry Mar 12, qty 3 → Low Stock (≤ 5, Near Expiry)
+const MOCK_INVENTORY = [
+  {
+    name:   'Classic Chocolate Cake',
+    qty:    20,
+    expiry: '2026-03-14',
+    made:   '2026-03-07',
+    price:  450,
+  },
+  {
+    name:   'Strawberry Shortcake',
+    qty:    12,
+    expiry: '2026-03-11',
+    made:   '2026-03-04',
+    price:  380,
+  },
+  {
+    name:   'Red Velvet Cake',
+    qty:    8,
+    expiry: '2026-03-09',
+    made:   '2026-03-02',
+    price:  520,
+  },
+  {
+    name:   'Matcha Green Tea Cake',
+    qty:    3,
+    expiry: '2026-03-12',
+    made:   '2026-03-05',
+    price:  490,
+  },
+];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
 
@@ -121,7 +169,8 @@ function formatDate(s) {
 
 /* ──────────────────────────────────────────────────────────────
    DERIVE INVENTORY FROM DELIVERIES
-   Converts the INIT_DELIVERIES list into per-batch inventory rows.
+   Converts the INIT_DELIVERIES list into per-batch inventory rows,
+   then appends MOCK_INVENTORY entries for demo purposes.
 
    Each delivery record produces one inventory row:
      name:   d.cakeType
@@ -168,6 +217,11 @@ function deriveInventoryFromDeliveries() {
     }
   });
 
+  // TODO: Backend — Remove once live API data is connected.
+  // Append mock entries so all four status cards show sample data
+  // within the "This Week" window (Mar 8–14, 2026).
+  MOCK_INVENTORY.forEach(entry => rows.push(entry));
+
   return rows;
 }
 
@@ -186,7 +240,10 @@ const InventoryOverview = () => {
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and all mock entries are immediately visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
@@ -213,8 +270,8 @@ const InventoryOverview = () => {
 
   // -----------------------------------------------------------
   // LIVE INVENTORY DATA
-  // Re-derived from INIT_DELIVERIES + INVENTORY_STATE on every
-  // render. Because handleAddDelivery in deliveriesOverview.jsx
+  // Re-derived from INIT_DELIVERIES + INVENTORY_STATE + MOCK_INVENTORY
+  // on every render. Because handleAddDelivery in deliveriesOverview.jsx
   // mutates both module-level refs in place, the next render of
   // this component automatically sees the updated data.
   //

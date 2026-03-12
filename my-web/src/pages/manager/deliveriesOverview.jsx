@@ -20,7 +20,13 @@ import { Truck, PackageCheck, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/deliveriesOverview.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
-const TODAY     = new Date();
+//
+// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with
+//       InventoryOverview.jsx, which also uses this pin so all four
+//       inventory statuses are representable within the "This Week"
+//       window (Mar 8–14, 2026). Restore `new Date()` once live data
+//       is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
@@ -69,7 +75,7 @@ const DATE_OPTIONS = [
   { key: 'month', label: 'This Month' },
 ];
 
-const PER_PAGE = 6;
+const PER_PAGE = 5;
 
 /* ── Misc Helpers ──────────────────────────────────────────── */
 
@@ -95,7 +101,22 @@ export let INVENTORY_STATE = {};
 
 // TODO: Backend — Populated from GET /api/stock-deliveries on mount.
 // Shape per record: { id, deliveryDate, cakeType, pricePerCake, quantity, expiryDate }
-export let INIT_DELIVERIES = [];
+//
+// NOTE: Seeded with one mock entry so the "This Week" view (Mar 8–14, 2026)
+//       shows at least one visible delivery record.
+//       Remove MOCK_DELIVERIES and the spread below once the API is live.
+const MOCK_DELIVERIES = [
+  {
+    id:           'mock-001',
+    deliveryDate: '2026-03-10',
+    cakeType:     'Yema Cake',
+    pricePerCake: 450,
+    quantity:     20,
+    expiryDate:   '2026-03-14',
+  },
+];
+
+export let INIT_DELIVERIES = [...MOCK_DELIVERIES];
 
 /* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
@@ -105,14 +126,17 @@ const DeliveryOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend — Replace initial [] with data fetched in
-  //   useEffect below via GET /api/stock-deliveries.
+  // TODO: Backend — Replace initial MOCK_DELIVERIES spread with []
+  //   and populate from GET /api/stock-deliveries in useEffect below.
   // -----------------------------------------------------------
-  const [deliveriesData, setDeliveriesData] = useState([]);
+  const [deliveriesData, setDeliveriesData] = useState([...MOCK_DELIVERIES]);
   const [loading,        setLoading]        = useState(true);
   const [error,          setError]          = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and the mock entry is immediately visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);

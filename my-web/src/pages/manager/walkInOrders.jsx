@@ -18,7 +18,13 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ShoppingBag, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/walkInOrders.css';
 
-const TODAY     = new Date();
+// TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
+//
+// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with
+//       deliveriesOverview.jsx and inventoryOverview.jsx, which also
+//       use this pin so all pages share the same "This Week" window
+//       (Mar 8–14, 2026). Restore `new Date()` once live data is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
@@ -97,8 +103,25 @@ function formatDate(s) {
    }
 ────────────────────────────────────────────────────────────── */
 
-// TODO: Backend will provide completed transactions here
-export let INIT_WALKIN_ORDERS = [];
+// TODO: Backend — Remove MOCK_WALKIN_ORDERS and the spread below once
+//   GET /api/walkin-orders is live. On mount, populate via:
+//   INIT_WALKIN_ORDERS = data.orders
+//
+// One mock entry dated Mar 10 so the "This Week" view (Mar 8–14, 2026)
+// shows at least one completed walk-in transaction immediately.
+const MOCK_WALKIN_ORDERS = [
+  {
+    cakeType:     'Strawberry Shortcake',
+    quantity:     2,
+    price:        760,
+    customer:     'Maria Santos',
+    orderDate:    '2026-03-10',
+    status:       'Completed',
+    instructions: 'Please slice before packing.',
+  },
+];
+
+export let INIT_WALKIN_ORDERS = [...MOCK_WALKIN_ORDERS];
 
 /* ──────────────────────────────────────────────────────────────
    WALK-IN ORDER DETAIL MODAL
@@ -190,14 +213,17 @@ const WalkInOrders = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend — Replace initial [] with data populated in
-  //   useEffect below via GET /api/walkin-orders.
+  // TODO: Backend — Replace initial MOCK_WALKIN_ORDERS spread with []
+  //   and populate from GET /api/walkin-orders in useEffect below.
   // -----------------------------------------------------------
-  const [ordersData, setOrdersData] = useState([]);
+  const [ordersData, setOrdersData] = useState([...MOCK_WALKIN_ORDERS]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and the mock entry is immediately visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
