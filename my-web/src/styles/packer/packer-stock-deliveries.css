@@ -1,0 +1,212 @@
+.pkdo-page-container {
+  animation: pkdo-fadeIn 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@keyframes pkdo-fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pkdo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.pkdo-title {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #000;
+  margin: 0;
+}
+
+.pkdo-subtitle {
+  color: #888;
+  margin: 5px 0 0 0;
+  font-size: 1rem;
+}
+
+.pkdo-table-container {
+  background: #fff;
+  border-radius: 12px;
+  overflow: visible;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pkdo-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.pkdo-table-section-title {
+  font-family: Georgia, serif;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #222;
+}
+
+.pkdo-table-count-pill {
+  font-size: 0.78rem;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+}
+
+.pkdo-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #a50213;
+  background: #dc2626;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pkdo-add-btn:hover {
+  background: #b91c1c;
+  border-color: #991b1b;
+  transform: translateY(-1px);
+}
+
+.pkdo-table-scroll-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pkdo-table-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 3px;
+}
+
+.pkdo-stock-deliveries-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  table-layout: fixed;
+}
+
+.pkdo-stock-deliveries-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  border-bottom: 2px solid #fcf6c4;
+}
+
+.pkdo-stock-deliveries-table th {
+  padding: 18px 20px;
+  font-weight: bold;
+  font-family: Georgia, serif;
+  color: #000;
+  font-size: 0.9rem;
+}
+
+.pkdo-stock-deliveries-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pkdo-stock-deliveries-table th:nth-child(4),
+.pkdo-stock-deliveries-table td:nth-child(4) {
+  text-align: center;
+}
+
+
+.pkdo-stock-deliveries-table tbody tr:hover {
+  background-color: #fffde8;
+}
+
+.pkdo-date-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.pkdo-cake-name-text {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #000;
+}
+
+.pkdo-qty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #d1fae5;
+  color: #065f46;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.pkdo-expiry-text {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #d97706;
+}
+
+.pkdo-price-text {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.pkdo-no-data {
+  text-align: center !important;
+  padding: 60px 20px !important;
+  color: #888;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .pkdo-table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .pkdo-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

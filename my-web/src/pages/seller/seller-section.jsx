@@ -52,7 +52,7 @@ export default function SellerSection({ activeTab, setActiveTab, fullName, onSav
   // ─── Modal Open Helper ───────────────────────────────────────────────────────
   const openModal = (setterFunc) => setterFunc(true);
 
-  // ─── Inventory Updater (passed down to SellerModals) ─────────────────────────
+  // ─── Inventory Updater ───────────────────────────────────────────────────────
   const subtractFromInventory = (cakeName, qtyToSubtract) => {
     setInventoryState(prev => prev.map(item =>
       item.cakeType === cakeName
@@ -62,25 +62,46 @@ export default function SellerSection({ activeTab, setActiveTab, fullName, onSav
   };
 
   // ─── Delete Handlers ─────────────────────────────────────────────────────────
+
+  // Deleting from Sales cascades to Reservations or Custom Orders
   const handleDeleteSale = (id) => {
     const saleToDelete = salesHistory.find(sale => sale.id === id);
+
     if (saleToDelete) {
+      // Restore inventory
       setInventoryState(prev => prev.map(item =>
         item.cakeType === saleToDelete.cakeType
           ? { ...item, qty: item.qty + saleToDelete.qty }
           : item
       ));
+
+      // Match by customer + cakeType + amount + date to find the source row
+      const isSameRecord = (row) =>
+        row.customer === saleToDelete.customer &&
+        row.cakeType === saleToDelete.cakeType &&
+        row.amount   === saleToDelete.amount &&
+        row.date     === saleToDelete.date;
+
+      if (saleToDelete.transactionType === 'Reservation') {
+        setReservationsHistory(prev => prev.filter(res => !isSameRecord(res)));
+      }
+
+      if (saleToDelete.transactionType === 'Custom Order') {
+        setCustomOrdersList(prev => prev.filter(order => !isSameRecord(order)));
+      }
     }
+
     setSalesHistory(prev => prev.filter(sale => sale.id !== id));
   };
 
+  // Deleting from Reservations does NOT touch Sales
   const handleDeleteReservation = (id) => {
     setReservationsHistory(prev => prev.filter(res => res.id !== id));
   };
 
+  // Deleting from Custom Orders does NOT touch Sales
   const handleDeleteCustomOrder = (id) => {
     setCustomOrdersList(prev => prev.filter(order => order.id !== id));
-    setSalesHistory(prev => prev.filter(sale => sale.id !== id));
   };
 
   // ─── Reservation Status Handler ──────────────────────────────────────────────
@@ -89,21 +110,6 @@ export default function SellerSection({ activeTab, setActiveTab, fullName, onSav
       prevReservations.map(res => {
         if (res.id === id) {
           if (res.isCompleted) return res;
-          if (newStatus === 'Picked Up') {
-            const completedSale = {
-              id: `sale-${res.id}`,
-              date: new Date().toLocaleDateString(),
-              cakeType: res.cakeType,
-              customer: res.customer,
-              qty: res.qty,
-              amount: res.amount,
-            };
-            setSalesHistory(currentSales => {
-              const exists = currentSales.find(s => s.id === `sale-${res.id}`);
-              if (exists) return currentSales;
-              return [completedSale, ...currentSales];
-            });
-          }
           return { ...res, status: newStatus, isCompleted: true };
         }
         return res;
@@ -111,7 +117,7 @@ export default function SellerSection({ activeTab, setActiveTab, fullName, onSav
     );
   };
 
-  // ─── Modal Callbacks (receive new records from SellerModals) ─────────────────
+  // ─── Modal Callbacks ─────────────────────────────────────────────────────────
   const handleSaleCreated = (newSale) => {
     setSalesHistory(prev => [newSale, ...prev]);
   };

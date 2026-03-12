@@ -1,12 +1,169 @@
-import { Trash2 } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Trash2, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/seller/seller-sales.css';
 
+// ── Date helpers ──
+const TODAY = new Date();
+const TODAY_STR = TODAY.toISOString().split('T')[0];
+const DATE_OPTIONS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week',  label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+];
+
+const TRANSACTION_OPTIONS = [
+  { key: 'all',           label: 'All' },
+  { key: 'Walk-in',       label: 'Walk-In' },
+  { key: 'Reservation',   label: 'Reservation' },
+  { key: 'Custom Order',  label: 'Custom Order' },
+];
+
+const PAYMENT_OPTIONS = [
+  { key: 'all',    label: 'All' },
+  { key: 'Cash',   label: 'Cash' },
+  { key: 'GCash',  label: 'GCash' },
+];
+
+function getDateRange(filter, customStart, customEnd) {
+  const start = new Date(TODAY);
+  const end   = new Date(TODAY);
+  switch (filter) {
+    case 'today': return { start: TODAY_STR, end: TODAY_STR };
+    case 'week': {
+      const day = start.getDay();
+      start.setDate(start.getDate() - day);
+      end.setDate(end.getDate() + (6 - day));
+      return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+    }
+    case 'month': return {
+      start: new Date(TODAY.getFullYear(), TODAY.getMonth(), 1).toISOString().split('T')[0],
+      end:   new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 0).toISOString().split('T')[0],
+    };
+    case 'custom': return { start: customStart || TODAY_STR, end: customEnd || TODAY_STR };
+    default: return { start: TODAY_STR, end: TODAY_STR };
+  }
+}
+
+function toISO(dateStr) {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  const yyyy = d.getFullYear();
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function inRange(dateStr, start, end) {
+  const iso = toISO(dateStr);
+  return iso >= start && iso <= end;
+}
+
+function formatDate(s) {
+  return new Date(s + 'T00:00:00').toLocaleDateString('en-PH', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+}
+// ─────────────────────────────────────────────────
+
 const SellerSales = ({ transactions = [], onDelete }) => {
+  const [dateFilter,      setDateFilter]      = useState('today');
+  const [customStart,     setCustomStart]     = useState('');
+  const [customEnd,       setCustomEnd]       = useState('');
+  const [dateDropOpen,    setDateDropOpen]    = useState(false);
+  const [txFilter,        setTxFilter]        = useState('all');
+  const [txDropOpen,      setTxDropOpen]      = useState(false);
+  const [payFilter,       setPayFilter]       = useState('all');
+  const [payDropOpen,     setPayDropOpen]     = useState(false);
+
+  const dateDropRef = useRef(null);
+  const txDropRef   = useRef(null);
+  const payDropRef  = useRef(null);
+
+  const { start: rangeStart, end: rangeEnd } = useMemo(
+    () => getDateRange(dateFilter, customStart, customEnd),
+    [dateFilter, customStart, customEnd]
+  );
+
+  const dateLabel = useMemo(() => {
+    if (dateFilter === 'custom' && customStart && customEnd)
+      return `${formatDate(customStart)} – ${formatDate(customEnd)}`;
+    return DATE_OPTIONS.find(o => o.key === dateFilter)?.label || 'Today';
+  }, [dateFilter, customStart, customEnd]);
+
+  const txLabel  = useMemo(() => TRANSACTION_OPTIONS.find(o => o.key === txFilter)?.label  || 'All', [txFilter]);
+  const payLabel = useMemo(() => PAYMENT_OPTIONS.find(o => o.key === payFilter)?.label || 'All', [payFilter]);
+
+  const filtered = useMemo(() =>
+    transactions.filter(s => {
+      const inDate = inRange(s.date, rangeStart, rangeEnd);
+      const inTx   = txFilter  === 'all' || (s.transactionType || 'Walk-in') === txFilter;
+      const inPay  = payFilter === 'all' || (s.payment || 'Cash') === payFilter;
+      return inDate && inTx && inPay;
+    }),
+    [transactions, rangeStart, rangeEnd, txFilter, payFilter]
+  );
+
+  useEffect(() => {
+    const handler = e => {
+      if (dateDropRef.current && !dateDropRef.current.contains(e.target)) setDateDropOpen(false);
+      if (txDropRef.current   && !txDropRef.current.contains(e.target))   setTxDropOpen(false);
+      if (payDropRef.current  && !payDropRef.current.contains(e.target))  setPayDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   return (
     <div className="seller-sales-container">
       <div className="seller-sales-header">
-        <h1 className="seller-sales-title">Sales Transactions</h1>
-        <p className="seller-sales-subtitle">All completed sales</p>
+        <div>
+          <h1 className="seller-sales-title">Sales Transactions</h1>
+          <p className="seller-sales-subtitle">All completed sales</p>
+        </div>
+
+        {/* ── Date Filter Dropdown ── */}
+        <div className="inv-filter-dropdown-wrapper" ref={dateDropRef}>
+          <button
+            className={`inv-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+            onClick={() => setDateDropOpen(p => !p)}
+          >
+            <Calendar size={16} color="currentColor" />
+            <span>{dateLabel}</span>
+            <ChevronDown size={12} />
+          </button>
+
+          {dateDropOpen && (
+            <div className="inv-date-dropdown">
+              {DATE_OPTIONS.map(opt => (
+                <button
+                  key={opt.key}
+                  className={`inv-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                  onClick={() => { setDateFilter(opt.key); if (opt.key !== 'custom') setDateDropOpen(false); }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+              <div className="inv-custom-range-section">
+                <span className="inv-custom-range-title">Custom Range</span>
+                <label className="inv-custom-label">From</label>
+                <input type="date" className="inv-date-input" value={customStart}
+                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }} />
+                <label className="inv-custom-label">To</label>
+                <input type="date" className="inv-date-input" value={customEnd} min={customStart}
+                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }} />
+                <button
+                  className="inv-apply-btn"
+                  onClick={() => { if (customStart && customEnd) setDateDropOpen(false); }}
+                  disabled={!customStart || !customEnd}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="seller-table-container">
@@ -17,19 +174,75 @@ const SellerSales = ({ transactions = [], onDelete }) => {
               <th>Cake Type</th>
               <th>Customer</th>
               <th>Qty</th>
+              <th>
+                {/* ── Transaction Filter ── */}
+                <div className="seller-th-filter-wrapper" ref={txDropRef}>
+                  <button
+                    className={`seller-th-filter-btn ${txDropOpen ? 'open' : ''}`}
+                    onClick={() => setTxDropOpen(p => !p)}
+                  >
+                    <span>{txFilter === 'all' ? 'Transaction' : txLabel}</span>
+                    <ChevronDown size={12} />
+                  </button>
+                  {txDropOpen && (
+                    <div className="seller-th-dropdown">
+                      {TRANSACTION_OPTIONS.map(opt => (
+                        <button
+                          key={opt.key}
+                          className={`seller-th-dropdown-item ${txFilter === opt.key ? 'selected' : ''}`}
+                          onClick={() => { setTxFilter(opt.key); setTxDropOpen(false); }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </th>
               <th>Amount</th>
+              <th>
+                {/* ── Payment Filter ── */}
+                <div className="seller-th-filter-wrapper" ref={payDropRef}>
+                  <button
+                    className={`seller-th-filter-btn ${payDropOpen ? 'open' : ''}`}
+                    onClick={() => setPayDropOpen(p => !p)}
+                  >
+                    <span>{payFilter === 'all' ? 'Payment' : payLabel}</span>
+                    <ChevronDown size={12} />
+                  </button>
+                  {payDropOpen && (
+                    <div className="seller-th-dropdown">
+                      {PAYMENT_OPTIONS.map(opt => (
+                        <button
+                          key={opt.key}
+                          className={`seller-th-dropdown-item ${payFilter === opt.key ? 'selected' : ''}`}
+                          onClick={() => { setPayFilter(opt.key); setPayDropOpen(false); }}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {transactions.length > 0 ? (
-              transactions.map((sale) => (
+            {filtered.length > 0 ? (
+              filtered.map((sale) => (
                 <tr key={sale.id}>
                   <td>{sale.date}</td>
                   <td>{sale.cakeType}</td>
                   <td>{sale.customer}</td>
                   <td>{sale.qty}</td>
+                  <td>{sale.transactionType || 'Walk-in'}</td>
                   <td>₱{sale.amount.toLocaleString()}</td>
+                  <td>
+                    <span className={(sale.payment || 'Cash') === 'GCash' ? 'seller-payment-gcash' : 'seller-payment-cash'}>
+                      {sale.payment || 'Cash'}
+                    </span>
+                  </td>
                   <td>
                     <button className="seller-delete-btn" onClick={() => onDelete(sale.id)}>
                       <Trash2 size={16} />
@@ -39,7 +252,7 @@ const SellerSales = ({ transactions = [], onDelete }) => {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="seller-empty-row">No sales recorded yet.</td>
+                <td colSpan="8" className="seller-empty-row">No sales recorded yet.</td>
               </tr>
             )}
           </tbody>

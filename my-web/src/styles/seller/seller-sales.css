@@ -11,8 +11,8 @@
 /* ─── Header ──────────────────────────────────────────────────────────────────*/
 .seller-sales-header {
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
+  justify-content: space-between;
   margin-bottom: 30px;
 }
 
@@ -31,8 +31,21 @@
 .seller-table-container {
   background: white;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+/* Round the top corners via first/last header cells */
+.seller-sales-table thead tr th:first-child { border-top-left-radius: 12px; }
+.seller-sales-table thead tr th:last-child  { border-top-right-radius: 12px; }
+
+/* Round the bottom corners via last row */
+.seller-sales-table tbody tr:last-child td:first-child { border-bottom-left-radius: 12px; }
+.seller-sales-table tbody tr:last-child td:last-child  { border-bottom-right-radius: 12px; }
+
+.seller-sales-table thead {
+  position: relative;
+  z-index: 10;
 }
 
 .seller-sales-table {
@@ -55,6 +68,20 @@
   color: #333;
 }
 
+/* Remove bottom border on last row */
+.seller-sales-table tbody tr:last-child td { border-bottom: none; }
+
+/* Narrow Qty column */
+.seller-sales-table th:nth-child(4),
+.seller-sales-table td:nth-child(4) {
+  width: 50px;
+  white-space: nowrap;
+}
+
+/* No-wrap Date column */
+.seller-sales-table th:nth-child(1),
+.seller-sales-table td:nth-child(1) { white-space: nowrap; }
+
 .seller-empty-row {
   text-align: center;
   padding: 40px !important;
@@ -66,6 +93,331 @@
   padding: 40px !important;
   color: #888;
   background-color: transparent !important;
+}
+
+/* ─── Transaction / Column Header Filter ─────────────────────────────────────*/
+.seller-th-filter-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.seller-th-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  font-weight: bold;
+  font-size: inherit;
+  color: #000;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.seller-th-filter-btn:focus,
+.seller-th-filter-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.seller-th-filter-btn svg {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: #888;
+}
+
+.seller-th-filter-btn.open svg { transform: rotate(180deg); }
+
+/* ─── Column Dropdown ────────────────────────────────────────────────────────*/
+.seller-th-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
+  animation: sellerFadeIn 0.15s ease;
+}
+
+.seller-th-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  font-family: inherit;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.seller-th-dropdown-item:hover { background: #fcf6c4; }
+
+.seller-th-dropdown-item.selected {
+  background: #f7dd30;
+  font-weight: 600;
+  color: #111;
+}
+
+.seller-th-dropdown-item:focus,
+.seller-th-dropdown-item:focus-visible { outline: none; box-shadow: none; }
+
+/* ─── Date Filter Dropdown (inv- classes) ────────────────────────────────────*/
+.inv-filter-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.inv-date-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s;
+}
+
+.inv-date-filter-btn:focus,
+.inv-date-filter-btn:focus-visible { outline: none; box-shadow: none; border-color: #eee; }
+
+.inv-date-filter-btn svg { transition: transform 0.2s ease; }
+.inv-date-filter-btn.open svg:last-child { transform: rotate(180deg); }
+
+/* ─── Synchronized Date Filter Dropdown ──────────────────────────────────── */
+.inv-date-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb; /* Matched border color */
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); /* Matched shadow */
+  z-index: 10000;
+  min-width: 200px; /* Matched width */
+  padding: 0; /* REMOVED padding to make items flush */
+  overflow: hidden; /* Ensures hover background hits the corners */
+  animation: sellerFadeIn 0.15s ease;
+}
+
+.inv-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 16px; /* Matched status item padding */
+  border: none;
+  background: transparent;
+  font-size: 0.85rem; /* Matched font size */
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.inv-dropdown-item:hover {
+  background-color: #fcf6c4; /* Matched hover color */
+}
+
+.inv-dropdown-item.selected {
+  background-color: #f7dd30; /* Matched status selected color */
+  color: #111;
+  font-weight: 600;
+}
+
+/* ─── Custom Range Section (Cleaned up to fit the list) ────────────────── */
+.inv-custom-range-section {
+  border-top: 1px solid #eee;
+  padding: 12px 16px; /* Aligned with item horizontal padding */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fafafa; /* Subtle distinction for the "input" area */
+}
+
+.inv-custom-range-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.inv-custom-label {
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 2px;
+}
+
+.inv-date-input {
+  width: 100%; /* Full width to fill the dropdown */
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.inv-date-input:focus {
+  border-color: #f5c800;
+}
+
+.inv-apply-btn {
+  margin-top: 5px;
+  padding: 8px;
+  background-color: #f5c800;
+  color: #000;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.15s;
+}
+
+.inv-apply-btn:hover:not(:disabled) {
+  background-color: #e0b300;
+}
+
+/* ─── Payment Method (modal) ─────────────────────────────────────────────────*/
+.seller-payment-toggle {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.seller-payment-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
+  user-select: none;
+}
+
+.seller-payment-option input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #f5c800;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.seller-gcash-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  flex-shrink: 0;
+}
+
+.seller-payment-option-label { line-height: 1; }
+
+/* ─── Payment text in table (no badge, plain bold colored text) ──────────────*/
+.seller-payment-cash  { font-weight: 700; color: #1a7a45; font-size: 0.88rem; }
+.seller-payment-gcash { font-weight: 700; color: #0057c2; font-size: 0.88rem; }
+
+/* ─── View Note Button ────────────────────────────────────────────────────────*/
+.seller-view-note-btn {
+  padding: 5px 14px;
+  background-color: #fcf6c4;
+  color: #7a6000;
+  border: 1px solid #e8d84a;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.seller-view-note-btn:hover {
+  background-color: #f5c800;
+  color: #000;
+  border-color: #d4aa00;
+}
+
+.seller-no-note { color: #bbb; }
+
+/* ─── Special Instructions Modal ─────────────────────────────────────────────*/
+.seller-note-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: sellerFadeIn 0.2s ease;
+}
+
+.seller-note-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.seller-note-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.seller-note-modal-header h3 { margin: 0; font-size: 1.1rem; color: #000; }
+
+.seller-note-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.seller-note-close-btn:hover { background: #f1f1f1; color: #333; }
+.seller-note-close-btn:focus,
+.seller-note-close-btn:focus-visible { outline: none; }
+
+.seller-note-modal-body {
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  margin: 0;
 }
 
 /* ─── Status Badge ────────────────────────────────────────────────────────────*/
@@ -98,10 +450,7 @@
   transition: all 0.2s;
 }
 
-.seller-delete-btn:hover {
-  background-color: #dc3545;
-  color: white;
-}
+.seller-delete-btn:hover { background-color: #dc3545; color: white; }
 
 /* ─── Action Buttons ──────────────────────────────────────────────────────────*/
 .seller-action-buttons-group {
@@ -125,25 +474,10 @@
   justify-content: center;
 }
 
-.seller-btn-picked-up {
-  border: 1px solid #28a745;
-  color: #28a745;
-}
-
-.seller-btn-picked-up:hover {
-  background-color: #28a745;
-  color: white;
-}
-
-.seller-btn-not-picked-up {
-  border: 1px solid #dc3545;
-  color: #dc3545;
-}
-
-.seller-btn-not-picked-up:hover {
-  background-color: #dc3545;
-  color: white;
-}
+.seller-btn-picked-up     { border: 1px solid #28a745; color: #28a745; }
+.seller-btn-picked-up:hover { background-color: #28a745; color: white; }
+.seller-btn-not-picked-up { border: 1px solid #dc3545; color: #dc3545; }
+.seller-btn-not-picked-up:hover { background-color: #dc3545; color: white; }
 
 /* ─── Misc Text ───────────────────────────────────────────────────────────────*/
 .seller-completed-text {
@@ -164,3 +498,31 @@
   font-style: italic;
   font-size: 0.9rem;
 }
+
+/* ─── Custom Order: Customer Details Cell ────────────────────────────────────*/
+.custom-customer-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.custom-customer-name    { font-weight: 600; color: #111; font-size: 0.9rem; }
+.custom-customer-contact { font-size: 0.82rem; color: #555; }
+.custom-customer-address { font-size: 0.82rem; color: #888; font-style: italic; }
+
+/* ─── Custom Order: Status Badge ─────────────────────────────────────────────*/
+.custom-order-status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.custom-status-pending          { background-color: #f1f3f5; color: #495057; }
+.custom-status-out-for-delivery { background-color: #fff3cd; color: #856404; }
+.custom-status-delivered        { background-color: #d1e7dd; color: #0a5c36; }
+.custom-status-overdue          { background-color: #f8d7da; color: #842029; }
+.custom-status-cancelled        { background-color: #e2e3e5; color: #41464b; }

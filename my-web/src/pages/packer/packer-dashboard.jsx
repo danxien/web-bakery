@@ -2,14 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import PackerSidebar from './packer-sidebarmenu';
 import DashboardOverview from './packer-dashboard-overview';
 import InventoryOverview from './packer-inventory-overview';
-import DeliveriesOverview from './packer-deliveries-overview';
+import DeliveriesOverview from './packer-stock-deliveries';
 import PackerMessages from './packer-messages';
 import CakePrices from './packer-cake-prices';
 import PackerSettings from './packer-settings';
-import { AddCakeModal, DeliveryModal } from './packer-modals';
+import { AddCakeModal, DeliveryModal, StockDeliveryModal } from './packer-modals';
 import {
   initialBranchStock,
   initialDeliveryToday,
+  initialStockDeliveries,
   inboxMessages,
   customOrders,
   getBadgeClass,
@@ -19,7 +20,7 @@ import '../../styles/packer/packer-dashboard.css';
 import '../../styles/packer/packer-sidebarmenu.css';
 import '../../styles/packer/packer-dashboard-overview.css';
 import '../../styles/packer/packer-inventory-overview.css';
-import '../../styles/packer/packer-deliveries-overview.css';
+import '../../styles/packer/packer-stock-deliveries.css';
 import '../../styles/packer/packer-messages.css';
 import '../../styles/packer/packer-modals.css';
 import '../../styles/packer/packer-cake-prices.css';
@@ -31,6 +32,7 @@ export default function PackerLandingPage({ onLogout }) {
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
   const [stockItems, setStockItems] = useState(initialBranchStock);
   const [deliveryItems, setDeliveryItems] = useState(initialDeliveryToday);
+  const [stockDeliveryItems, setStockDeliveryItems] = useState(initialStockDeliveries);
   const [messages, setMessages] = useState(
     inboxMessages.map((msg, index) => ({
       ...msg,
@@ -43,6 +45,7 @@ export default function PackerLandingPage({ onLogout }) {
   const [newCakeName, setNewCakeName] = useState('');
   const [newCakePrice, setNewCakePrice] = useState('');
   const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState(false);
+  const [isStockDeliveryModalOpen, setIsStockDeliveryModalOpen] = useState(false);
   const [deliveryForm, setDeliveryForm] = useState({
     branch: 'Main Branch',
     customer: '',
@@ -55,11 +58,17 @@ export default function PackerLandingPage({ onLogout }) {
     deliveryDateTime: '',
     specialInstructions: '',
   });
+  const [stockDeliveryForm, setStockDeliveryForm] = useState({
+    cakeType: '',
+    quantity: '',
+    price: '',
+    expiryDate: '',
+    deliveryDate: new Date().toISOString().slice(0, 10),
+  });
   const [stockAddForm, setStockAddForm] = useState({
     cake: initialBranchStock[0]?.cake || '',
     qty: '',
     madeDate: new Date().toISOString().slice(0, 10),
-    madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     expiryDate: '',
   });
   const [deliveryWarning, setDeliveryWarning] = useState('');
@@ -194,20 +203,16 @@ export default function PackerLandingPage({ onLogout }) {
     const qtyToAdd = Number(stockAddForm.qty);
     if (!stockAddForm.cake || Number.isNaN(qtyToAdd) || qtyToAdd <= 0 || !stockAddForm.madeDate || !stockAddForm.expiryDate) return;
 
-    const now = new Date();
-    const madeTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
     setStockItems((prev) =>
       prev.map((item) =>
         item.cake === stockAddForm.cake
-          ? {
-              ...item,
-              qty: item.qty + qtyToAdd,
-              madeDate: stockAddForm.madeDate,
-              time: madeTime,
-              expiryDate: stockAddForm.expiryDate,
-            }
-          : item
+            ? {
+                ...item,
+                qty: item.qty + qtyToAdd,
+                madeDate: stockAddForm.madeDate,
+                expiryDate: stockAddForm.expiryDate,
+              }
+            : item
       )
     );
 
@@ -215,9 +220,57 @@ export default function PackerLandingPage({ onLogout }) {
       ...prev, 
       qty: '',
       madeDate: new Date().toISOString().slice(0, 10),
-      madeTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       expiryDate: '',
     }));
+  };
+
+  const handleStockDeliveryInput = (key, value) => {
+    if (key === 'cakeType') {
+      const matchedCake = stockItems.find((item) => item.cake === value);
+      setStockDeliveryForm((prev) => ({
+        ...prev,
+        cakeType: value,
+        price: value ? matchedCake?.price ?? prev.price : '',
+      }));
+      return;
+    }
+    setStockDeliveryForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleCreateStockDelivery = () => {
+    const quantity = Number(stockDeliveryForm.quantity);
+    const price = Number(stockDeliveryForm.price);
+    if (
+      !stockDeliveryForm.cakeType ||
+      Number.isNaN(quantity) ||
+      quantity <= 0 ||
+      Number.isNaN(price) ||
+      price <= 0 ||
+      !stockDeliveryForm.expiryDate ||
+      !stockDeliveryForm.deliveryDate
+    ) {
+      return;
+    }
+
+    setStockDeliveryItems((prev) => [
+      ...prev,
+      {
+        deliveryDate: stockDeliveryForm.deliveryDate,
+        cakeType: stockDeliveryForm.cakeType,
+        quantity,
+        price,
+        expiryDate: stockDeliveryForm.expiryDate,
+      },
+    ]);
+
+    setIsStockDeliveryModalOpen(false);
+    setStockDeliveryForm({
+      cakeType: '',
+      quantity: '',
+      price: '',
+      expiryDate: '',
+      deliveryDate: new Date().toISOString().slice(0, 10),
+    });
   };
 
   const handleDeliveryInput = (key, value) => {
@@ -440,10 +493,8 @@ export default function PackerLandingPage({ onLogout }) {
     if (activeTab === 'deliveries') {
       return (
         <DeliveriesOverview
-          deliveryItems={deliveryItems}
-          onAdvanceStatus={handleAdvanceDeliveryStatus}
-          deliveryWarning={deliveryWarning}
-          onOpenDeliveryModal={() => setIsDeliveryModalOpen(true)}
+          stockDeliveryItems={stockDeliveryItems}
+          onOpenStockDeliveryModal={() => setIsStockDeliveryModalOpen(true)}
         />
       );
     }
@@ -497,6 +548,14 @@ export default function PackerLandingPage({ onLogout }) {
         onSubmit={handleAddCake}
       />
 
+      <StockDeliveryModal
+        isOpen={isStockDeliveryModalOpen}
+        stockDeliveryForm={stockDeliveryForm}
+        stockItems={stockItems}
+        onChangeField={handleStockDeliveryInput}
+        onClose={() => setIsStockDeliveryModalOpen(false)}
+        onSubmit={handleCreateStockDelivery}
+      />
       <DeliveryModal
         isOpen={isDeliveryModalOpen}
         deliveryForm={deliveryForm}

@@ -145,7 +145,7 @@ export function DeliveryModal({
             disabled
           />
 
-          <label>Delivery Date &amp; Time</label>
+          <label>Delivery Date & Time</label>
           <input
             type="datetime-local"
             value={deliveryForm.deliveryDateTime || ''}
@@ -164,6 +164,105 @@ export function DeliveryModal({
         <div className="add-cake-modal-actions">
           <button className="confirm-add-cake-btn" onClick={onSubmit}>
             Create Delivery
+          </button>
+          <button className="cancel-add-cake-btn" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function StockDeliveryModal({
+  isOpen,
+  stockDeliveryForm,
+  stockItems,
+  onChangeField,
+  onClose,
+  onSubmit,
+}) {
+  if (!isOpen) return null;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const cakeOptions = stockItems.reduce((list, item) => {
+    if (!list.some((cakeName) => cakeName.toLowerCase() === item.cake.toLowerCase())) {
+      list.push(item.cake);
+    }
+    return list;
+  }, []);
+
+  return (
+    <div className="add-cake-modal-overlay" onClick={onClose}>
+      <div className="add-cake-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="add-cake-modal-header">
+          <div>
+            <h3>Add Stock Delivery</h3>
+            <p>Record cakes delivered to Main Branch stock.</p>
+          </div>
+          <button className="close-modal-btn" onClick={onClose}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="add-cake-modal-body">
+          <label>Branch</label>
+          <input type="text" value="Main Branch" disabled />
+
+          <label>Cake Type</label>
+          <select 
+            value={stockDeliveryForm.cakeType || ''} 
+            onChange={(event) => onChangeField('cakeType', event.target.value)}
+            required
+          >
+            <option value="">Select cake type</option>
+            {cakeOptions.map((cakeName) => (
+              <option key={`stock-cake-${cakeName}`} value={cakeName}>
+                {cakeName}
+              </option>
+            ))}
+          </select>
+
+          <label>Quantity</label>
+          <input
+            type="number"
+            min="1"
+            value={stockDeliveryForm.quantity || ''}
+            onChange={(event) => onChangeField('quantity', event.target.value)}
+            placeholder="0"
+            required
+          />
+
+          <label>Price (PHP)</label>
+          <input
+            type="number"
+            min="1"
+            value={stockDeliveryForm.price || ''}
+            onChange={(event) => onChangeField('price', event.target.value)}
+            placeholder="0"
+            required
+          />
+
+          <label>Expiry Date</label>
+          <input
+            type="date"
+            value={stockDeliveryForm.expiryDate || ''}
+            onChange={(event) => onChangeField('expiryDate', event.target.value)}
+            required
+          />
+
+          <label>Delivery Date</label>
+          <input
+            type="date"
+            value={stockDeliveryForm.deliveryDate || today}
+            onChange={(event) => onChangeField('deliveryDate', event.target.value)}
+            required
+          />
+        </div>
+
+        <div className="add-cake-modal-actions">
+          <button className="confirm-add-cake-btn" onClick={onSubmit}>
+            Deliver
           </button>
           <button className="cancel-add-cake-btn" onClick={onClose}>
             Cancel
@@ -214,6 +313,22 @@ export function CustomOrderModal({
             value={customOrderForm.customer}
             onChange={(event) => onChangeField('customer', event.target.value)}
             placeholder="e.g. Juan Dela Cruz"
+          />
+
+          <label>Contact Number</label>
+          <input
+            type="text"
+            value={customOrderForm.contact || ''}
+            onChange={(event) => onChangeField('contact', event.target.value)}
+            placeholder="e.g. 09171234567"
+          />
+
+          <label>Delivery Address</label>
+          <input
+            type="text"
+            value={customOrderForm.address || ''}
+            onChange={(event) => onChangeField('address', event.target.value)}
+            placeholder="e.g. 123 Rizal St., Calamba"
           />
 
           <label>Quantity</label>

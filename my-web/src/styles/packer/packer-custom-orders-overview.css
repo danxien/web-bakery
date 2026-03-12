@@ -33,272 +33,6 @@
   font-size: 1rem;
 }
 
-.pkco-metrics-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.pkco-metric-card {
-  flex: 1 1 200px;
-  background: #ffffff;
-  padding: 18px 20px;
-  border-radius: 12px;
-  border: 1px solid #ececec;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.pkco-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.pkco-metric-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #333;
-}
-
-.pkco-blue-icon { color: #6366f1; }
-.pkco-green-icon { color: #22c55e; }
-.pkco-yellow-icon { color: #eab308; }
-
-.pkco-card-bottom {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.pkco-metric-value {
-  font-family: Georgia, serif;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #111;
-  line-height: 1.1;
-}
-
-.pkco-metric-subtext {
-  font-size: 0.88rem;
-  color: #888;
-}
-
-.pkco-filter-dropdown-wrapper {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.pkco-date-filter-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.83rem;
-  font-weight: 500;
-  color: #444;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-
-.pkco-date-filter-btn svg {
-  flex-shrink: 0;
-  color: inherit;
-  stroke: currentColor;
-}
-
-.pkco-date-filter-btn:hover,
-.pkco-date-filter-btn.open {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
-
-.pkco-date-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  z-index: 10000;
-  min-width: 200px;
-}
-
-.pkco-dropdown-item {
-  display: block;
-  width: 100%;
-  padding: 9px 16px;
-  text-align: left;
-  font-size: 0.85rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.12s;
-}
-
-.pkco-dropdown-item:hover {
-  background: #fcf6c4;
-}
-
-.pkco-dropdown-item.selected {
-  background: #f7dd30;
-  font-weight: 600;
-  color: #111;
-}
-
-.pkco-custom-range-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px 14px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
-}
-
-.pkco-custom-range-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #000;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 2px;
-}
-
-.pkco-custom-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #000;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.pkco-date-input {
-  padding: 7px 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.83rem;
-  color: #000;
-  outline: none;
-  transition: border-color 0.15s;
-  background: #fff9c4;
-}
-
-.pkco-date-input:focus {
-  border-color: #f7dd30;
-}
-
-.pkco-date-input::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  filter: brightness(0) saturate(100%) opacity(0.65);
-  border-radius: 6px;
-  padding: 4px;
-  background-color: transparent;
-  transition: filter 0.15s, background-color 0.15s;
-}
-
-.pkco-date-input::-webkit-calendar-picker-indicator:hover {
-  filter: brightness(0) saturate(100%) opacity(1);
-  background-color: rgba(231, 197, 0, 0.3);
-}
-
-.pkco-date-input::-webkit-calendar-picker-indicator:active {
-  filter: brightness(0) saturate(100%) opacity(1);
-  background-color: rgba(231, 197, 0, 0.55);
-}
-
-.pkco-apply-btn {
-  margin-top: 4px;
-  padding: 8px;
-  background: #f7dd30;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.83rem;
-  font-weight: 700;
-  color: #111;
-  cursor: pointer;
-  transition: filter 0.15s;
-}
-
-.pkco-apply-btn:hover { filter: brightness(0.95); }
-.pkco-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.pkco-status-cards-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.pkco-status-card {
-  flex: 1 1 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 14px 12px;
-  background: #fff;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
-  text-align: center;
-  min-width: 0;
-}
-
-.pkco-status-card:hover {
-  filter: brightness(0.97);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.1);
-}
-
-.pkco-status-card-count {
-  font-family: Georgia, serif;
-  font-size: 1.6rem;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.pkco-status-card-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.pkco-status-card--pending .pkco-status-card-count { color: #ffc107; }
-.pkco-status-card--pending .pkco-status-card-label { color: #ffc107; }
-.pkco-status-card--pending.is-active { border-color: #ffc107; background: #fff8e1; }
-
-.pkco-status-card--ready .pkco-status-card-count { color: #17a2b8; }
-.pkco-status-card--ready .pkco-status-card-label { color: #17a2b8; }
-.pkco-status-card--ready.is-active { border-color: #17a2b8; background: #e0f7fa; }
-
-.pkco-status-card--picked-up .pkco-status-card-count { color: #28a745; }
-.pkco-status-card--picked-up .pkco-status-card-label { color: #28a745; }
-.pkco-status-card--picked-up.is-active { border-color: #28a745; background: #d4edda; }
-
-.pkco-status-card--overdue .pkco-status-card-count { color: #fd7e14; }
-.pkco-status-card--overdue .pkco-status-card-label { color: #fd7e14; }
-.pkco-status-card--overdue.is-active { border-color: #fd7e14; background: #fff3e0; }
-
-.pkco-status-card--cancelled .pkco-status-card-count { color: #dc3545; }
-.pkco-status-card--cancelled .pkco-status-card-label { color: #dc3545; }
-.pkco-status-card--cancelled.is-active { border-color: #dc3545; background: #fde8ea; }
-
 .pkco-table-container {
   background: #fff;
   border-radius: 12px;
@@ -339,28 +73,12 @@
   margin-left: 8px;
 }
 
-.pkco-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pkco-search-input {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 6px 10px;
-  background: #fff;
-  font-size: 0.82rem;
-  min-width: 220px;
-}
-
 .pkco-add-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   border: 1px solid #a50213;
-  background: var(--pack-red);
+  background: #dc2626;
   color: #ffffff;
   border-radius: 8px;
   padding: 7px 14px;
@@ -375,38 +93,10 @@
   background: #be0516;
 }
 
-.pkco-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.pkco-filter-icon-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.pkco-filter-icon-btn:hover {
-  background: #f7dd30;
-  border-color: #e5c800;
-  color: #111;
-}
-
 .pkco-table-scroll-wrapper {
   flex: 1;
-  overflow-y: auto;
   overflow-x: auto;
+  overflow-y: hidden;
   min-width: 0;
   scrollbar-width: thin;
   scrollbar-color: #e5e7eb transparent;
@@ -419,7 +109,6 @@
 
 .pkco-orders-table {
   width: 100%;
-  min-width: 960px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -431,7 +120,7 @@
 }
 
 .pkco-orders-table th {
-  padding: 14px 6px;
+  padding: 18px 20px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
   font-weight: bold;
@@ -441,128 +130,291 @@
 }
 
 .pkco-orders-table td {
-  padding: 14px 6px;
+  padding: 15px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
   vertical-align: middle;
 }
 
-.pkco-orders-table th:first-child,
-.pkco-orders-table td:first-child { padding-left: 20px; }
+.pkco-header-break {
+  display: inline-block;
+  line-height: 1.1;
+}
 
-.pkco-orders-table td:last-child { padding-right: 15px; }
+.pkco-th-filter-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.pkco-th-filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  font-weight: bold;
+  font-size: inherit;
+  color: #000;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.pkco-th-filter-btn:focus,
+.pkco-th-filter-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.pkco-th-filter-btn svg {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: #888;
+}
+
+.pkco-th-filter-btn.open svg {
+  transform: rotate(180deg);
+}
+
+.pkco-th-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 10000;
+  min-width: 200px;
+  animation: pkco-fadeIn 0.15s ease;
+}
+
+.pkco-th-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  font-family: inherit;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.pkco-th-dropdown-item:hover {
+  background: #fcf6c4;
+}
+
+.pkco-th-dropdown-item.selected {
+  background: #f7dd30;
+  font-weight: 600;
+  color: #111;
+}
+
 
 .pkco-orders-table tbody tr:hover { background-color: #fffde8; }
 
-.pkco-cake-name-text {
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.pkco-cake-name-text { font-weight: 500; color: #111; }
+.pkco-qty-text { font-weight: 600; color: #111; }
+.pkco-amount-text { font-weight: 500; color: #111; }
+
+.pkco-customer-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.pkco-order-type {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.pkco-order-type.custom {
-  background: #ede9fe;
-  color: #5b21b6;
-}
-
-.pkco-price-text {
-  font-weight: 600;
-  color: #22c55e;
-}
-
-.pkco-contact-text {
+.pkco-customer-name { font-weight: 700; color: #111; }
+.pkco-customer-contact { font-size: 0.82rem; color: #555; }
+.pkco-customer-address {
   font-size: 0.82rem;
-  color: #555;
-  font-variant-numeric: tabular-nums;
+  color: #888;
+  font-style: italic;
+  line-height: 1.2;
 }
 
-.pkco-address-text {
-  max-width: 135px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.82rem;
-  color: #666;
-  display: block;
-}
-
-.pkco-date-text {
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
+.pkco-date-text { font-weight: 600; font-size: 0.85rem; }
 .pkco-date-text.is-today { color: #854d0e; }
 .pkco-date-text.is-overdue { color: #b91c1c; }
 
-.pkco-status-pill {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem;
+.pkco-view-btn {
+  padding: 5px 14px;
+  background-color: #fcf6c4;
+  color: #7a6000;
+  border: 1px solid #e8d84a;
+  border-radius: 6px;
+  font-size: 0.8rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
-.pkco-status-pill.pending { background: #fef9c3; color: #854d0e; }
-.pkco-status-pill.ready { background: #e0f7fa; color: #17a2b8; }
-.pkco-status-pill.picked-up { background: #d1fae5; color: #065f46; }
-.pkco-status-pill.cancelled { background: #f3f4f6; color: #6b7280; }
-.pkco-status-pill.overdue { background: #fee2e2; color: #991b1b; }
+.pkco-view-btn:hover {
+  background-color: #f5c800;
+  color: #000;
+  border-color: #d4aa00;
+}
 
-.pkco-status-action-btn {
-  display: block;
-  margin-top: 8px;
-  border: 1px solid #c3b871;
-  border-radius: 7px;
-  background: #fff6c7;
-  color: #3d3000;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 6px 9px;
+.pkco-status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: none;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  font-family: inherit;
 }
 
-.pkco-status-action-btn:hover:not(.disabled) {
-  background: #ffefad;
-  border-color: #c0a83a;
+.pkco-status-btn:focus,
+.pkco-status-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
-.pkco-status-action-btn.disabled {
-  border-color: #d8d8d8;
-  background: #f2f2f2;
-  color: #858585;
-  cursor: not-allowed;
+
+.pkco-status-cell {
+  position: relative;
+  display: inline-block;
 }
 
-.pkco-cancel-btn {
+.pkco-status-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  z-index: 9999;
+  min-width: 200px;
+  box-sizing: border-box;
+  animation: pkco-fadeIn 0.15s ease;
+}
+
+.pkco-status-dropdown-portal {
+  position: fixed;
+}
+
+.pkco-status-option {
   display: block;
-  margin-top: 6px;
-  border: 1px solid #ef4444;
-  border-radius: 7px;
-  background: #fee2e2;
-  color: #991b1b;
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 6px 9px;
+  width: 100%;
+  padding: 9px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  color: #333;
+  font-family: inherit;
+  transition: background 0.12s;
+  white-space: nowrap;
 }
 
-.pkco-cancel-btn:hover {
-  background: #fecaca;
-  border-color: #dc2626;
+.pkco-status-option:hover { background: #fcf6c4; }
+
+.pkco-status-option.selected {
+  background: #f7dd30;
+  font-weight: 600;
+  color: #111;
+}
+
+.pkco-status-btn.pending { background: #fef9c3; color: #854d0e; }
+.pkco-status-btn.out-for-delivery { background: #dbeafe; color: #1e40af; }
+.pkco-status-btn.delivered { background: #d1fae5; color: #065f46; }
+.pkco-status-btn.overdue { background: #fee2e2; color: #991b1b; }
+.pkco-status-btn.cancelled { background: #f3f4f6; color: #6b7280; }
+
+.pkco-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  background: transparent;
+  color: #dc3545;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pkco-delete-btn:hover {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.pkco-instructions-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: pkco-fadeIn 0.2s ease;
+}
+
+.pkco-instructions-modal {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.pkco-instructions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pkco-instructions-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #000;
+}
+
+.pkco-instructions-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.pkco-instructions-close:hover {
+  background: #f1f1f1;
+  color: #333;
+}
+
+.pkco-instructions-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .pkco-no-data {
@@ -606,12 +458,5 @@
 .pkco-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
 @media (max-width: 768px) {
-  .pkco-metrics-row { flex-direction: column; }
-  .pkco-status-cards-row { gap: 8px; }
-  .pkco-status-card { flex: 1 1 80px; padding: 10px 8px; }
-  .pkco-status-card-count { font-size: 1.3rem; }
   .pkco-header { flex-direction: column; align-items: flex-start; }
-  .pkco-date-dropdown { right: auto; left: 0; }
-  .pkco-toolbar-actions { width: 100%; }
-  .pkco-filter-icon-btn { width: 100%; justify-content: center; }
 }

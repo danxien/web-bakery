@@ -11,21 +11,20 @@ const getExpiryStatus = (expiresStr) => {
 
   if (diffDays < 0)  return { label: 'Expired',     className: 'seller-status-expired'     };
   if (diffDays <= 3) return { label: 'Near Expiry', className: 'seller-status-near-expiry' };
-  return               { label: 'Fresh',           className: 'seller-status-fresh'       };
+  return               { label: 'Fresh',            className: 'seller-status-fresh'       };
 };
 
 const SellerInventory = ({ inventoryData = [] }) => {
-  
-  const inventoryItems = inventoryData.filter(item => {
-    const status = getExpiryStatus(item.expires);
-    return status.label !== 'Expired'; 
-  });
+
+  const inventoryItems = inventoryData;
 
   return (
     <div className="seller-sales-container">
       <div className="seller-sales-header">
-        <h1 className="seller-sales-title">Inventory</h1>
-        <p className="seller-sales-subtitle">Current stock details</p>
+        <div>
+          <h1 className="seller-sales-title">Inventory</h1>
+          <p className="seller-sales-subtitle">Current stock details</p>
+        </div>
       </div>
 
       <div className="seller-table-container">
