@@ -1,18 +1,18 @@
 /* =============================================================
-   deliveriesOverview.css
-   Mirrors reservationsOverview.css structure exactly.
-   Only class names (.do- prefix) and delivery-specific
-   status pill colors differ.
+   walkInOrders.css
+   Mirrors customOrders.css structure exactly.
+   Only class names (.wi- prefix) differ.
+   No status cards — walk-in orders are always Completed.
    ============================================================= */
 
 /* ── Animation ── */
-@keyframes do-fadeIn {
+@keyframes wi-fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.do-page-container {
-  animation: do-fadeIn 0.3s ease;
+.wi-page-container {
+  animation: wi-fadeIn 0.3s ease;
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
@@ -21,7 +21,7 @@
 /* =========================================================
    HEADER — title left, date filter button right
    ========================================================= */
-.do-header {
+.wi-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -30,7 +30,7 @@
   flex-wrap: wrap;
 }
 
-.do-title {
+.wi-title {
   font-family: Georgia, serif;
   font-size: 1.8rem;
   font-weight: bold;
@@ -38,7 +38,7 @@
   margin: 0;
 }
 
-.do-subtitle {
+.wi-subtitle {
   color: #888;
   margin: 5px 0 0 0;
 }
@@ -46,12 +46,12 @@
 /* =========================================================
    DATE FILTER — calendar icon button + dropdown in header
    ========================================================= */
-.do-filter-dropdown-wrapper {
+.wi-filter-dropdown-wrapper {
   position: relative;
   flex-shrink: 0;
 }
 
-.do-date-filter-btn {
+.wi-date-filter-btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -67,20 +67,20 @@
   white-space: nowrap;
 }
 
-.do-date-filter-btn svg {
+.wi-date-filter-btn svg {
   flex-shrink: 0;
   color: inherit;
   stroke: currentColor;
 }
 
-.do-date-filter-btn:hover,
-.do-date-filter-btn.open {
+.wi-date-filter-btn:hover,
+.wi-date-filter-btn.open {
   background: #f7dd30;
   border-color: #e5c800;
   color: #111;
 }
 
-.do-date-dropdown {
+.wi-date-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
@@ -93,7 +93,7 @@
   min-width: 200px;
 }
 
-.do-dropdown-item {
+.wi-dropdown-item {
   display: block;
   width: 100%;
   padding: 9px 16px;
@@ -105,10 +105,10 @@
   color: #333;
   transition: background 0.12s;
 }
-.do-dropdown-item:hover    { background: #fcf6c4; }
-.do-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
+.wi-dropdown-item:hover    { background: #fcf6c4; }
+.wi-dropdown-item.selected { background: #f7dd30; font-weight: 600; color: #111; }
 
-.do-custom-range-section {
+.wi-custom-range-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -117,7 +117,7 @@
   background: #fafafa;
 }
 
-.do-custom-range-title {
+.wi-custom-range-title {
   font-size: 0.72rem;
   font-weight: 700;
   color: #000;
@@ -126,7 +126,7 @@
   margin-bottom: 2px;
 }
 
-.do-custom-label {
+.wi-custom-label {
   font-size: 0.72rem;
   font-weight: 700;
   color: #000;
@@ -134,7 +134,7 @@
   letter-spacing: 0.06em;
 }
 
-.do-date-input {
+.wi-date-input {
   padding: 7px 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
@@ -144,9 +144,9 @@
   transition: border-color 0.15s;
   background: #fff9c4;
 }
-.do-date-input:focus { border-color: #f7dd30; }
+.wi-date-input:focus { border-color: #f7dd30; }
 
-.do-date-input::-webkit-calendar-picker-indicator {
+.wi-date-input::-webkit-calendar-picker-indicator {
   cursor: pointer;
   filter: brightness(0) saturate(100%) opacity(0.65);
   border-radius: 6px;
@@ -154,16 +154,16 @@
   background-color: transparent;
   transition: filter 0.15s, background-color 0.15s;
 }
-.do-date-input::-webkit-calendar-picker-indicator:hover {
+.wi-date-input::-webkit-calendar-picker-indicator:hover {
   filter: brightness(0) saturate(100%) opacity(1);
   background-color: rgba(231, 197, 0, 0.30);
 }
-.do-date-input::-webkit-calendar-picker-indicator:active {
+.wi-date-input::-webkit-calendar-picker-indicator:active {
   filter: brightness(0) saturate(100%) opacity(1);
   background-color: rgba(231, 197, 0, 0.55);
 }
 
-.do-apply-btn {
+.wi-apply-btn {
   margin-top: 4px;
   padding: 8px;
   background: #f7dd30;
@@ -175,20 +175,20 @@
   cursor: pointer;
   transition: filter 0.15s;
 }
-.do-apply-btn:hover    { filter: brightness(0.95); }
-.do-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.wi-apply-btn:hover    { filter: brightness(0.95); }
+.wi-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* =========================================================
    METRIC CARDS
    ========================================================= */
-.do-metrics-row {
+.wi-metrics-row {
   display: flex;
   gap: 16px;
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
-.do-metric-card {
+.wi-metric-card {
   flex: 1 1 200px;
   background: #fff;
   padding: 18px 20px;
@@ -200,29 +200,29 @@
   min-width: 0;
 }
 
-.do-card-top {
+.wi-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.do-metric-label {
+.wi-metric-label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #333;
 }
 
-.do-blue-icon   { color: #6366f1; }
-.do-green-icon  { color: #22c55e; }
-.do-yellow-icon { color: #eab308; }
+.wi-blue-icon   { color: #6366f1; }
+.wi-green-icon  { color: #22c55e; }
+.wi-yellow-icon { color: #eab308; }
 
-.do-card-bottom {
+.wi-card-bottom {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.do-metric-value {
+.wi-metric-value {
   font-family: Georgia, serif;
   font-size: 1.9rem;
   font-weight: bold;
@@ -230,81 +230,15 @@
   line-height: 1.1;
 }
 
-.do-metric-subtext {
+.wi-metric-subtext {
   font-size: 0.78rem;
   color: #999;
 }
 
 /* =========================================================
-   STATUS CARDS — Clickable Filters
-   ========================================================= */
-.do-status-cards-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.do-status-card {
-  flex: 1 1 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 14px 12px;
-  background: #fff;
-  border: 2px solid transparent;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, filter 0.15s;
-  text-align: center;
-  min-width: 0;
-}
-.do-status-card:hover { filter: brightness(0.97); box-shadow: 0 4px 18px rgba(0, 0, 0, 0.10); }
-
-.do-status-card-count {
-  font-family: Georgia, serif;
-  font-size: 1.6rem;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.do-status-card-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-/* ── Status Card Variants ── */
-
-.do-status-card--pending .do-status-card-count { color: #ffc107; }
-.do-status-card--pending .do-status-card-label { color: #ffc107; }
-.do-status-card--pending.is-active             { border-color: #ffc107; background: #fff8e1; }
-
-.do-status-card--out-for-delivery .do-status-card-count { color: #17a2b8; }
-.do-status-card--out-for-delivery .do-status-card-label { color: #17a2b8; }
-.do-status-card--out-for-delivery.is-active             { border-color: #17a2b8; background: #e0f7fa; }
-
-.do-status-card--delivered .do-status-card-count { color: #28a745; }
-.do-status-card--delivered .do-status-card-label { color: #28a745; }
-.do-status-card--delivered.is-active             { border-color: #28a745; background: #d4edda; }
-
-.do-status-card--overdue .do-status-card-count { color: #fd7e14; }
-.do-status-card--overdue .do-status-card-label { color: #fd7e14; }
-.do-status-card--overdue.is-active             { border-color: #fd7e14; background: #fff3e0; }
-
-.do-status-card--cancelled .do-status-card-count { color: #dc3545; }
-.do-status-card--cancelled .do-status-card-label { color: #dc3545; }
-.do-status-card--cancelled.is-active             { border-color: #dc3545; background: #fde8ea; }
-
-/* =========================================================
    TABLE CONTAINER
    ========================================================= */
-.do-table-container {
+.wi-table-container {
   background: #fff;
   border-radius: 12px;
   overflow: visible;
@@ -317,7 +251,7 @@
   box-sizing: border-box;
 }
 
-.do-table-toolbar {
+.wi-table-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -326,14 +260,14 @@
   flex-shrink: 0;
 }
 
-.do-table-section-title {
+.wi-table-section-title {
   font-family: Georgia, serif;
   font-size: 1rem;
   font-weight: bold;
   color: #222;
 }
 
-.do-table-count-pill {
+.wi-table-count-pill {
   font-size: 0.78rem;
   color: #999;
   background: #f5f5f5;
@@ -345,7 +279,7 @@
 /* =========================================================
    TABLE SCROLL WRAPPER
    ========================================================= */
-.do-table-scroll-wrapper {
+.wi-table-scroll-wrapper {
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
@@ -353,12 +287,12 @@
   scrollbar-width: thin;
   scrollbar-color: #e5e7eb transparent;
 }
-.do-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
-.do-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
-.do-table-scroll-wrapper::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
-.do-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+.wi-table-scroll-wrapper::-webkit-scrollbar       { width: 6px; height: 6px; }
+.wi-table-scroll-wrapper::-webkit-scrollbar-track { background: transparent; }
+.wi-table-scroll-wrapper::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+.wi-table-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
 
-.do-deliveries-table {
+.wi-orders-table {
   width: 100%;
   min-width: 560px;
   border-collapse: collapse;
@@ -367,20 +301,20 @@
 }
 
 /* ── Column width distribution (6 cols, no horizontal scroll) ── */
-.do-deliveries-table col.col-cake     { width: 16%; }
-.do-deliveries-table col.col-qty      { width: 25%; }
-.do-deliveries-table col.col-price    { width: 17%; }
-.do-deliveries-table col.col-delivery { width: 16%; }
-.do-deliveries-table col.col-status   { width: 16%; }
-.do-deliveries-table col.col-action   { width: 10%; }
+.wi-orders-table col.col-cake   { width: 16%; }
+.wi-orders-table col.col-qty    { width: 25%; }
+.wi-orders-table col.col-price  { width: 17%; }
+.wi-orders-table col.col-date   { width: 16%; }
+.wi-orders-table col.col-status { width: 16%; }
+.wi-orders-table col.col-action { width: 10%; }
 
-.do-deliveries-table thead th {
+.wi-orders-table thead th {
   position: sticky;
   top: 0;
   z-index: 2;
 }
 
-.do-deliveries-table th {
+.wi-orders-table th {
   padding: 18px 20px;
   background-color: #fff;
   border-bottom: 2px solid #fcf6c4;
@@ -391,14 +325,14 @@
 }
 
 /* ── Qty (col 2) and Status (col 5) centered ── */
-.do-deliveries-table th:nth-child(2),
-.do-deliveries-table td:nth-child(2),
-.do-deliveries-table th:nth-child(5),
-.do-deliveries-table td:nth-child(5) {
+.wi-orders-table th:nth-child(2),
+.wi-orders-table td:nth-child(2),
+.wi-orders-table th:nth-child(5),
+.wi-orders-table td:nth-child(5) {
   text-align: center;
 }
 
-.do-deliveries-table td {
+.wi-orders-table td {
   padding: 18px 20px;
   border-bottom: 1px solid #eee;
   color: #333;
@@ -406,30 +340,27 @@
 }
 
 /* ── Symmetrical outer padding ── */
-.do-deliveries-table th:first-child,
-.do-deliveries-table td:first-child {
+.wi-orders-table th:first-child,
+.wi-orders-table td:first-child {
   padding-left: 32px;
 }
 
-.do-deliveries-table th:last-child,
-.do-deliveries-table td:last-child {
+.wi-orders-table th:last-child,
+.wi-orders-table td:last-child {
   padding-right: 32px;
   text-align: right;
 }
 
-.do-deliveries-table tbody tr:last-child td { border-bottom: none; }
-.do-deliveries-table tbody tr:hover         { background-color: #fffde8; }
+.wi-orders-table tbody tr:last-child td { border-bottom: none; }
+.wi-orders-table tbody tr:hover         { background-color: #fffde8; }
 
 /* ── Cell helpers ── */
-.do-cake-name-text { font-weight: 500; }
-.do-price-text     { font-weight: 600; color: #22c55e; }
+.wi-cake-name-text { font-weight: 500; }
+.wi-price-text     { font-weight: 600; color: #22c55e; }
+.wi-date-text      { font-weight: 600; font-size: 0.85rem; }
 
-.do-date-text            { font-weight: 600; font-size: 0.85rem; }
-.do-date-text.is-today   { color: #854d0e; }
-.do-date-text.is-overdue { color: #fd7e14; }
-
-/* ── Status pills ── */
-.do-status-pill {
+/* ── Status pill — Completed only ── */
+.wi-status-pill {
   display: inline-block;
   padding: 4px 12px;
   border-radius: 20px;
@@ -437,15 +368,11 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.do-status-pill.pending          { background: #fff8e1; color: #ffc107; }
-.do-status-pill.out-for-delivery { background: #e0f7fa; color: #17a2b8; }
-.do-status-pill.delivered        { background: #d4edda; color: #28a745; }
-.do-status-pill.overdue          { background: #fff3e0; color: #fd7e14; }
-.do-status-pill.cancelled        { background: #fde8ea; color: #dc3545; }
+.wi-status-pill.completed { background: #d4edda; color: #28a745; }
 
-.do-no-data { text-align: center !important; padding: 40px !important; color: #888; }
+.wi-no-data { text-align: center !important; padding: 40px !important; color: #888; }
 
-.do-view-btn {
+.wi-view-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -460,10 +387,10 @@
   transition: background 0.15s, border-color 0.15s;
   white-space: nowrap;
 }
-.do-view-btn:hover { background: #f7dd30; border-color: #e5c800; color: #111; }
+.wi-view-btn:hover { background: #f7dd30; border-color: #e5c800; color: #111; }
 
 /* ── Pagination ── */
-.do-pagination {
+.wi-pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -474,10 +401,10 @@
   flex-shrink: 0;
 }
 
-.do-pagination-info { font-size: 0.78rem; color: #999; }
-.do-pagination-btns { display: flex; gap: 4px; }
+.wi-pagination-info { font-size: 0.78rem; color: #999; }
+.wi-pagination-btns { display: flex; gap: 4px; }
 
-.do-page-btn {
+.wi-page-btn {
   min-width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -492,14 +419,14 @@
   justify-content: center;
   padding: 0 8px;
 }
-.do-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
-.do-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
-.do-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+.wi-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
+.wi-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.wi-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* =========================================================
    MODAL
    ========================================================= */
-.do-modal-overlay {
+.wi-modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
@@ -511,7 +438,7 @@
   padding: 16px;
 }
 
-.do-modal {
+.wi-modal {
   background: #fff;
   border-radius: 16px;
   width: 100%;
@@ -519,7 +446,7 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
-.do-modal-header {
+.wi-modal-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -533,7 +460,7 @@
   border-radius: 16px 16px 0 0;
 }
 
-.do-modal-eyebrow {
+.wi-modal-eyebrow {
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -542,7 +469,7 @@
   margin: 0 0 4px;
 }
 
-.do-modal-cake-name {
+.wi-modal-cake-name {
   font-family: Georgia, serif;
   font-size: 1.45rem;
   font-weight: bold;
@@ -551,7 +478,7 @@
   line-height: 1.2;
 }
 
-.do-modal-close-btn {
+.wi-modal-close-btn {
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -566,13 +493,13 @@
   flex-shrink: 0;
   font-size: 1rem;
 }
-.do-modal-close-btn:hover { background: #fee2e2; color: #b91c1c; border-color: transparent; }
+.wi-modal-close-btn:hover { background: #fee2e2; color: #b91c1c; border-color: transparent; }
 
-.do-modal-body {
+.wi-modal-body {
   padding: 24px 28px 32px;
 }
 
-.do-modal-section-title {
+.wi-modal-section-title {
   font-family: Georgia, serif;
   font-size: 0.95rem;
   font-weight: bold;
@@ -583,19 +510,18 @@
 }
 
 /* =========================================================
-   MODAL INFO GRID
-   Identical layout for ALL statuses — no inline overrides.
+   MODAL INFO GRID — identical layout for all entries
    ========================================================= */
-.do-modal-info-grid {
+.wi-modal-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px 24px;
 }
 
-.do-info-item            { display: flex; flex-direction: column; gap: 3px; }
-.do-info-item.full-width { grid-column: span 2; }
+.wi-info-item            { display: flex; flex-direction: column; gap: 3px; }
+.wi-info-item.full-width { grid-column: span 2; }
 
-.do-info-label {
+.wi-info-label {
   font-size: 0.68rem;
   font-weight: 700;
   color: #aaa;
@@ -603,20 +529,20 @@
   letter-spacing: 0.07em;
 }
 
-.do-info-value {
+.wi-info-value {
   font-size: 0.88rem;
   color: #222;
   line-height: 1.4;
 }
 
-.do-info-value.price-val {
+.wi-info-value.price-val {
   font-family: Georgia, serif;
   font-size: 1.15rem;
   font-weight: bold;
   color: #22c55e;
 }
 
-.do-info-value.instructions-val {
+.wi-info-value.instructions-val {
   padding: 10px 12px;
   background: #fefce8;
   border-radius: 8px;
@@ -631,12 +557,9 @@
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .do-metrics-row          { flex-direction: column; }
-  .do-status-cards-row     { gap: 8px; }
-  .do-status-card          { flex: 1 1 80px; padding: 10px 8px; }
-  .do-status-card-count    { font-size: 1.3rem; }
-  .do-modal-info-grid      { grid-template-columns: 1fr; }
-  .do-info-item.full-width { grid-column: span 1; }
-  .do-header               { flex-direction: column; align-items: flex-start; }
-  .do-date-dropdown        { right: auto; left: 0; }
+  .wi-metrics-row          { flex-direction: column; }
+  .wi-modal-info-grid      { grid-template-columns: 1fr; }
+  .wi-info-item.full-width { grid-column: span 1; }
+  .wi-header               { flex-direction: column; align-items: flex-start; }
+  .wi-date-dropdown        { right: auto; left: 0; }
 }

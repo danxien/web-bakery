@@ -1,8 +1,5 @@
 /* =============================================================
    salesOverview.css
-   Mirrors deliveriesOverview.css structure.
-   New: date filter button + dropdown in header.
-   Removed: toolbar filter icon button + dropdown.
    ============================================================= */
 
 /* ── Animation ── */
@@ -19,7 +16,7 @@
 }
 
 /* =========================================================
-   HEADER — title left, date filter button right
+   HEADER — title left · [ Date Filter ] [ Export Report ] right
    ========================================================= */
 .so-header {
   display: flex;
@@ -43,12 +40,19 @@
   margin: 5px 0 0 0;
 }
 
+/* Groups the two header buttons flush together */
+.so-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* =========================================================
-   DATE FILTER — calendar icon button + dropdown in header
+   DATE FILTER BUTTON + DROPDOWN
    ========================================================= */
 .so-filter-dropdown-wrapper {
   position: relative;
-  flex-shrink: 0;
 }
 
 .so-date-filter-btn {
@@ -61,14 +65,12 @@
   background: #fff;
   font-size: 0.83rem;
   font-weight: 500;
-  /* Visible mid-grey at rest — readable on white without being harsh */
   color: #444;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
-/* ✅ Calendar SVG inherits button color — shifts #444 → #111 on hover/open */
 .so-date-filter-btn svg {
   flex-shrink: 0;
   color: inherit;
@@ -148,7 +150,6 @@
 }
 .so-date-input:focus { border-color: #f7dd30; }
 
-/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
 .so-date-input::-webkit-calendar-picker-indicator {
   cursor: pointer;
   filter: brightness(0) saturate(100%) opacity(0.65);
@@ -180,6 +181,46 @@
 }
 .so-apply-btn:hover    { filter: brightness(0.95); }
 .so-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   EXPORT REPORT BUTTON
+   White background with black text at rest → yellow on hover.
+   ========================================================= */
+.so-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.so-export-btn svg {
+  flex-shrink: 0;
+}
+
+.so-export-btn:hover:not(:disabled) {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.so-export-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.so-export-btn:disabled,
+.so-export-btn.loading {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 /* =========================================================
    SUMMARY CARDS — 3 static display cards
@@ -239,7 +280,7 @@
 }
 
 /* =========================================================
-   REVENUE BREAKDOWN CARDS — clickable, filter table on click
+   REVENUE BREAKDOWN CARDS — 4 cards
    ========================================================= */
 .so-breakdown-row {
   display: flex;
@@ -249,7 +290,7 @@
 }
 
 .so-breakdown-card {
-  flex: 1 1 160px;
+  flex: 1 1 140px;
   background: #fff;
   padding: 16px 18px;
   border-radius: 12px;
@@ -288,6 +329,7 @@
 .so-icon-delivery     { color: #6366f1; }
 .so-icon-reservation  { color: #22c55e; }
 .so-icon-custom-order { color: #f59e0b; }
+.so-icon-walk-in      { color: #ec4899; }
 
 .so-breakdown-amount {
   font-family: Georgia, serif;
@@ -408,6 +450,7 @@
 .so-type-pill.delivery     { background: #e0e7ff; color: #3730a3; }
 .so-type-pill.reservation  { background: #d1fae5; color: #065f46; }
 .so-type-pill.custom-order { background: #fef9c3; color: #854d0e; }
+.so-type-pill.walk-in      { background: #fce7f3; color: #9d174d; }
 
 .so-no-data { text-align: center; padding: 40px !important; color: #888; }
 
@@ -449,8 +492,9 @@
    RESPONSIVE
    ========================================================= */
 @media (max-width: 768px) {
-  .so-metrics-row   { flex-direction: column; }
-  .so-breakdown-row { flex-direction: column; }
-  .so-header        { flex-direction: column; align-items: flex-start; }
-  .so-date-dropdown { right: auto; left: 0; }
+  .so-metrics-row    { flex-direction: column; }
+  .so-breakdown-row  { flex-direction: column; }
+  .so-header         { flex-direction: column; align-items: flex-start; }
+  .so-header-actions { flex-wrap: wrap; }
+  .so-date-dropdown  { right: auto; left: 0; }
 }

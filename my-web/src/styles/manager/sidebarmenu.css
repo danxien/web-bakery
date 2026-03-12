@@ -29,10 +29,10 @@
   padding: 15px 0;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   height: 100vh;
-  max-height: 100vh;        /* ← ADD THIS */
+  max-height: 100vh;
   flex-shrink: 0;
   z-index: 100;
-  overflow: hidden;         /* ← ADD THIS */
+  overflow: hidden;
 }
 
 .sidebar.collapsed {
@@ -47,6 +47,7 @@
   padding: 0 15px;
   margin-bottom: 15px;
   min-height: 55px;
+  flex-shrink: 0;            /* Header never shrinks */
 }
 
 .logo-group {
@@ -102,6 +103,7 @@
 .user-info {
   padding: 0 17px;
   margin-bottom: 10px;
+  flex-shrink: 0;            /* User info never shrinks */
 }
 
 .user-info h3 {
@@ -124,8 +126,8 @@
   flex-direction: column;
   gap: 10px;
   padding: 8px 15px 12px 15px;
-  overflow-y: hidden;
-  min-height: 0;
+  min-height: 0;             /* Critical: allows flex child to shrink below content size */
+  overflow-y: auto;          /* ← THE FIX: was 'hidden', now scrolls when needed */
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
@@ -164,6 +166,7 @@
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
+  flex-shrink: 0;            /* Nav items never compress — they scroll instead */
 }
 
 .msg-nav-badge {
@@ -229,7 +232,7 @@
   flex-direction: column;
   gap: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  flex-shrink: 0;           /* ← ADD THIS — prevents footer from being squeezed */
+  flex-shrink: 0;            /* Footer never shrinks or scrolls */
 }
 
 .footer-nav-item {
@@ -278,4 +281,3 @@
 }
 
 .logout:hover svg { color: #fff; }
-

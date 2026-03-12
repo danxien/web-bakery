@@ -1,7 +1,7 @@
 // ─── Imports ──────────────────────────────────────────────────────────────────
 import {
   LayoutDashboard, Package, BarChart3, ClipboardList,
-  Users, Truck, MessageSquare, Settings, LogOut, CalendarCheck
+  Users, Truck, MessageSquare, Settings, LogOut, CalendarCheck, ShoppingBag 
 } from "lucide-react";
 
 import logo from "../../assets/logo.png";
@@ -11,6 +11,7 @@ import "../../styles/manager/sidebarmenu.css";
 const NAV_ITEMS = [
   { key: "dashboard",    label: "Dashboard",      icon: LayoutDashboard },
   { key: "inventory",    label: "Inventory",       icon: Package },
+  { key: "walkIn",       label: "Walk-In Orders",   icon: ShoppingBag },
   { key: "deliveries",   label: "Deliveries",      icon: Truck },
   { key: "reservations", label: "Reservations",    icon: CalendarCheck },
   { key: "customOrders", label: "Custom Orders",   icon: ClipboardList },

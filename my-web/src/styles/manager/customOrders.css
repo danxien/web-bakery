@@ -516,8 +516,6 @@
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
-  max-height: 90vh;
-  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
@@ -585,6 +583,10 @@
   border-bottom: 2px solid #fcf6c4;
 }
 
+/* =========================================================
+   MODAL INFO GRID
+   Identical layout for ALL statuses — no inline overrides.
+   ========================================================= */
 .co-modal-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -602,9 +604,22 @@
   letter-spacing: 0.07em;
 }
 
-.co-info-value           { font-size: 0.88rem; color: #222; line-height: 1.4; }
-.co-info-value.price-val { font-family: Georgia, serif; font-size: 1.15rem; font-weight: bold; color: #22c55e; }
+/* Base value style — same for every status */
+.co-info-value {
+  font-size: 0.88rem;
+  color: #222;
+  line-height: 1.4;
+}
 
+/* Price value variant */
+.co-info-value.price-val {
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #22c55e;
+}
+
+/* Instructions value variant */
 .co-info-value.instructions-val {
   padding: 10px 12px;
   background: #fefce8;
