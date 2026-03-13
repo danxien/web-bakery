@@ -104,9 +104,11 @@ export default function SellerModals({
 
   // ── Payment toggle component (reused across modals) ──
   const PaymentToggle = () => (
-    <div className="seller-form-group">
-      <label>Payment Method</label>
+  <div className="seller-form-group">
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <label style={{ margin: 0, whiteSpace: 'nowrap' }}>Payment Method:</label>
       <div className="seller-payment-toggle">
+      </div>
         <label className="seller-payment-option">
           <input
             type="radio"
