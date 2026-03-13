@@ -6,7 +6,7 @@
 // STATUS LOGIC (Operational-Based):
 //   Pending   → Cake not yet prepared (waiting for action)
 //   Ready     → Cake prepared, awaiting customer pickup
-//   Picked Up → Customer collected cake, order complete
+//   Picked Up → Customer collected cake, order complete ✓ SALES
 //   Overdue   → Auto: Today > PickupDate AND status === 'Ready'
 //   Cancelled → Final state
 //
@@ -14,6 +14,10 @@
 //   Pending → Ready → Picked Up
 //   Pending → Cancelled
 //   Ready   → Overdue → Picked Up | Cancelled
+//
+// SALES CONNECTION:
+//   IF status === 'Picked Up' → transaction is included in salesOverview.jsx
+//   salesOverview reads INIT_RESERVATIONS and filters by status === 'Picked Up'
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -21,7 +25,13 @@ import { PackageCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown } 
 import '../../styles/manager/reservationsOverview.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
-const TODAY     = new Date();
+//
+// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with all other
+//       overview pages, which share the same "This Week" window
+//       (Mar 8–14, 2026). The Overdue mock entry requires pickupDate < TODAY,
+//       so Mar 9 is used for that record. Restore `new Date()` once live
+//       data is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
@@ -64,7 +74,8 @@ function inRange(date, start, end) {
 
 /* ── Constants ─────────────────────────────────────────────── */
 
-// Revenue is counted only for active statuses (excluding Cancelled)
+// Estimated revenue counts non-cancelled active reservations.
+// For Sales, only 'Picked Up' status is used by salesOverview.jsx.
 const REVENUE_STATUSES = ['Pending', 'Ready', 'Picked Up'];
 
 const DATE_OPTIONS = [
@@ -117,89 +128,119 @@ function StatusPill({ reservation }) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   TODO: Backend - Export reservations data for salesOverview.jsx
-   Replace this empty array with the fetched API response.
-   Expected shape per reservation:
+   SHARED DATA BRIDGE — consumed by salesOverview.jsx
+   salesOverview reads this array and filters by status === 'Picked Up'
+   to compute Reservation Sales Revenue (completionDate = pickupDate).
+
+   TODO: Backend — Remove this export once salesOverview.jsx
+   fetches sales data independently via GET /api/sales.
+   On mount (see useEffect below), populate via GET /api/reservations
+   and sync: INIT_RESERVATIONS = data.reservations
+
+   Expected shape per record:
    {
      cakeType:        string  — cake product name
      quantity:        number
      price:           number  — unit price (₱)
      customer:        string
      contact:         string  — customer contact number
+     address:         string  — customer address
      seller:          string
      reservationDate: string  — YYYY-MM-DD
-     pickupDate:      string  — YYYY-MM-DD
+     pickupDate:      string  — YYYY-MM-DD (Sales completionDate)
      status:          'Pending' | 'Ready' | 'Picked Up' | 'Cancelled'
      instructions:    string  — special notes (optional)
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_RESERVATIONS = [
-  {
-    cakeType:        'Chocolate Fudge Cake',
-    quantity:        2,
-    price:           850,
-    customer:        'Ana Reyes',
-    contact:         '09171234567',
-    seller:          'staff',
-    reservationDate: '2026-03-09',
-    pickupDate:      '2026-03-11',
-    status:          'Ready',
-    instructions:    'No nuts. Please write "Happy Birthday Ana" on top.',
-  },
-  {
-    cakeType:        'Ube Macapuno Cake',
-    quantity:        1,
-    price:           950,
-    customer:        'Carlo Mendoza',
-    contact:         '09209876543',
-    seller:          'staff',
-    reservationDate: '2026-03-09',
-    pickupDate:      '2026-03-11',
-    status:          'Pending',
-    instructions:    '',
-  },
-  {
-    cakeType:        'Bento Cake',
-    quantity:        3,
-    price:           450,
-    customer:        'Sofia dela Cruz',
-    contact:         '09561122334',
-    seller:          'staff',
-    reservationDate: '2026-03-10',
-    pickupDate:      '2026-03-11',
-    status:          'Picked Up',
-    instructions:    'One with candles, two plain.',
-  },
-  {
-    cakeType:        'Mango Cream Cake',
-    quantity:        1,
-    price:           780,
-    customer:        'Ramon Villanueva',
-    contact:         '09321234321',
-    seller:          'staff',
-    reservationDate: '2026-03-08',
-    pickupDate:      '2026-03-11',
-    status:          'Cancelled',
-    instructions:    '',
-  },
+
+// TODO: Backend — Remove MOCK_RESERVATIONS and the spread below once
+//   GET /api/reservations is live. On mount, populate via:
+//   INIT_RESERVATIONS = data.reservations
+//
+// One entry per status, all pickup dates within Mar 8–14, 2026
+// (relative to pinned TODAY = Mar 10). Address set to San Pablo City
+// for all entries.
+//
+// Pickup date strategy vs TODAY (Mar 10):
+//   Pending   → Mar 13  (future, status Pending)
+//   Ready     → Mar 12  (future, status Ready → not overdue)
+//   Picked Up → Mar 11  (future, status Picked Up)
+//   Overdue   → Mar 09  (past,   status Ready  → isOverdue() = true)
+//   Cancelled → Mar 14  (future, status Cancelled)
+const MOCK_RESERVATIONS = [
   {
     cakeType:        'Red Velvet Cake',
     quantity:        1,
-    price:           900,
-    customer:        'Liza Corpuz',
-    contact:         '09184445556',
-    seller:          'staff',
-    reservationDate: '2026-03-07',
-    pickupDate:      '2026-03-10',
+    price:           520,
+    customer:        'Dan Exconde',
+    contact:         '09171234567',
+    address:         'San Pablo City',
+    seller:          'Store',
+    reservationDate: '2026-03-08',
+    pickupDate:      '2026-03-13',
+    status:          'Pending',
+    instructions:    'Please write "Happy Birthday" on the cake.',
+  },
+  {
+    cakeType:        'Ube Halaya Cake',
+    quantity:        2,
+    price:           480,
+    customer:        'Kimberly Luceñada',
+    contact:         '09182345678',
+    address:         'San Pablo City',
+    seller:          'Store',
+    reservationDate: '2026-03-08',
+    pickupDate:      '2026-03-12',
     status:          'Ready',
-    instructions:    'Extra cream cheese frosting on the side.',
+    instructions:    'Extra ube jam on the side, if available.',
+  },
+  {
+    cakeType:        'Caramel Macchiato Cake',
+    quantity:        1,
+    price:           560,
+    customer:        'Ice Garcia',
+    contact:         '09193456789',
+    address:         'San Pablo City',
+    seller:          'Store',
+    reservationDate: '2026-03-08',
+    pickupDate:      '2026-03-11',
+    status:          'Picked Up',
+    instructions:    '',
+  },
+  {
+    // Overdue: status is 'Ready' but pickupDate is before TODAY (Mar 10)
+    // isOverdue() will return true and render the 'Overdue' pill.
+    cakeType:        'Mango Royale Cake',
+    quantity:        1,
+    price:           490,
+    customer:        'Justin Arron Soriano',
+    contact:         '09204567890',
+    address:         'San Pablo City',
+    seller:          'Store',
+    reservationDate: '2026-03-07',
+    pickupDate:      '2026-03-09',
+    status:          'Ready',
+    instructions:    'Whole cake, do not slice.',
+  },
+  {
+    cakeType:        'Buko Pandan Cake',
+    quantity:        2,
+    price:           420,
+    customer:        'Charlot Raza',
+    contact:         '09215678901',
+    address:         'San Pablo City',
+    seller:          'Store',
+    reservationDate: '2026-03-08',
+    pickupDate:      '2026-03-14',
+    status:          'Cancelled',
+    instructions:    '',
   },
 ];
 
+export let INIT_RESERVATIONS = [...MOCK_RESERVATIONS];
+
 /* ──────────────────────────────────────────────────────────────
    RESERVATION DETAIL MODAL
-   Table shows: Cake Type · Qty · Price · Pick-Up Date · Status · Action
-   Modal shows: Order Info + Customer Info + Schedule + Instructions
 ────────────────────────────────────────────────────────────── */
 function ReservationDetailModal({ reservation, onClose }) {
   return (
@@ -258,6 +299,11 @@ function ReservationDetailModal({ reservation, onClose }) {
               <span className="ro-info-value">{reservation.contact || '—'}</span>
             </div>
 
+            <div className="ro-info-item full-width">
+              <span className="ro-info-label">Address</span>
+              <span className="ro-info-value">{reservation.address || '—'}</span>
+            </div>
+
           </div>
 
           {/* ── Section 3: Schedule ── */}
@@ -302,20 +348,24 @@ const ReservationsOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace empty array with fetched reservations data
+  // TODO: Backend — Replace initial MOCK_RESERVATIONS spread with []
+  //   and populate from GET /api/reservations in useEffect below.
   // -----------------------------------------------------------
-  const [reservationsData, setReservationsData] = useState(INIT_RESERVATIONS);
+  const [reservationsData, setReservationsData] = useState([...MOCK_RESERVATIONS]);
   const [loading,          setLoading]          = useState(true);
   const [error,            setError]            = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and all five mock entries are visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
   const dateDropRef = useRef(null);
 
-  const [statusFilter, setStatusFilter] = useState(null);
-  const [page,         setPage]         = useState(1);
+  const [statusFilter,     setStatusFilter]     = useState(null);
+  const [page,             setPage]             = useState(1);
   const [modalReservation, setModalReservation] = useState(null);
 
 
@@ -411,21 +461,23 @@ const ReservationsOverview = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch reservations on mount
-    // const fetchReservations = async () => {
+    // TODO: Backend — Fetch reservations on mount:
+    //
+    // const load = async () => {
     //   try {
     //     setLoading(true);
-    //     const response = await fetch('/api/reservations');
-    //     const data = await response.json();
+    //     const res  = await fetch('/api/reservations');
+    //     const data = await res.json();
     //     setReservationsData(data.reservations);
-    //     INIT_RESERVATIONS = data.reservations;
+    //     INIT_RESERVATIONS = data.reservations; // sync bridge for salesOverview
     //   } catch (err) {
     //     setError('Failed to load reservation data.');
     //   } finally {
     //     setLoading(false);
     //   }
     // };
-    // fetchReservations();
+    // load();
+
     setLoading(false);
 
     const handler = e => {
@@ -580,10 +632,9 @@ const ReservationsOverview = () => {
 
       {/* =====================================================
           4. RESERVATIONS TABLE
-          Visible columns: Cake Type · Qty · Price · Customer Name ·
-                           Pick-Up Date · Status · Action
+          Visible columns: Cake Type · Qty · Price · Pick-Up Date · Status · Action
           Hidden from table (shown only in modal):
-            Contact Number, Reservation Date, Special Instructions
+            Address, Contact Number, Reservation Date, Special Instructions
           ===================================================== */}
       <div className="ro-table-container">
 

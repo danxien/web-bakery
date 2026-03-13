@@ -40,7 +40,7 @@
   margin: 5px 0 0 0;
 }
 
-/* Groups the two header buttons flush together */
+/* Groups the header buttons flush together */
 .so-header-actions {
   display: flex;
   align-items: center;
@@ -184,7 +184,6 @@
 
 /* =========================================================
    EXPORT REPORT BUTTON
-   White background with black text at rest → yellow on hover.
    ========================================================= */
 .so-export-btn {
   display: inline-flex;
@@ -202,9 +201,7 @@
   transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
 }
 
-.so-export-btn svg {
-  flex-shrink: 0;
-}
+.so-export-btn svg { flex-shrink: 0; }
 
 .so-export-btn:hover:not(:disabled) {
   background: #f7dd30;
@@ -212,15 +209,10 @@
   color: #111;
 }
 
-.so-export-btn:active:not(:disabled) {
-  transform: scale(0.97);
-}
+.so-export-btn:active:not(:disabled) { transform: scale(0.97); }
 
 .so-export-btn:disabled,
-.so-export-btn.loading {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
+.so-export-btn.loading { opacity: 0.55; cursor: not-allowed; }
 
 /* =========================================================
    SUMMARY CARDS — 3 static display cards
@@ -280,7 +272,8 @@
 }
 
 /* =========================================================
-   REVENUE BREAKDOWN CARDS — 4 cards
+   REVENUE BREAKDOWN CARDS — 3 clickable filter cards
+   Walk-In · Reservations · Custom Orders
    ========================================================= */
 .so-breakdown-row {
   display: flex;
@@ -290,7 +283,7 @@
 }
 
 .so-breakdown-card {
-  flex: 1 1 140px;
+  flex: 1 1 160px;
   background: #fff;
   padding: 16px 18px;
   border-radius: 12px;
@@ -326,10 +319,11 @@
 }
 
 .so-breakdown-icon    { flex-shrink: 0; }
-.so-icon-delivery     { color: #6366f1; }
+
+/* Icon colors per order type */
+.so-icon-walk-in      { color: #ec4899; }
 .so-icon-reservation  { color: #22c55e; }
 .so-icon-custom-order { color: #f59e0b; }
-.so-icon-walk-in      { color: #ec4899; }
 
 .so-breakdown-amount {
   font-family: Georgia, serif;
@@ -447,10 +441,9 @@
   font-weight: 600;
   white-space: nowrap;
 }
-.so-type-pill.delivery     { background: #e0e7ff; color: #3730a3; }
+.so-type-pill.walk-in      { background: #fce7f3; color: #9d174d; }
 .so-type-pill.reservation  { background: #d1fae5; color: #065f46; }
 .so-type-pill.custom-order { background: #fef9c3; color: #854d0e; }
-.so-type-pill.walk-in      { background: #fce7f3; color: #9d174d; }
 
 .so-no-data { text-align: center; padding: 40px !important; color: #888; }
 

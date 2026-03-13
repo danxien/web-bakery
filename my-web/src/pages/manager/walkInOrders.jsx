@@ -9,8 +9,9 @@
 //               Pending / Ready / Overdue states exist.
 //
 // SYSTEM INTEGRATIONS (TODO: Backend):
-//   Inventory   → Deduct qty sold from cake stock on Completed order.
-//   Sales Overview → Include walk-in revenue in channel breakdown.
+//   Inventory      → Deduct qty sold from cake stock on Completed order.
+//   Sales Overview → salesOverview.jsx reads INIT_WALKIN_ORDERS and
+//                    includes status === 'Completed' records in revenue.
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -18,7 +19,12 @@ import { ShoppingBag, CircleDollarSign, ClipboardList, Calendar, ChevronDown } f
 import '../../styles/manager/walkInOrders.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
-const TODAY     = new Date();
+//
+// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with
+//       deliveriesOverview.jsx and inventoryOverview.jsx, which also
+//       use this pin so all pages share the same "This Week" window
+//       (Mar 8–14, 2026). Restore `new Date()` once live data is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
@@ -61,7 +67,6 @@ function inRange(date, start, end) {
 
 /* ── Constants ─────────────────────────────────────────────── */
 
-// All walk-in orders are Completed — revenue always counted
 const DATE_OPTIONS = [
   { key: 'today', label: 'Today' },
   { key: 'week',  label: 'This Week' },
@@ -77,90 +82,49 @@ function formatDate(s) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   TODO: Backend - Export walk-in data for salesOverview.jsx and
-   trigger inventory deduction on each Completed order.
-   Replace this mock array with the fetched API response.
-   Expected shape per walk-in order:
+   SHARED DATA BRIDGE — consumed by salesOverview.jsx
+   salesOverview reads this array and filters by status === 'Completed'
+   to compute Walk-In Sales Revenue.
+
+   TODO: Backend — Remove this export once salesOverview.jsx
+   fetches sales data independently via GET /api/sales.
+   On mount (see useEffect below), populate via GET /api/walkin-orders
+   and sync: INIT_WALKIN_ORDERS = data.orders
+
+   Expected shape per record:
    {
      cakeType:     string  — cake product name
      quantity:     number
      price:        number  — total order price (₱)
-     customer:     string  — optional; use 'Walk-In Customer' if unknown
+     customer:     string  — use 'Walk-In Customer' if unknown
      orderDate:    string  — YYYY-MM-DD
      status:       'Completed'
      instructions: string  — special notes (optional)
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_WALKIN_ORDERS = [
-  {
-    cakeType:     'Chocolate Fudge Cake',
-    quantity:     1,
-    price:        850,
-    customer:     'Walk-In Customer',
-    orderDate:    '2026-03-11',
-    status:       'Completed',
-    instructions: '',
-  },
-  {
-    cakeType:     'Ube Macapuno Cake',
-    quantity:     2,
-    price:        1900,
-    customer:     'Ana Reyes',
-    orderDate:    '2026-03-11',
-    status:       'Completed',
-    instructions: 'Box separately.',
-  },
-  {
-    cakeType:     'Bento Cake',
-    quantity:     1,
-    price:        450,
-    customer:     'Walk-In Customer',
-    orderDate:    '2026-03-11',
-    status:       'Completed',
-    instructions: '',
-  },
-  {
-    cakeType:     'Mango Cream Cake',
-    quantity:     1,
-    price:        780,
-    customer:     'Carlo Mendoza',
-    orderDate:    '2026-03-11',
-    status:       'Completed',
-    instructions: 'No candles needed.',
-  },
-  {
-    cakeType:     'Red Velvet Cake',
-    quantity:     1,
-    price:        900,
-    customer:     'Walk-In Customer',
-    orderDate:    '2026-03-10',
-    status:       'Completed',
-    instructions: '',
-  },
-  {
-    cakeType:     'Caramel Chiffon Cake',
-    quantity:     2,
-    price:        1600,
-    customer:     'Liza Corpuz',
-    orderDate:    '2026-03-10',
-    status:       'Completed',
-    instructions: 'Slice into 12 pieces.',
-  },
+
+// TODO: Backend — Remove MOCK_WALKIN_ORDERS and the spread below once
+//   GET /api/walkin-orders is live. On mount, populate via:
+//   INIT_WALKIN_ORDERS = data.orders
+//
+// One mock entry dated Mar 10 so the "This Week" view (Mar 8–14, 2026)
+// shows at least one completed walk-in transaction immediately.
+const MOCK_WALKIN_ORDERS = [
   {
     cakeType:     'Strawberry Shortcake',
-    quantity:     1,
-    price:        820,
-    customer:     'Walk-In Customer',
-    orderDate:    '2026-03-09',
+    quantity:     2,
+    price:        760,
+    customer:     'Maria Santos',
+    orderDate:    '2026-03-10',
     status:       'Completed',
-    instructions: '',
+    instructions: 'Please slice before packing.',
   },
 ];
 
+export let INIT_WALKIN_ORDERS = [...MOCK_WALKIN_ORDERS];
+
 /* ──────────────────────────────────────────────────────────────
    WALK-IN ORDER DETAIL MODAL
-   Table shows: Cake Type · Qty · Price · Order Date · Status · Action
-   Modal shows: Order Info + Customer Info + Order Date + Instructions
 ────────────────────────────────────────────────────────────── */
 function WalkInDetailModal({ order, onClose }) {
   return (
@@ -208,23 +172,19 @@ function WalkInDetailModal({ order, onClose }) {
           {/* ── Section 2: Customer Information ── */}
           <h3 className="wi-modal-section-title" style={{ marginTop: 22 }}>Customer Information</h3>
           <div className="wi-modal-info-grid">
-
             <div className="wi-info-item full-width">
               <span className="wi-info-label">Customer Name</span>
               <span className="wi-info-value">{order.customer}</span>
             </div>
-
           </div>
 
           {/* ── Section 3: Order Date ── */}
           <h3 className="wi-modal-section-title" style={{ marginTop: 22 }}>Schedule</h3>
           <div className="wi-modal-info-grid">
-
             <div className="wi-info-item full-width">
               <span className="wi-info-label">Order Date</span>
               <span className="wi-info-value">{formatDate(order.orderDate)}</span>
             </div>
-
           </div>
 
           {/* ── Section 4: Special Instructions ── */}
@@ -253,13 +213,17 @@ const WalkInOrders = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace INIT_WALKIN_ORDERS with fetched data
+  // TODO: Backend — Replace initial MOCK_WALKIN_ORDERS spread with []
+  //   and populate from GET /api/walkin-orders in useEffect below.
   // -----------------------------------------------------------
-  const [ordersData, setOrdersData] = useState(INIT_WALKIN_ORDERS);
+  const [ordersData, setOrdersData] = useState([...MOCK_WALKIN_ORDERS]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and the mock entry is immediately visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
@@ -295,18 +259,15 @@ const WalkInOrders = () => {
 
   // -----------------------------------------------------------
   // SUMMARY METRICS
+  // All walk-in orders are Completed — every scoped record counts.
   // -----------------------------------------------------------
-  const totalOrders = dateScoped.length;
-
-  const revenueTotal = dateScoped
-    .reduce((sum, o) => sum + o.price, 0);
-
-  const totalQtySold = dateScoped
-    .reduce((sum, o) => sum + o.quantity, 0);
+  const totalOrders  = dateScoped.length;
+  const revenueTotal = dateScoped.reduce((sum, o) => sum + o.price, 0);
+  const totalQtySold = dateScoped.reduce((sum, o) => sum + o.quantity, 0);
 
 
   // -----------------------------------------------------------
-  // TABLE DATA (no status filter — all walk-ins are Completed)
+  // PAGINATION
   // -----------------------------------------------------------
   const totalPages = Math.max(1, Math.ceil(dateScoped.length / PER_PAGE));
   const paged      = dateScoped.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -333,21 +294,23 @@ const WalkInOrders = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch walk-in orders on mount
-    // const fetchOrders = async () => {
+    // TODO: Backend — Fetch walk-in orders on mount:
+    //
+    // const load = async () => {
     //   try {
     //     setLoading(true);
-    //     const response = await fetch('/api/walkin-orders');
-    //     const data = await response.json();
+    //     const res  = await fetch('/api/walkin-orders');
+    //     const data = await res.json();
     //     setOrdersData(data.orders);
-    //     INIT_WALKIN_ORDERS = data.orders;
+    //     INIT_WALKIN_ORDERS = data.orders; // sync bridge for salesOverview
     //   } catch (err) {
     //     setError('Failed to load walk-in orders.');
     //   } finally {
     //     setLoading(false);
     //   }
     // };
-    // fetchOrders();
+    // load();
+
     setLoading(false);
 
     const handler = e => {

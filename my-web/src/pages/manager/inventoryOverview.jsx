@@ -2,16 +2,87 @@
 // InventoryOverview.jsx
 // PURPOSE: Displays inventory stock levels, expiry status,
 //          and a filterable table.
+//
+// CONNECTION LOGIC (Stock Delivery → Inventory):
+//   Inventory is derived live from INIT_DELIVERIES and
+//   INVENTORY_STATE exported by deliveriesOverview.jsx.
+//
+//   On every render the component:
+//     1. Starts with any base INVENTORY_STATE records (pre-existing
+//        stock seeded from the backend on mount).
+//     2. Folds all INIT_DELIVERIES records on top:
+//        - Cake Type exists  → add quantity, use delivery expiry date
+//        - Cake Type new     → create new record
+//     3. Produces a flat array of per-batch inventory rows.
+//
+//   This means every new Stock Delivery recorded in
+//   deliveriesOverview.jsx is instantly reflected here —
+//   no separate fetch or event bus needed.
+//
 // FILTERING: Date Filter (header icon) + Status Cards (clickable)
+//            Date filter scopes by expiry date.
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Layers, Package, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/inventoryOverview.css';
 
+// Bridge imports — replaced by a unified inventory API once backend is ready.
+// TODO: Backend — Remove these imports and replace deriveInventoryFromDeliveries()
+//   with a direct call to GET /api/inventory.
+import { INIT_DELIVERIES, INVENTORY_STATE } from './deliveriesOverview';
+
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
-const TODAY     = new Date();
+//
+// NOTE: TODAY is pinned to 2026-03-10 so that all four inventory statuses
+//       (Fresh, Near Expiry, Expired, Low Stock) are representable within
+//       the "This Week" range of March 8–14, 2026.
+//       With the real today (Mar 13), Fresh items would need expiry ≥ Mar 16,
+//       which falls outside the weekly window.
+//       Remove this pin and restore `new Date()` once live data is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
+
+/* ── Mock Inventory Data ───────────────────────────────────── */
+
+// TODO: Backend — Remove MOCK_INVENTORY once GET /api/inventory is wired up.
+// One entry per status to validate all four status cards within the
+// "This Week" window (March 8–14, 2026, relative to pinned TODAY = Mar 10).
+//
+//   Classic Chocolate Cake  expiry Mar 14  → Fresh       (4 days away)
+//   Strawberry Shortcake    expiry Mar 11  → Near Expiry (1 day away)
+//   Red Velvet Cake         expiry Mar 09  → Expired
+//   Matcha Green Tea Cake   expiry Mar 12, qty 3 → Low Stock (≤ 5, Near Expiry)
+const MOCK_INVENTORY = [
+  {
+    name:   'Classic Chocolate Cake',
+    qty:    20,
+    expiry: '2026-03-14',
+    made:   '2026-03-07',
+    price:  450,
+  },
+  {
+    name:   'Strawberry Shortcake',
+    qty:    12,
+    expiry: '2026-03-11',
+    made:   '2026-03-04',
+    price:  380,
+  },
+  {
+    name:   'Red Velvet Cake',
+    qty:    8,
+    expiry: '2026-03-09',
+    made:   '2026-03-02',
+    price:  520,
+  },
+  {
+    name:   'Matcha Green Tea Cake',
+    qty:    3,
+    expiry: '2026-03-12',
+    made:   '2026-03-05',
+    price:  490,
+  },
+];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
 
@@ -59,7 +130,7 @@ const DATE_OPTIONS = [
   { key: 'month', label: 'This Month' },
 ];
 
-// TODO: Backend - Fetch this threshold value from API or config (per-cake-type)
+// TODO: Backend — Fetch this threshold from config or GET /api/settings
 const LOW_STOCK_THRESHOLD = 5;
 const PER_PAGE = 6;
 
@@ -97,6 +168,64 @@ function formatDate(s) {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   DERIVE INVENTORY FROM DELIVERIES
+   Converts the INIT_DELIVERIES list into per-batch inventory rows,
+   then appends MOCK_INVENTORY entries for demo purposes.
+
+   Each delivery record produces one inventory row:
+     name:   d.cakeType
+     qty:    d.quantity
+     expiry: d.expiryDate
+     made:   d.deliveryDate  (used as production date proxy)
+     price:  d.pricePerCake
+
+   INVENTORY_STATE seed records with no matching delivery (e.g.
+   pre-existing stock loaded from the backend) are also included.
+
+   TODO: Backend — Remove this function entirely once the backend
+   supplies pre-aggregated inventory rows via GET /api/inventory.
+   The component should then use:
+     const [inventoryData, setInventoryData] = useState([]);
+   and populate it from the API response in useEffect.
+────────────────────────────────────────────────────────────── */
+function deriveInventoryFromDeliveries() {
+  const rows = [];
+
+  // One row per delivery record (each delivery = one distinct batch)
+  INIT_DELIVERIES.forEach(d => {
+    rows.push({
+      name:   d.cakeType,
+      qty:    d.quantity,
+      expiry: d.expiryDate,
+      made:   d.deliveryDate,
+      price:  d.pricePerCake ?? 0,
+    });
+  });
+
+  // Include INVENTORY_STATE seed records that have no delivery yet
+  // (pre-existing stock not yet represented in INIT_DELIVERIES)
+  const deliveredTypes = new Set(INIT_DELIVERIES.map(d => d.cakeType));
+  Object.entries(INVENTORY_STATE).forEach(([cakeType, info]) => {
+    if (!deliveredTypes.has(cakeType)) {
+      rows.push({
+        name:   cakeType,
+        qty:    info.quantity,
+        expiry: info.expiryDate,
+        made:   TODAY_STR,        // production date unknown for seed stock
+        price:  info.pricePerCake ?? 0,
+      });
+    }
+  });
+
+  // TODO: Backend — Remove once live API data is connected.
+  // Append mock entries so all four status cards show sample data
+  // within the "This Week" window (Mar 8–14, 2026).
+  MOCK_INVENTORY.forEach(entry => rows.push(entry));
+
+  return rows;
+}
+
+/* ──────────────────────────────────────────────────────────────
    MAIN PAGE COMPONENT
 ────────────────────────────────────────────────────────────── */
 
@@ -104,23 +233,17 @@ const InventoryOverview = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace empty array with fetched inventory data
-  // Expected shape per item:
-  // {
-  //   name:   string  — cake product name
-  //   qty:    number  — current quantity in stock for this batch
-  //   price:  number  — unit selling price (₱)
-  //   made:   string  — production date (YYYY-MM-DD)
-  //   expiry: string  — expiry date (YYYY-MM-DD)
-  //   // NOTE: status is computed from expiry, not stored on backend
-  // }
-  // Multiple rows with the same name = multiple batches (FIFO)
+  // loadTrigger is a counter bumped on manual refresh.
+  // TODO: Backend — Replace with real-time subscription or polling.
   // -----------------------------------------------------------
-  const [inventoryData, setInventoryData] = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState(null);
+  const [loadTrigger, setLoadTrigger] = useState(0);
+  const [loading,     setLoading]     = useState(true);
+  const [error,       setError]       = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and all mock entries are immediately visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
@@ -146,15 +269,35 @@ const InventoryOverview = () => {
 
 
   // -----------------------------------------------------------
-  // FULL INVENTORY — attach computed status
+  // LIVE INVENTORY DATA
+  // Re-derived from INIT_DELIVERIES + INVENTORY_STATE + MOCK_INVENTORY
+  // on every render. Because handleAddDelivery in deliveriesOverview.jsx
+  // mutates both module-level refs in place, the next render of
+  // this component automatically sees the updated data.
+  //
+  // TODO: Backend — Replace this useMemo with a useEffect that
+  //   fetches from GET /api/inventory and stores results in state:
+  //   const [rawInventory, setRawInventory] = useState([]);
   // -----------------------------------------------------------
-  const fullInventory = useMemo(() =>
-    inventoryData.map(item => ({ ...item, status: computeStatus(item.expiry) })),
-  [inventoryData]);
+  const rawInventory = useMemo(
+    () => deriveInventoryFromDeliveries(),
+    // loadTrigger in deps forces re-derive on manual refresh
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [loadTrigger, INIT_DELIVERIES, INVENTORY_STATE]
+  );
 
 
   // -----------------------------------------------------------
-  // DATE-SCOPED INVENTORY (filter by expiry date)
+  // FULL INVENTORY — attach computed status to each row
+  // -----------------------------------------------------------
+  const fullInventory = useMemo(
+    () => rawInventory.map(item => ({ ...item, status: computeStatus(item.expiry) })),
+    [rawInventory]
+  );
+
+
+  // -----------------------------------------------------------
+  // DATE-SCOPED INVENTORY (filter rows by expiry date)
   // -----------------------------------------------------------
   const dateScoped = useMemo(
     () => fullInventory.filter(item => inRange(item.expiry, rangeStart, rangeEnd)),
@@ -163,19 +306,21 @@ const InventoryOverview = () => {
 
 
   // -----------------------------------------------------------
-  // SUMMARY METRICS (from dateScoped)
+  // SUMMARY METRICS (computed from dateScoped)
   // -----------------------------------------------------------
-  const totalCakeTypes = useMemo(() =>
-    new Set(dateScoped.map(i => i.name)).size,
-  [dateScoped]);
+  const totalCakeTypes = useMemo(
+    () => new Set(dateScoped.map(i => i.name)).size,
+    [dateScoped]
+  );
 
-  const totalCakesInStock = useMemo(() =>
-    dateScoped.reduce((sum, i) => sum + i.qty, 0),
-  [dateScoped]);
+  const totalCakesInStock = useMemo(
+    () => dateScoped.reduce((sum, i) => sum + i.qty, 0),
+    [dateScoped]
+  );
 
 
   // -----------------------------------------------------------
-  // STATUS CARD COUNTS (from dateScoped)
+  // STATUS CARD COUNTS (total qty per status within dateScoped)
   // -----------------------------------------------------------
   const statusCounts = useMemo(() => ({
     'Fresh':       dateScoped.filter(i => i.status === 'Fresh').reduce((sum, i) => sum + i.qty, 0),
@@ -186,7 +331,7 @@ const InventoryOverview = () => {
 
 
   // -----------------------------------------------------------
-  // TABLE DATA (dateScoped + statusFilter)
+  // TABLE DATA (dateScoped filtered by active statusFilter)
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
     if (!statusFilter)                return dateScoped;
@@ -225,13 +370,14 @@ const InventoryOverview = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch inventory data on mount
+    // TODO: Backend — Fetch inventory on mount:
+    //
     // const fetchInventory = async () => {
     //   try {
     //     setLoading(true);
     //     const response = await fetch('/api/inventory');
     //     const data = await response.json();
-    //     setInventoryData(data.items);
+    //     setRawInventory(data.items);     // replaces deriveInventoryFromDeliveries()
     //   } catch (err) {
     //     setError('Failed to load inventory data.');
     //   } finally {
@@ -239,6 +385,7 @@ const InventoryOverview = () => {
     //   }
     // };
     // fetchInventory();
+
     setLoading(false);
 
     const handler = e => {
@@ -267,18 +414,15 @@ const InventoryOverview = () => {
       <div className="inventory-header">
         <div>
           <h1 className="inventory-title">Inventory Overview</h1>
-          <p className="inventory-subtitle">Monitor stock levels and expiry dates</p>
+          <p className="inventory-subtitle">Real-time stock levels derived from Stock Deliveries</p>
         </div>
 
         <div className="inv-filter-dropdown-wrapper" ref={dateDropRef}>
           <button
             className={`inv-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
             onClick={() => setDateDropOpen(p => !p)}
-            title="Filter by date range"
+            title="Filter by expiry date range"
           >
-            {/* ✅ Replaced SlidersHorizontal with Calendar icon — sized up to 16px and
-                coloured #555 at rest so it's clearly visible on the white button bg.
-                The existing CSS already flips fill/stroke to #000 on hover/open. */}
             <Calendar size={16} strokeWidth={2} color="currentColor" />
             <span>{dateLabel}</span>
             <ChevronDown size={12} />
@@ -339,7 +483,7 @@ const InventoryOverview = () => {
           </div>
           <div className="card-bottom">
             <span className="metric-value">{totalCakeTypes}</span>
-            <span className="metric-subtext">Unique cake varieties</span>
+            <span className="metric-subtext">Unique cake varieties in stock</span>
           </div>
         </div>
 
@@ -359,6 +503,7 @@ const InventoryOverview = () => {
 
       {/* =====================================================
           3. STATUS CARDS (Clickable Filters)
+          Counts show total qty (not batch count) per status.
           ===================================================== */}
       <div className="inv-status-cards-row">
         {STATUS_CARDS.map(card => (
@@ -376,6 +521,8 @@ const InventoryOverview = () => {
 
       {/* =====================================================
           4. TABLE
+          Columns: Cake Name · Quantity · Price · Date Produced
+                   Expiry Date · Status
           ===================================================== */}
       <div className="table-container">
 
@@ -407,7 +554,9 @@ const InventoryOverview = () => {
                   <tr key={idx} className={item.status === 'Expired' ? 'row-expired' : ''}>
                     <td className="cake-name-text">{item.name}</td>
                     <td className={isLowStock(item) ? 'qty-low' : ''}>{item.qty}</td>
-                    <td className="price-text">₱{item.price.toLocaleString()}</td>
+                    <td className="price-text">
+                      {item.price > 0 ? `₱${item.price.toLocaleString()}` : '—'}
+                    </td>
                     <td>{formatDate(item.made)}</td>
                     <td className={
                       item.status === 'Expired'     ? 'expiry-overdue' :
@@ -424,7 +573,7 @@ const InventoryOverview = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="no-data">No items match this filter.</td>
+                  <td colSpan={6} className="no-data">No inventory items match this filter.</td>
                 </tr>
               )}
             </tbody>

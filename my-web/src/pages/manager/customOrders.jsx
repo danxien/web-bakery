@@ -3,25 +3,36 @@
 // PURPOSE: Manager monitoring view for custom cake orders.
 // FILTERING: Date Filter (header calendar icon) + Status Cards (clickable)
 //
-// STATUS LOGIC (Operational-Based):
-//   Pending   → Cake not yet prepared (waiting for action)
-//   Ready     → Cake finished, awaiting customer pickup
-//   Picked Up → Customer received cake, order complete
-//   Overdue   → Auto: Today > PickupDate AND status === 'Ready'
-//   Cancelled → Final state
+// STATUS LOGIC (Delivery-Based):
+//   Pending          → Order placed, not yet prepared
+//   Out for Delivery → Cake prepared and currently being delivered
+//   Delivered        → Successfully delivered to customer ✓ SALES
+//   Overdue          → Auto: Today > DeliveryDate AND status !== 'Delivered' | 'Cancelled'
+//   Cancelled        → Final state
 //
 // WORKFLOW:
-//   Pending → Ready → Picked Up
+//   Pending → Out for Delivery → Delivered
 //   Pending → Cancelled
-//   Ready   → Overdue → Picked Up | Cancelled
+//   Out for Delivery → Overdue → Delivered | Cancelled
+//
+// SALES CONNECTION:
+//   IF status === 'Delivered' → transaction is included in salesOverview.jsx
+//   salesOverview reads INIT_ORDERS and filters by status === 'Delivered'
+//   (completionDate = deliveryDate)
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ShieldCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
+import { ShieldCheck, CircleDollarSign, PackageCheck, Calendar, ChevronDown } from 'lucide-react';
 import '../../styles/manager/customOrders.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
-const TODAY     = new Date();
+//
+// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with all other
+//       overview pages, which share the same "This Week" window
+//       (Mar 8–14, 2026). The Overdue mock entry requires deliveryDate < TODAY,
+//       so Mar 9 is used for that record. Restore `new Date()` once live
+//       data is connected.
+const TODAY     = new Date('2026-03-13T00:00:00');
 const TODAY_STR = TODAY.toISOString().split('T')[0];
 
 /* ── Date Range Helpers ────────────────────────────────────── */
@@ -64,9 +75,6 @@ function inRange(date, start, end) {
 
 /* ── Constants ─────────────────────────────────────────────── */
 
-// Revenue is counted only when order is Picked Up
-const REVENUE_STATUSES = ['Picked Up'];
-
 const DATE_OPTIONS = [
   { key: 'today', label: 'Today' },
   { key: 'week',  label: 'This Week' },
@@ -74,24 +82,29 @@ const DATE_OPTIONS = [
 ];
 
 const STATUS_CARDS = [
-  { key: 'Pending',   label: 'Pending' },
-  { key: 'Ready',     label: 'Ready' },
-  { key: 'Picked Up', label: 'Picked Up' },
-  { key: 'Overdue',   label: 'Overdue' },
-  { key: 'Cancelled', label: 'Cancelled' },
+  { key: 'Pending',          label: 'Pending' },
+  { key: 'Out for Delivery', label: 'Out for Delivery' },
+  { key: 'Delivered',        label: 'Delivered' },
+  { key: 'Overdue',          label: 'Overdue' },
+  { key: 'Cancelled',        label: 'Cancelled' },
 ];
 
 /* ── Misc Helpers ──────────────────────────────────────────── */
 
 function isOverdue(o) {
   return (
-    new Date(o.pickupDate + 'T00:00:00') < TODAY &&
-    o.status === 'Ready'
+    new Date(o.deliveryDate + 'T00:00:00') < TODAY &&
+    o.status !== 'Delivered' &&
+    o.status !== 'Cancelled'
   );
 }
 
 function isDueToday(o) {
-  return o.pickupDate === TODAY_STR && o.status === 'Ready';
+  return (
+    o.deliveryDate === TODAY_STR &&
+    o.status !== 'Delivered' &&
+    o.status !== 'Cancelled'
+  );
 }
 
 function formatDate(s) {
@@ -102,11 +115,11 @@ function formatDate(s) {
 
 function statusPillClass(ds) {
   const map = {
-    Pending:     'pending',
-    Ready:       'ready',
-    'Picked Up': 'picked-up',
-    Cancelled:   'cancelled',
-    Overdue:     'overdue',
+    Pending:            'pending',
+    'Out for Delivery': 'out-for-delivery',
+    Delivered:          'delivered',
+    Cancelled:          'cancelled',
+    Overdue:            'overdue',
   };
   return map[ds] || 'pending';
 }
@@ -117,60 +130,125 @@ function StatusPill({ order }) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   TODO: Backend - Export orders data for salesOverview.jsx
-   Replace this mock array with the fetched API response.
-   Expected shape per custom order:
+   SHARED DATA BRIDGE — consumed by salesOverview.jsx
+   salesOverview reads this array and filters by status === 'Delivered'
+   to compute Custom Order Sales Revenue (completionDate = deliveryDate).
+
+   TODO: Backend — Remove this export once salesOverview.jsx
+   fetches sales data independently via GET /api/sales.
+   On mount (see useEffect below), populate via GET /api/custom-orders
+   and sync: INIT_ORDERS = data.orders
+
+   Expected shape per record:
    {
      cakeType:     string  — cake product name
-     instructions: string  — special design notes
+     instructions: string  — special design/delivery notes
      quantity:     number
      price:        number  — total order price (₱)
      customer:     string
      contact:      string  — customer contact number
+     address:      string  — delivery address
      orderDate:    string  — YYYY-MM-DD
-     pickupDate:   string  — YYYY-MM-DD
-     status:       'Pending' | 'Ready' | 'Picked Up' | 'Cancelled'
+     deliveryDate: string  — YYYY-MM-DD (Sales completionDate)
+     status:       'Pending' | 'Out for Delivery' | 'Delivered' | 'Cancelled'
      createdBy:    string  — seller who created the order
      lastUpdated:  string  — timestamp string
-     timeline:     [{ event: string, time: string, state: 'done' | 'current' | 'pending' }]
    }
 ────────────────────────────────────────────────────────────── */
-export let INIT_ORDERS = [
+
+// TODO: Backend — Remove MOCK_ORDERS and the spread below once
+//   GET /api/custom-orders is live. On mount, populate via:
+//   INIT_ORDERS = data.orders
+//
+// One entry per status, all delivery dates within Mar 8–14, 2026
+// (relative to pinned TODAY = Mar 10). Address set to San Pablo City
+// for all entries.
+//
+// Delivery date strategy vs TODAY (Mar 10):
+//   Pending          → Mar 13  (future, status Pending)
+//   Out for Delivery → Mar 12  (future, status Out for Delivery → not overdue)
+//   Delivered        → Mar 11  (status Delivered, exempt from overdue check)
+//   Overdue          → Mar 09  (past, status Out for Delivery → isOverdue() = true)
+//   Cancelled        → Mar 14  (status Cancelled, exempt from overdue check)
+const MOCK_ORDERS = [
   {
-    cakeType:     'Custom Birthday Cake',
-    instructions: 'Minimalist pink cake with gold lettering.',
+    cakeType:     'Mocha Crunch Cake',
+    instructions: 'Write "Congratulations" on top. Dark chocolate drizzle.',
     quantity:     1,
-    price:        1500,
-    customer:     'Kimberly Luceñada',
-    contact:      '09123456789',
+    price:        580,
+    customer:     'Dan Exconde',
+    contact:      '09171234567',
+    address:      'San Pablo City',
     orderDate:    '2026-03-08',
-    pickupDate:   '2026-03-11',
-    status:       'Ready',
-    createdBy:    'staff',
-    lastUpdated:  '2026-06-01T10:00:00',
-    timeline:     [],
+    deliveryDate: '2026-03-13',
+    status:       'Pending',
+    createdBy:    'Store',
+    lastUpdated:  '2026-03-08T09:00:00',
   },
   {
-    cakeType:     'Custom Wedding Cake',
-    instructions: 'Three-tier white fondant cake with floral accents and pearl details.',
+    cakeType:     'Lemon Blueberry Cake',
+    instructions: 'Extra blueberry glaze. Handle with care.',
     quantity:     1,
-    price:        4500,
-    customer:     'Maria Santos',
-    contact:      '09987654321',
+    price:        620,
+    customer:     'Kimberly Luceñada',
+    contact:      '09182345678',
+    address:      'San Pablo City',
     orderDate:    '2026-03-08',
-    pickupDate:   '2026-03-12',
-    status:       'Ready',
-    createdBy:    'staff',
-    lastUpdated:  '2026-03-10T14:30:00',
-    timeline:     [],
+    deliveryDate: '2026-03-12',
+    status:       'Out for Delivery',
+    createdBy:    'Store',
+    lastUpdated:  '2026-03-12T08:30:00',
+  },
+  {
+    cakeType:     'Cookies and Cream Cake',
+    instructions: 'No special instructions.',
+    quantity:     2,
+    price:        1100,
+    customer:     'Ice Garcia',
+    contact:      '09193456789',
+    address:      'San Pablo City',
+    orderDate:    '2026-03-07',
+    deliveryDate: '2026-03-11',
+    status:       'Delivered',
+    createdBy:    'Store',
+    lastUpdated:  '2026-03-11T14:00:00',
+  },
+  {
+    // Overdue: status is 'Out for Delivery' but deliveryDate is before TODAY (Mar 10)
+    // isOverdue() will return true and render the 'Overdue' pill.
+    cakeType:     'Choco Fudge Cake',
+    instructions: 'Deliver between 10AM–12PM. Call customer upon arrival.',
+    quantity:     1,
+    price:        540,
+    customer:     'Justin Arron Soriano',
+    contact:      '09204567890',
+    address:      'San Pablo City',
+    orderDate:    '2026-03-07',
+    deliveryDate: '2026-03-09',
+    status:       'Out for Delivery',
+    createdBy:    'Store',
+    lastUpdated:  '2026-03-09T07:45:00',
+  },
+  {
+    cakeType:     'Vanilla Bean Cake',
+    instructions: '',
+    quantity:     1,
+    price:        460,
+    customer:     'Charlot Raza',
+    contact:      '09215678901',
+    address:      'San Pablo City',
+    orderDate:    '2026-03-08',
+    deliveryDate: '2026-03-14',
+    status:       'Cancelled',
+    createdBy:    'Store',
+    lastUpdated:  '2026-03-09T10:00:00',
   },
 ];
 
+export let INIT_ORDERS = [...MOCK_ORDERS];
+
 /* ──────────────────────────────────────────────────────────────
    ORDER DETAIL MODAL
-   Table shows: Cake Type · Qty · Price · Pick-Up Date · Status
-   Modal shows: all of the above + Customer · Contact ·
-                Order Date · Special Instructions
 ────────────────────────────────────────────────────────────── */
 function OrderDetailModal({ order, onClose }) {
   return (
@@ -187,8 +265,8 @@ function OrderDetailModal({ order, onClose }) {
 
         <div className="co-modal-body">
 
-          {/* ── Section 1: Product ── */}
-          <h3 className="co-modal-section-title">Product</h3>
+          {/* ── Section 1: Order Information ── */}
+          <h3 className="co-modal-section-title">Order Information</h3>
           <div className="co-modal-info-grid">
 
             <div className="co-info-item">
@@ -213,8 +291,8 @@ function OrderDetailModal({ order, onClose }) {
 
           </div>
 
-          {/* ── Section 2: Customer ── */}
-          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Customer</h3>
+          {/* ── Section 2: Customer Information ── */}
+          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Customer Information</h3>
           <div className="co-modal-info-grid">
 
             <div className="co-info-item">
@@ -229,8 +307,8 @@ function OrderDetailModal({ order, onClose }) {
 
           </div>
 
-          {/* ── Section 3: Schedule ── */}
-          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Schedule</h3>
+          {/* ── Section 3: Delivery Information ── */}
+          <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Delivery Information</h3>
           <div className="co-modal-info-grid">
 
             <div className="co-info-item">
@@ -239,8 +317,13 @@ function OrderDetailModal({ order, onClose }) {
             </div>
 
             <div className="co-info-item">
-              <span className="co-info-label">Pick-Up Date</span>
-              <span className="co-info-value">{formatDate(order.pickupDate)}</span>
+              <span className="co-info-label">Delivery Date</span>
+              <span className="co-info-value">{formatDate(order.deliveryDate)}</span>
+            </div>
+
+            <div className="co-info-item full-width">
+              <span className="co-info-label">Delivery Address</span>
+              <span className="co-info-value instructions-val">{order.address || 'No address provided.'}</span>
             </div>
 
           </div>
@@ -249,7 +332,9 @@ function OrderDetailModal({ order, onClose }) {
           <h3 className="co-modal-section-title" style={{ marginTop: 22 }}>Special Instructions / Design Notes</h3>
           <div className="co-modal-info-grid">
             <div className="co-info-item full-width">
-              <span className="co-info-value instructions-val">{order.instructions}</span>
+              <span className="co-info-value instructions-val">
+                {order.instructions || 'No special instructions provided.'}
+              </span>
             </div>
           </div>
 
@@ -269,13 +354,17 @@ const CustomOrders = () => {
 
   // -----------------------------------------------------------
   // STATE
-  // TODO: Backend - Replace INIT_ORDERS with fetched data
+  // TODO: Backend — Replace initial MOCK_ORDERS spread with []
+  //   and populate from GET /api/custom-orders in useEffect below.
   // -----------------------------------------------------------
-  const [ordersData, setOrdersData] = useState(INIT_ORDERS);
+  const [ordersData, setOrdersData] = useState([...MOCK_ORDERS]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
-  const [dateFilter,   setDateFilter]   = useState('today');
+  // Default to 'week' so the This Week range (Mar 8–14, 2026) is
+  // active on first render and all five mock entries are visible.
+  // TODO: Backend — Restore to 'today' or user-preference once live data is wired.
+  const [dateFilter,   setDateFilter]   = useState('week');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
@@ -302,31 +391,34 @@ const CustomOrders = () => {
 
 
   // -----------------------------------------------------------
-  // DATE-SCOPED ORDERS (filter by pickupDate)
+  // DATE-SCOPED ORDERS (filter by deliveryDate)
   // -----------------------------------------------------------
   const dateScoped = useMemo(
-    () => ordersData.filter(o => inRange(o.pickupDate, rangeStart, rangeEnd)),
+    () => ordersData.filter(o => inRange(o.deliveryDate, rangeStart, rangeEnd)),
     [ordersData, rangeStart, rangeEnd]
   );
 
 
   // -----------------------------------------------------------
   // SUMMARY METRICS
+  // Revenue: Delivered orders only (feeds salesOverview).
   // -----------------------------------------------------------
   const totalOrders = dateScoped.length;
 
   const revenueTotal = dateScoped
-    .filter(o => REVENUE_STATUSES.includes(o.status))
+    .filter(o => o.status === 'Delivered')
     .reduce((sum, o) => sum + o.price, 0);
 
-  const pendingCount = dateScoped.filter(o => o.status === 'Pending').length;
+  const totalCakesDelivered = dateScoped
+    .filter(o => o.status === 'Delivered')
+    .reduce((sum, o) => sum + o.quantity, 0);
 
 
   // -----------------------------------------------------------
   // STATUS CARD COUNTS
   // -----------------------------------------------------------
   const statusCounts = useMemo(() => {
-    const counts = { Pending: 0, Ready: 0, 'Picked Up': 0, Overdue: 0, Cancelled: 0 };
+    const counts = { Pending: 0, 'Out for Delivery': 0, Delivered: 0, Overdue: 0, Cancelled: 0 };
     dateScoped.forEach(o => {
       if (isOverdue(o))            counts.Overdue++;
       else if (o.status in counts) counts[o.status]++;
@@ -339,10 +431,10 @@ const CustomOrders = () => {
   // TABLE DATA
   // -----------------------------------------------------------
   const filteredData = useMemo(() => {
-    if (!statusFilter)              return dateScoped;
-    if (statusFilter === 'Overdue') return dateScoped.filter(isOverdue);
-    if (statusFilter === 'Ready')   return dateScoped.filter(o => o.status === 'Ready' && !isOverdue(o));
-    return dateScoped.filter(o => o.status === statusFilter);
+    if (!statusFilter)                       return dateScoped;
+    if (statusFilter === 'Overdue')          return dateScoped.filter(isOverdue);
+    if (statusFilter === 'Out for Delivery') return dateScoped.filter(o => o.status === 'Out for Delivery' && !isOverdue(o));
+    return dateScoped.filter(o => o.status === statusFilter && !isOverdue(o));
   }, [dateScoped, statusFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PER_PAGE));
@@ -376,21 +468,23 @@ const CustomOrders = () => {
   // EFFECTS
   // -----------------------------------------------------------
   useEffect(() => {
-    // TODO: Backend - Fetch custom orders on mount
-    // const fetchOrders = async () => {
+    // TODO: Backend — Fetch custom orders on mount:
+    //
+    // const load = async () => {
     //   try {
     //     setLoading(true);
-    //     const response = await fetch('/api/custom-orders');
-    //     const data = await response.json();
+    //     const res  = await fetch('/api/custom-orders');
+    //     const data = await res.json();
     //     setOrdersData(data.orders);
-    //     INIT_ORDERS = data.orders;
+    //     INIT_ORDERS = data.orders; // sync bridge for salesOverview
     //   } catch (err) {
     //     setError('Failed to load custom orders.');
     //   } finally {
     //     setLoading(false);
     //   }
     // };
-    // fetchOrders();
+    // load();
+
     setLoading(false);
 
     const handler = e => {
@@ -423,7 +517,7 @@ const CustomOrders = () => {
       <div className="co-header">
         <div>
           <h1 className="co-title">Custom Orders</h1>
-          <p className="co-subtitle">Monitor all custom cake orders and production status</p>
+          <p className="co-subtitle">Monitor all custom cake orders and delivery status</p>
         </div>
 
         <div className="co-filter-dropdown-wrapper" ref={dateDropRef}>
@@ -498,23 +592,25 @@ const CustomOrders = () => {
 
         <div className="co-metric-card">
           <div className="co-card-top">
-            <span className="co-metric-label">Custom Orders Revenue</span>
+            <span className="co-metric-label">Custom Order Revenue</span>
             <CircleDollarSign className="co-green-icon" size={20} />
           </div>
           <div className="co-card-bottom">
             <span className="co-metric-value">₱{revenueTotal.toLocaleString()}</span>
-            <span className="co-metric-subtext">Picked Up orders only</span>
+            <span className="co-metric-subtext">Delivered orders only</span>
           </div>
         </div>
 
         <div className="co-metric-card">
           <div className="co-card-top">
-            <span className="co-metric-label">Pending Orders</span>
-            <ClipboardList className="co-yellow-icon" size={20} />
+            <span className="co-metric-label">Total Cakes Delivered</span>
+            <PackageCheck className="co-yellow-icon" size={20} />
           </div>
           <div className="co-card-bottom">
-            <span className="co-metric-value">{pendingCount}</span>
-            <span className="co-metric-subtext">Awaiting preparation</span>
+            <span className="co-metric-value">{totalCakesDelivered}</span>
+            <span className="co-metric-subtext">
+              {totalCakesDelivered === 1 ? 'Cake successfully delivered' : 'Cakes successfully delivered'}
+            </span>
           </div>
         </div>
 
@@ -540,9 +636,10 @@ const CustomOrders = () => {
 
       {/* =====================================================
           4. ORDERS TABLE
-          Visible columns: Cake Type · Qty · Price · Pick-Up Date · Status · Action
+          Visible columns: Cake Type · Qty · Price · Delivery Date · Status · Action
           Hidden from table (shown only in modal):
-            Customer Name, Contact Number, Order Date, Special Instructions
+            Customer Name, Contact Number, Order Date,
+            Delivery Address, Special Instructions
           ===================================================== */}
       <div className="co-table-container">
 
@@ -562,7 +659,7 @@ const CustomOrders = () => {
               <col className="col-cake" />
               <col className="col-qty" />
               <col className="col-price" />
-              <col className="col-pickup" />
+              <col className="col-delivery" />
               <col className="col-status" />
               <col className="col-action" />
             </colgroup>
@@ -571,7 +668,7 @@ const CustomOrders = () => {
                 <th>Cake Type</th>
                 <th>Qty</th>
                 <th>Price</th>
-                <th>Pick-Up Date</th>
+                <th>Delivery Date</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -586,8 +683,8 @@ const CustomOrders = () => {
                     <td>{order.quantity}</td>
                     <td><span className="co-price-text">₱{order.price.toLocaleString()}</span></td>
                     <td>
-                      <span className={`co-pickup-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
-                        {formatDate(order.pickupDate)}
+                      <span className={`co-delivery-text ${overdue ? 'is-overdue' : dueToday ? 'is-today' : ''}`}>
+                        {formatDate(order.deliveryDate)}
                       </span>
                     </td>
                     <td><StatusPill order={order} /></td>
