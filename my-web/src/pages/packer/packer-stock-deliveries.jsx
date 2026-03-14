@@ -46,11 +46,11 @@ export default function DeliveriesOverview({
         <div className="pkdo-table-scroll-wrapper">
           <table className="pkdo-stock-deliveries-table" style={{ tableLayout: 'fixed', width: '100%' }}>
             <colgroup>
-              <col style={{ width: '20%' }} />
-              <col style={{ width: '20%' }} />
-              <col style={{ width: '20%' }} />
-              <col style={{ width: '20%' }} />
-              <col style={{ width: '20%' }} />
+              <col className="pkdo-col-delivery-date" />
+              <col className="pkdo-col-cake" />
+              <col className="pkdo-col-price" />
+              <col className="pkdo-col-qty" />
+              <col className="pkdo-col-expiry" />
             </colgroup>
             <thead>
               <tr>

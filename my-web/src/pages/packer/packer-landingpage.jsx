@@ -20,7 +20,6 @@ import {
 
 import '../../styles/packer/packer-dashboard.css';
 import '../../styles/packer/packer-sidebarmenu.css';
-import '../../styles/packer/packer-dashboard-overview.css';
 import '../../styles/packer/packer-inventory-overview.css';
 import '../../styles/packer/packer-stock-deliveries.css';
 
@@ -607,6 +606,7 @@ export default function PackerLandingPage({ onLogout }) {
           stockDeliveryItems={stockDeliveryItems}
           deliveryItems={deliveryItems}
           customOrders={customOrderItems}
+          messages={messages}
           onOpenCustomOrderModal={() => setIsCustomOrderModalOpen(true)}
           onOpenStockDeliveryModal={() => setIsStockDeliveryModalOpen(true)}
         />

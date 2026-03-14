@@ -48,8 +48,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  margin-bottom: 0;
+  padding: 16px 20px 0;
+  margin-bottom: 12px;
   flex-wrap: wrap;
   gap: 12px;
   flex-shrink: 0;
@@ -97,6 +97,9 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
 }
 
 .pkdo-table-scroll-wrapper::-webkit-scrollbar {
@@ -113,12 +116,24 @@
   border-radius: 3px;
 }
 
+.pkdo-table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}
+
 .pkdo-stock-deliveries-table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   text-align: left;
   table-layout: fixed;
 }
+
+/* Column widths (5 cols) */
+.pkdo-stock-deliveries-table col.pkdo-col-delivery-date { width: 23%; }
+.pkdo-stock-deliveries-table col.pkdo-col-cake          { width: 20%; }
+.pkdo-stock-deliveries-table col.pkdo-col-price         { width: 15%; }
+.pkdo-stock-deliveries-table col.pkdo-col-qty           { width: 25%; }
+.pkdo-stock-deliveries-table col.pkdo-col-expiry        { width: 17%; }
 
 .pkdo-stock-deliveries-table thead th {
   position: sticky;
@@ -133,23 +148,35 @@
   font-weight: bold;
   font-family: Georgia, serif;
   color: #000;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .pkdo-stock-deliveries-table td {
   padding: 18px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #eee;
   vertical-align: middle;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.pkdo-stock-deliveries-table th:nth-child(3),
+.pkdo-stock-deliveries-table td:nth-child(3),
 .pkdo-stock-deliveries-table th:nth-child(4),
 .pkdo-stock-deliveries-table td:nth-child(4) {
   text-align: center;
 }
 
+/* Symmetrical outer padding */
+.pkdo-stock-deliveries-table th:first-child,
+.pkdo-stock-deliveries-table td:first-child {
+  padding-left: 42px;
+}
+
+.pkdo-stock-deliveries-table th:last-child,
+.pkdo-stock-deliveries-table td:last-child {
+  padding-right: 32px;
+}
 
 .pkdo-stock-deliveries-table tbody tr:hover {
   background-color: #fffde8;
@@ -157,45 +184,42 @@
 
 .pkdo-date-text {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #333;
 }
 
 .pkdo-cake-name-text {
-  font-weight: 600;
-  font-size: 1rem;
-  color: #000;
+  font-weight: 500;
 }
 
 .pkdo-qty-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #d1fae5;
-  color: #065f46;
+  background: #d4edda;
+  color: #4338ca;
   font-weight: 700;
-  font-size: 0.85rem;
-  padding: 6px 12px;
+  font-size: 0.95rem;
+  padding: 4px 12px;
   border-radius: 20px;
 }
 
 .pkdo-expiry-text {
   font-weight: 600;
-  font-size: 0.9rem;
-  color: #d97706;
+  font-size: 0.85rem;
+  color: #fd7e14;
 }
 
 .pkdo-price-text {
   font-weight: 700;
-  font-size: 0.9rem;
-  color: #111827;
+  font-size: 0.88rem;
+  color: #16a34a;
 }
 
 .pkdo-no-data {
   text-align: center !important;
-  padding: 60px 20px !important;
+  padding: 40px !important;
   color: #888;
-  font-style: italic;
 }
 
 @media (max-width: 768px) {
