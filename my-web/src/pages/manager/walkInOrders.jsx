@@ -12,15 +12,24 @@
 //   Inventory      → Deduct qty sold from cake stock on Completed order.
 //   Sales Overview → salesOverview.jsx reads INIT_WALKIN_ORDERS and
 //                    includes status === 'Completed' records in revenue.
+//
+// EXPORT:
+//   Export Report button (top-right, beside Date Filter).
+//   Downloads a CSV file containing:
+//     - Report metadata  (title, period)
+//     - Summary          (total orders, revenue, cakes sold)
+//     - Orders Records   (one row per order in the date range)
+//   All rows in dateScoped are exported — not just the current page.
+//   All currency values use the format: PHP X,XXX
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ShoppingBag, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
+import { ShoppingBag, CircleDollarSign, ClipboardList, Calendar, ChevronDown, Download } from 'lucide-react';
 import '../../styles/manager/walkInOrders.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
 //
-// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with
+// NOTE: TODAY is pinned to 2026-03-13 to stay consistent with
 //       deliveriesOverview.jsx and inventoryOverview.jsx, which also
 //       use this pin so all pages share the same "This Week" window
 //       (Mar 8–14, 2026). Restore `new Date()` once live data is connected.
@@ -82,6 +91,119 @@ function formatDate(s) {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   CSV EXPORT
+   Builds a structured CSV in-memory and triggers a file download.
+   No external libraries required.
+
+   Structure:
+     Section 1 — Report Metadata  (title, period)
+     Section 2 — Summary          (total orders, revenue, cakes sold)
+     Section 3 — Orders Records   (one row per order in the date range)
+
+   All currency values are formatted as "PHP X,XXX".
+
+   TODO: Backend — dateScoped will be populated from
+     GET /api/walkin-orders&from=YYYY-MM-DD&to=YYYY-MM-DD
+     No changes to this function are needed once the data source changes.
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Formats a numeric amount as a PHP currency string.
+ * Example: 1250 → "PHP 1,250"
+ */
+function phpCurrency(amount) {
+  return `PHP ${Number(amount).toLocaleString()}`;
+}
+
+/**
+ * Escapes a single CSV cell per RFC 4180:
+ * wraps in double-quotes if the value contains a comma, double-quote, or newline.
+ * Internal double-quotes are escaped by doubling them.
+ */
+function escapeCSVCell(value) {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
+}
+
+/** Converts a 2-D array of rows into a RFC 4180-compliant CSV string. */
+function buildCSV(rows) {
+  return rows
+    .map(row => row.map(escapeCSVCell).join(','))
+    .join('\n');
+}
+
+/**
+ * Composes the full Walk-In Orders report CSV and downloads it as a .csv file.
+ *
+ * @param {object} params
+ * @param {string}   params.rangeStart   - ISO date string for period start
+ * @param {string}   params.rangeEnd     - ISO date string for period end
+ * @param {Array}    params.dateScoped   - All orders in the date range
+ * @param {number}   params.totalOrders  - Count of rows in dateScoped
+ * @param {number}   params.revenueTotal - Sum of all order prices
+ * @param {number}   params.totalQtySold - Sum of all order quantities
+ */
+function exportWalkInOrdersCSV({
+  rangeStart, rangeEnd,
+  dateScoped, totalOrders, revenueTotal, totalQtySold,
+}) {
+  const period = rangeStart === rangeEnd
+    ? formatDate(rangeStart)
+    : `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+
+  const rows = [
+    // ── Section 1: Report Metadata ──────────────────────────
+    ['WALK-IN ORDERS REPORT'],
+    ['Period', period],
+    [],
+
+    // ── Section 2: Summary ──────────────────────────────────
+    ['SUMMARY'],
+    ['Metric',                 'Value'],
+    ['Total Walk-In Orders',   totalOrders],
+    ['Walk-In Revenue',        phpCurrency(revenueTotal)],
+    ['Total Cakes Sold',       totalQtySold],
+    [],
+
+    // ── Section 3: Orders Records ────────────────────────────
+    ['ORDERS RECORDS'],
+    [
+      'Cake Type', 'Quantity', 'Price (PHP)', 'Payment Method', 'Status',
+      'Customer Name', 'Order Date', 'Special Instructions',
+    ],
+    ...(
+      dateScoped.length > 0
+        ? dateScoped.map(o => [
+            o.cakeType,
+            o.quantity,
+            phpCurrency(o.price),
+            o.paymentMethod  || '',
+            o.status,
+            o.customer,
+            formatDate(o.orderDate),
+            o.instructions   || '',
+          ])
+        : [['No walk-in orders for the selected period.', '', '', '', '', '', '', '']]
+    ),
+  ];
+
+  const csv  = buildCSV(rows);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // UTF-8 BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href     = url;
+  link.download = `WalkInOrdersReport_${rangeStart}_to_${rangeEnd}`.replace(/-/g, '') + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
    SHARED DATA BRIDGE — consumed by salesOverview.jsx
    salesOverview reads this array and filters by status === 'Completed'
    to compute Walk-In Sales Revenue.
@@ -93,13 +215,14 @@ function formatDate(s) {
 
    Expected shape per record:
    {
-     cakeType:     string  — cake product name
-     quantity:     number
-     price:        number  — total order price (₱)
-     customer:     string  — use 'Walk-In Customer' if unknown
-     orderDate:    string  — YYYY-MM-DD
-     status:       'Completed'
-     instructions: string  — special notes (optional)
+     cakeType:      string  — cake product name
+     quantity:      number
+     price:         number  — total order price (₱)
+     paymentMethod: 'Cash' | 'Gcash'
+     customer:      string  — use 'Walk-In Customer' if unknown
+     orderDate:     string  — YYYY-MM-DD
+     status:        'Completed'
+     instructions:  string  — special notes (optional)
    }
 ────────────────────────────────────────────────────────────── */
 
@@ -111,13 +234,14 @@ function formatDate(s) {
 // shows at least one completed walk-in transaction immediately.
 const MOCK_WALKIN_ORDERS = [
   {
-    cakeType:     'Strawberry Shortcake',
-    quantity:     2,
-    price:        760,
-    customer:     'Maria Santos',
-    orderDate:    '2026-03-10',
-    status:       'Completed',
-    instructions: 'Please slice before packing.',
+    cakeType:      'Strawberry Shortcake',
+    quantity:      2,
+    price:         760,
+    paymentMethod: 'Cash',
+    customer:      'Maria Santos',
+    orderDate:     '2026-03-10',
+    status:        'Completed',
+    instructions:  'Please slice before packing.',
   },
 ];
 
@@ -172,10 +296,17 @@ function WalkInDetailModal({ order, onClose }) {
           {/* ── Section 2: Customer Information ── */}
           <h3 className="wi-modal-section-title" style={{ marginTop: 22 }}>Customer Information</h3>
           <div className="wi-modal-info-grid">
-            <div className="wi-info-item full-width">
+
+            <div className="wi-info-item">
               <span className="wi-info-label">Customer Name</span>
               <span className="wi-info-value">{order.customer}</span>
             </div>
+
+            <div className="wi-info-item">
+              <span className="wi-info-label">Payment Method</span>
+              <span className="wi-info-value">{order.paymentMethod || '—'}</span>
+            </div>
+
           </div>
 
           {/* ── Section 3: Order Date ── */}
@@ -289,6 +420,14 @@ const WalkInOrders = () => {
     }
   }
 
+  function handleExport() {
+    exportWalkInOrdersCSV({
+      rangeStart, rangeEnd,
+      dateScoped,
+      totalOrders, revenueTotal, totalQtySold,
+    });
+  }
+
 
   // -----------------------------------------------------------
   // EFFECTS
@@ -338,7 +477,7 @@ const WalkInOrders = () => {
       )}
 
       {/* =====================================================
-          1. HEADER + DATE FILTER
+          1. HEADER — title left · [ Date Filter ] [ Export Report ] right
           ===================================================== */}
       <div className="wi-header">
         <div>
@@ -346,56 +485,71 @@ const WalkInOrders = () => {
           <p className="wi-subtitle">Monitor all in-store cake purchases and daily walk-in sales</p>
         </div>
 
-        <div className="wi-filter-dropdown-wrapper" ref={dateDropRef}>
+        <div className="wi-header-actions">
+
+          {/* Date Filter dropdown */}
+          <div className="wi-filter-dropdown-wrapper" ref={dateDropRef}>
+            <button
+              className={`wi-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+              onClick={() => setDateDropOpen(p => !p)}
+              title="Filter by date range"
+            >
+              <Calendar size={16} strokeWidth={2} color="currentColor" />
+              <span>{dateLabel}</span>
+              <ChevronDown size={12} />
+            </button>
+
+            {dateDropOpen && (
+              <div className="wi-date-dropdown">
+                {DATE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    className={`wi-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                    onClick={() => handleDateSelect(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+
+                <div className="wi-custom-range-section">
+                  <span className="wi-custom-range-title">Custom Range</span>
+                  <label className="wi-custom-label">From</label>
+                  <input
+                    type="date"
+                    className="wi-date-input"
+                    value={customStart}
+                    onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <label className="wi-custom-label">To</label>
+                  <input
+                    type="date"
+                    className="wi-date-input"
+                    value={customEnd}
+                    min={customStart}
+                    onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <button
+                    className="wi-apply-btn"
+                    onClick={applyCustomRange}
+                    disabled={!customStart || !customEnd}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export Report button */}
           <button
-            className={`wi-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
-            onClick={() => setDateDropOpen(p => !p)}
-            title="Filter by date range"
+            className="wi-export-btn"
+            onClick={handleExport}
+            title="Download current view as CSV"
           >
-            <Calendar size={16} strokeWidth={2} color="currentColor" />
-            <span>{dateLabel}</span>
-            <ChevronDown size={12} />
+            <Download size={15} strokeWidth={2} />
+            <span>Export Report</span>
           </button>
 
-          {dateDropOpen && (
-            <div className="wi-date-dropdown">
-              {DATE_OPTIONS.map(opt => (
-                <button
-                  key={opt.key}
-                  className={`wi-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
-                  onClick={() => handleDateSelect(opt.key)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-
-              <div className="wi-custom-range-section">
-                <span className="wi-custom-range-title">Custom Range</span>
-                <label className="wi-custom-label">From</label>
-                <input
-                  type="date"
-                  className="wi-date-input"
-                  value={customStart}
-                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
-                />
-                <label className="wi-custom-label">To</label>
-                <input
-                  type="date"
-                  className="wi-date-input"
-                  value={customEnd}
-                  min={customStart}
-                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
-                />
-                <button
-                  className="wi-apply-btn"
-                  onClick={applyCustomRange}
-                  disabled={!customStart || !customEnd}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -447,7 +601,7 @@ const WalkInOrders = () => {
           3. ORDERS TABLE
           Visible columns: Cake Type · Qty · Price · Order Date · Status · Action
           Hidden from table (shown only in modal):
-            Customer Name, Special Instructions
+            Customer Name, Payment Method, Special Instructions
           ===================================================== */}
       <div className="wi-table-container">
 

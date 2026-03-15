@@ -19,7 +19,7 @@
 }
 
 /* =========================================================
-   HEADER — title left, date filter button right
+   HEADER — title left · [ Date Filter ] [ Export Report ] right
    ========================================================= */
 .co-header {
   display: flex;
@@ -43,12 +43,19 @@
   margin: 5px 0 0 0;
 }
 
+/* Groups the header buttons flush together */
+.co-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* =========================================================
    DATE FILTER — calendar icon button + dropdown in header
    ========================================================= */
 .co-filter-dropdown-wrapper {
   position: relative;
-  flex-shrink: 0;
 }
 
 .co-date-filter-btn {
@@ -177,6 +184,35 @@
 }
 .co-apply-btn:hover    { filter: brightness(0.95); }
 .co-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   EXPORT REPORT BUTTON
+   ========================================================= */
+.co-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.co-export-btn svg { flex-shrink: 0; }
+
+.co-export-btn:hover {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.co-export-btn:active { transform: scale(0.97); }
 
 /* =========================================================
    METRIC CARDS
@@ -646,5 +682,6 @@
   .co-modal-info-grid      { grid-template-columns: 1fr; }
   .co-info-item.full-width { grid-column: span 1; }
   .co-header               { flex-direction: column; align-items: flex-start; }
+  .co-header-actions       { flex-wrap: wrap; }
   .co-date-dropdown        { right: auto; left: 0; }
 }

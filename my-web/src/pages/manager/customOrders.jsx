@@ -19,10 +19,19 @@
 //   IF status === 'Delivered' → transaction is included in salesOverview.jsx
 //   salesOverview reads INIT_ORDERS and filters by status === 'Delivered'
 //   (completionDate = deliveryDate)
+//
+// EXPORT:
+//   Export Report button (top-right, beside Date Filter).
+//   Downloads a CSV file containing:
+//     - Report metadata  (title, period)
+//     - Summary          (total orders, revenue, cakes delivered)
+//     - Orders Records   (one row per order in the date range)
+//   All rows in dateScoped are exported — not just the current page.
+//   All currency values use the format: PHP X,XXX
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ShieldCheck, CircleDollarSign, PackageCheck, Calendar, ChevronDown } from 'lucide-react';
+import { ShieldCheck, CircleDollarSign, PackageCheck, Calendar, ChevronDown, Download } from 'lucide-react';
 import '../../styles/manager/customOrders.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
@@ -128,6 +137,125 @@ function StatusPill({ order }) {
   const ds = isOverdue(order) ? 'Overdue' : order.status;
   return <span className={`co-status-pill ${statusPillClass(ds)}`}>{ds}</span>;
 }
+
+/* ──────────────────────────────────────────────────────────────
+   CSV EXPORT
+   Builds a structured CSV in-memory and triggers a file download.
+   No external libraries required.
+
+   Structure:
+     Section 1 — Report Metadata   (title, period)
+     Section 2 — Summary           (total orders, revenue, cakes delivered)
+     Section 3 — Orders Records    (one row per order in the date range)
+
+   All currency values are formatted as "PHP X,XXX".
+   Status column uses the resolved display value (Overdue shown where applicable).
+
+   TODO: Backend — dateScoped will be populated from
+     GET /api/custom-orders&from=YYYY-MM-DD&to=YYYY-MM-DD
+     No changes to this function are needed once the data source changes.
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Formats a numeric amount as a PHP currency string.
+ * Example: 1250 → "PHP 1,250"
+ */
+function phpCurrency(amount) {
+  return `PHP ${Number(amount).toLocaleString()}`;
+}
+
+/**
+ * Escapes a single CSV cell per RFC 4180:
+ * wraps in double-quotes if the value contains a comma, double-quote, or newline.
+ * Internal double-quotes are escaped by doubling them.
+ */
+function escapeCSVCell(value) {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
+}
+
+/** Converts a 2-D array of rows into a RFC 4180-compliant CSV string. */
+function buildCSV(rows) {
+  return rows
+    .map(row => row.map(escapeCSVCell).join(','))
+    .join('\n');
+}
+
+/**
+ * Composes the full Custom Orders report CSV and downloads it as a .csv file.
+ *
+ * @param {object} params
+ * @param {string}   params.rangeStart          - ISO date string for period start
+ * @param {string}   params.rangeEnd            - ISO date string for period end
+ * @param {Array}    params.dateScoped          - All orders in the date range
+ * @param {number}   params.totalOrders         - Count of rows in dateScoped
+ * @param {number}   params.revenueTotal        - Sum of delivered order prices
+ * @param {number}   params.totalCakesDelivered - Sum of qty for delivered orders
+ */
+function exportCustomOrdersCSV({
+  rangeStart, rangeEnd,
+  dateScoped, totalOrders, revenueTotal, totalCakesDelivered,
+}) {
+  const period = rangeStart === rangeEnd
+    ? formatDate(rangeStart)
+    : `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+
+  const rows = [
+    // ── Section 1: Report Metadata ──────────────────────────
+    ['CUSTOM ORDERS REPORT'],
+    ['Period', period],
+    [],
+
+    // ── Section 2: Summary ──────────────────────────────────
+    ['SUMMARY'],
+    ['Metric',                'Value'],
+    ['Total Custom Orders',   totalOrders],
+    ['Custom Order Revenue',  phpCurrency(revenueTotal)],
+    ['Total Cakes Delivered', totalCakesDelivered],
+    [],
+
+    // ── Section 3: Orders Records ────────────────────────────
+    // Status uses the resolved display value so Overdue is shown where applicable.
+    // Includes all order fields: product, fulfillment, customer, and delivery details.
+    ['ORDERS RECORDS'],
+    [
+      'Cake Type', 'Quantity', 'Price (PHP)', 'Status',
+      'Customer Name', 'Contact Number',
+      'Order Date', 'Delivery Date', 'Delivery Address', 'Special Instructions',
+    ],
+    ...(
+      dateScoped.length > 0
+        ? dateScoped.map(o => [
+            o.cakeType,
+            o.quantity,
+            phpCurrency(o.price),
+            isOverdue(o) ? 'Overdue' : o.status,
+            o.customer,
+            o.contact      || '',
+            formatDate(o.orderDate),
+            formatDate(o.deliveryDate),
+            o.address      || '',
+            o.instructions || '',
+          ])
+        : [['No orders for the selected period.', '', '', '', '', '', '', '', '', '']]
+    ),
+  ];
+
+  const csv  = buildCSV(rows);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // UTF-8 BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href     = url;
+  link.download = `CustomOrdersReport_${rangeStart}_to_${rangeEnd}`.replace(/-/g, '') + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 
 /* ──────────────────────────────────────────────────────────────
    SHARED DATA BRIDGE — consumed by salesOverview.jsx
@@ -463,6 +591,14 @@ const CustomOrders = () => {
     }
   }
 
+  function handleExport() {
+    exportCustomOrdersCSV({
+      rangeStart, rangeEnd,
+      dateScoped,
+      totalOrders, revenueTotal, totalCakesDelivered,
+    });
+  }
+
 
   // -----------------------------------------------------------
   // EFFECTS
@@ -512,7 +648,7 @@ const CustomOrders = () => {
       )}
 
       {/* =====================================================
-          1. HEADER + DATE FILTER
+          1. HEADER — title left · [ Date Filter ] [ Export Report ] right
           ===================================================== */}
       <div className="co-header">
         <div>
@@ -520,56 +656,71 @@ const CustomOrders = () => {
           <p className="co-subtitle">Monitor all custom cake orders and delivery status</p>
         </div>
 
-        <div className="co-filter-dropdown-wrapper" ref={dateDropRef}>
+        <div className="co-header-actions">
+
+          {/* Date Filter dropdown */}
+          <div className="co-filter-dropdown-wrapper" ref={dateDropRef}>
+            <button
+              className={`co-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+              onClick={() => setDateDropOpen(p => !p)}
+              title="Filter by date range"
+            >
+              <Calendar size={16} strokeWidth={2} color="currentColor" />
+              <span>{dateLabel}</span>
+              <ChevronDown size={12} />
+            </button>
+
+            {dateDropOpen && (
+              <div className="co-date-dropdown">
+                {DATE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    className={`co-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                    onClick={() => handleDateSelect(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+
+                <div className="co-custom-range-section">
+                  <span className="co-custom-range-title">Custom Range</span>
+                  <label className="co-custom-label">From</label>
+                  <input
+                    type="date"
+                    className="co-date-input"
+                    value={customStart}
+                    onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <label className="co-custom-label">To</label>
+                  <input
+                    type="date"
+                    className="co-date-input"
+                    value={customEnd}
+                    min={customStart}
+                    onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <button
+                    className="co-apply-btn"
+                    onClick={applyCustomRange}
+                    disabled={!customStart || !customEnd}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export Report button */}
           <button
-            className={`co-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
-            onClick={() => setDateDropOpen(p => !p)}
-            title="Filter by date range"
+            className="co-export-btn"
+            onClick={handleExport}
+            title="Download current view as CSV"
           >
-            <Calendar size={16} strokeWidth={2} color="currentColor" />
-            <span>{dateLabel}</span>
-            <ChevronDown size={12} />
+            <Download size={15} strokeWidth={2} />
+            <span>Export Report</span>
           </button>
 
-          {dateDropOpen && (
-            <div className="co-date-dropdown">
-              {DATE_OPTIONS.map(opt => (
-                <button
-                  key={opt.key}
-                  className={`co-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
-                  onClick={() => handleDateSelect(opt.key)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-
-              <div className="co-custom-range-section">
-                <span className="co-custom-range-title">Custom Range</span>
-                <label className="co-custom-label">From</label>
-                <input
-                  type="date"
-                  className="co-date-input"
-                  value={customStart}
-                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
-                />
-                <label className="co-custom-label">To</label>
-                <input
-                  type="date"
-                  className="co-date-input"
-                  value={customEnd}
-                  min={customStart}
-                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
-                />
-                <button
-                  className="co-apply-btn"
-                  onClick={applyCustomRange}
-                  disabled={!customStart || !customEnd}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

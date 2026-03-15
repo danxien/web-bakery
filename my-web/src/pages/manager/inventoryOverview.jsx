@@ -21,10 +21,19 @@
 //
 // FILTERING: Date Filter (header icon) + Status Cards (clickable)
 //            Date filter scopes by expiry date.
+//
+// EXPORT:
+//   Export Report button (top-right, beside Date Filter).
+//   Downloads a CSV file containing:
+//     - Report metadata  (title, period)
+//     - Summary          (total cake types, total cakes in stock)
+//     - Inventory Records (one row per batch in the date range)
+//   All rows in dateScoped are exported — not just the current page.
+//   All currency values use the format: PHP X,XXX
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Layers, Package, Calendar, ChevronDown } from 'lucide-react';
+import { Layers, Package, Calendar, ChevronDown, Download } from 'lucide-react';
 import '../../styles/manager/inventoryOverview.css';
 
 // Bridge imports — replaced by a unified inventory API once backend is ready.
@@ -166,6 +175,116 @@ function formatDate(s) {
     month: 'short', day: 'numeric', year: 'numeric',
   });
 }
+
+/* ──────────────────────────────────────────────────────────────
+   CSV EXPORT
+   Builds a structured CSV in-memory and triggers a file download.
+   No external libraries required.
+
+   Structure:
+     Section 1 — Report Metadata   (title, period)
+     Section 2 — Summary           (total cake types, total cakes in stock)
+     Section 3 — Inventory Records (one row per batch in the date range)
+
+   All currency values are formatted as "PHP X,XXX".
+   Price shows "—" if zero (no price on record), matching the table display.
+   Status column reflects the computed value (Fresh / Near Expiry / Expired).
+   Low Stock items are flagged in a dedicated column for easy filtering.
+
+   TODO: Backend — dateScoped will be populated from
+     GET /api/inventory&from=YYYY-MM-DD&to=YYYY-MM-DD
+     No changes to this function are needed once the data source changes.
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Formats a numeric amount as a PHP currency string.
+ * Example: 1250 → "PHP 1,250"
+ */
+function phpCurrency(amount) {
+  return `PHP ${Number(amount).toLocaleString()}`;
+}
+
+/**
+ * Escapes a single CSV cell per RFC 4180:
+ * wraps in double-quotes if the value contains a comma, double-quote, or newline.
+ * Internal double-quotes are escaped by doubling them.
+ */
+function escapeCSVCell(value) {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
+}
+
+/** Converts a 2-D array of rows into a RFC 4180-compliant CSV string. */
+function buildCSV(rows) {
+  return rows
+    .map(row => row.map(escapeCSVCell).join(','))
+    .join('\n');
+}
+
+/**
+ * Composes the full Inventory report CSV and downloads it as a .csv file.
+ *
+ * @param {object} params
+ * @param {string}   params.rangeStart        - ISO date string for period start
+ * @param {string}   params.rangeEnd          - ISO date string for period end
+ * @param {Array}    params.dateScoped        - All inventory items in the date range (with computed status)
+ * @param {number}   params.totalCakeTypes    - Count of unique cake names in dateScoped
+ * @param {number}   params.totalCakesInStock - Sum of all qty in dateScoped
+ */
+function exportInventoryCSV({
+  rangeStart, rangeEnd,
+  dateScoped, totalCakeTypes, totalCakesInStock,
+}) {
+  const period = rangeStart === rangeEnd
+    ? formatDate(rangeStart)
+    : `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+
+  const rows = [
+    // ── Section 1: Report Metadata ──────────────────────────
+    ['INVENTORY REPORT'],
+    ['Period', period],
+    [],
+
+    // ── Section 2: Summary ──────────────────────────────────
+    ['SUMMARY'],
+    ['Metric',                  'Value'],
+    ['Total Cake Types',        totalCakeTypes],
+    ['Total Cakes in Stock',    totalCakesInStock],
+    [],
+
+    // ── Section 3: Inventory Records ─────────────────────────
+    // Price uses "—" when zero to match the table display.
+    ['INVENTORY RECORDS'],
+    ['Cake Name', 'Quantity', 'Price (PHP)', 'Date Produced', 'Expiry Date', 'Status'],
+    ...(
+      dateScoped.length > 0
+        ? dateScoped.map(item => [
+            item.name,
+            item.qty,
+            item.price > 0 ? phpCurrency(item.price) : '—',
+            formatDate(item.made),
+            formatDate(item.expiry),
+            item.status,
+          ])
+        : [['No inventory items for the selected period.', '', '', '', '', '']]
+    ),
+  ];
+
+  const csv  = buildCSV(rows);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // UTF-8 BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href     = url;
+  link.download = `InventoryReport_${rangeStart}_to_${rangeEnd}`.replace(/-/g, '') + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 
 /* ──────────────────────────────────────────────────────────────
    DERIVE INVENTORY FROM DELIVERIES
@@ -365,6 +484,14 @@ const InventoryOverview = () => {
     }
   }
 
+  function handleExport() {
+    exportInventoryCSV({
+      rangeStart, rangeEnd,
+      dateScoped,
+      totalCakeTypes, totalCakesInStock,
+    });
+  }
+
 
   // -----------------------------------------------------------
   // EFFECTS
@@ -409,7 +536,7 @@ const InventoryOverview = () => {
     <div className="inventory-page-container">
 
       {/* =====================================================
-          1. HEADER + DATE FILTER
+          1. HEADER — title left · [ Date Filter ] [ Export Report ] right
           ===================================================== */}
       <div className="inventory-header">
         <div>
@@ -417,56 +544,71 @@ const InventoryOverview = () => {
           <p className="inventory-subtitle">Real-time stock levels derived from Stock Deliveries</p>
         </div>
 
-        <div className="inv-filter-dropdown-wrapper" ref={dateDropRef}>
+        <div className="inv-header-actions">
+
+          {/* Date Filter dropdown */}
+          <div className="inv-filter-dropdown-wrapper" ref={dateDropRef}>
+            <button
+              className={`inv-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+              onClick={() => setDateDropOpen(p => !p)}
+              title="Filter by expiry date range"
+            >
+              <Calendar size={16} strokeWidth={2} color="currentColor" />
+              <span>{dateLabel}</span>
+              <ChevronDown size={12} />
+            </button>
+
+            {dateDropOpen && (
+              <div className="inv-date-dropdown">
+                {DATE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    className={`inv-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                    onClick={() => handleDateSelect(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+
+                <div className="inv-custom-range-section">
+                  <span className="inv-custom-range-title">Custom Range</span>
+                  <label className="inv-custom-label">From</label>
+                  <input
+                    type="date"
+                    className="inv-date-input"
+                    value={customStart}
+                    onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <label className="inv-custom-label">To</label>
+                  <input
+                    type="date"
+                    className="inv-date-input"
+                    value={customEnd}
+                    min={customStart}
+                    onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <button
+                    className="inv-apply-btn"
+                    onClick={applyCustomRange}
+                    disabled={!customStart || !customEnd}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export Report button */}
           <button
-            className={`inv-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
-            onClick={() => setDateDropOpen(p => !p)}
-            title="Filter by expiry date range"
+            className="inv-export-btn"
+            onClick={handleExport}
+            title="Download current view as CSV"
           >
-            <Calendar size={16} strokeWidth={2} color="currentColor" />
-            <span>{dateLabel}</span>
-            <ChevronDown size={12} />
+            <Download size={15} strokeWidth={2} />
+            <span>Export Report</span>
           </button>
 
-          {dateDropOpen && (
-            <div className="inv-date-dropdown">
-              {DATE_OPTIONS.map(opt => (
-                <button
-                  key={opt.key}
-                  className={`inv-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
-                  onClick={() => handleDateSelect(opt.key)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-
-              <div className="inv-custom-range-section">
-                <span className="inv-custom-range-title">Custom Range</span>
-                <label className="inv-custom-label">From</label>
-                <input
-                  type="date"
-                  className="inv-date-input"
-                  value={customStart}
-                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
-                />
-                <label className="inv-custom-label">To</label>
-                <input
-                  type="date"
-                  className="inv-date-input"
-                  value={customEnd}
-                  min={customStart}
-                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
-                />
-                <button
-                  className="inv-apply-btn"
-                  onClick={applyCustomRange}
-                  disabled={!customStart || !customEnd}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

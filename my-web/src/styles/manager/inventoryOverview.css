@@ -21,7 +21,7 @@
 }
 
 /* =========================================================
-   HEADER — title left, date filter button right
+   HEADER — title left · [ Date Filter ] [ Export Report ] right
    ========================================================= */
 .inventory-header {
   display: flex;
@@ -45,12 +45,19 @@
   margin: 5px 0 0 0;
 }
 
+/* Groups the header buttons flush together */
+.inv-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* =========================================================
    DATE FILTER — calendar icon button + dropdown in header
    ========================================================= */
 .inv-filter-dropdown-wrapper {
   position: relative;
-  flex-shrink: 0;
 }
 
 .inv-date-filter-btn {
@@ -148,7 +155,6 @@
 }
 .inv-date-input:focus { border-color: #f7dd30; }
 
-/* ✅ Calendar picker icon — all states explicitly themed, no gray fallback */
 .inv-date-input::-webkit-calendar-picker-indicator {
   cursor: pointer;
   filter: brightness(0) saturate(100%) opacity(0.65);
@@ -180,6 +186,35 @@
 }
 .inv-apply-btn:hover    { filter: brightness(0.95); }
 .inv-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   EXPORT REPORT BUTTON
+   ========================================================= */
+.inv-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.inv-export-btn svg { flex-shrink: 0; }
+
+.inv-export-btn:hover {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.inv-export-btn:active { transform: scale(0.97); }
 
 /* =========================================================
    METRIC CARDS — static display, NOT clickable
@@ -462,5 +497,6 @@
   .inv-status-card         { flex: 1 1 80px; padding: 10px 8px; }
   .inv-status-card-count   { font-size: 1.3rem; }
   .inventory-header        { flex-direction: column; align-items: flex-start; }
+  .inv-header-actions      { flex-wrap: wrap; }
   .inv-date-dropdown       { right: auto; left: 0; }
 }

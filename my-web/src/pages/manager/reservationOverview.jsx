@@ -18,15 +18,24 @@
 // SALES CONNECTION:
 //   IF status === 'Picked Up' → transaction is included in salesOverview.jsx
 //   salesOverview reads INIT_RESERVATIONS and filters by status === 'Picked Up'
+//
+// EXPORT:
+//   Export Report button (top-right, beside Date Filter).
+//   Downloads a CSV file containing:
+//     - Report metadata  (title, period)
+//     - Summary          (reserved qty, estimated revenue, pending count)
+//     - Reservations Records (one row per reservation in the date range)
+//   All rows in dateScoped are exported — not just the current page.
+//   All currency values use the format: PHP X,XXX
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { PackageCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown } from 'lucide-react';
+import { PackageCheck, CircleDollarSign, ClipboardList, Calendar, ChevronDown, Download } from 'lucide-react';
 import '../../styles/manager/reservationsOverview.css';
 
 // TODO: Backend - Replace with: const TODAY = new Date(); const TODAY_STR = TODAY.toISOString().split('T')[0];
 //
-// NOTE: TODAY is pinned to 2026-03-10 to stay consistent with all other
+// NOTE: TODAY is pinned to 2026-03-13 to stay consistent with all other
 //       overview pages, which share the same "This Week" window
 //       (Mar 8–14, 2026). The Overdue mock entry requires pickupDate < TODAY,
 //       so Mar 9 is used for that record. Restore `new Date()` once live
@@ -128,6 +137,126 @@ function StatusPill({ reservation }) {
 }
 
 /* ──────────────────────────────────────────────────────────────
+   CSV EXPORT
+   Builds a structured CSV in-memory and triggers a file download.
+   No external libraries required.
+
+   Structure:
+     Section 1 — Report Metadata      (title, period)
+     Section 2 — Summary              (reserved qty, estimated revenue, pending count)
+     Section 3 — Reservations Records (one row per reservation in the date range)
+
+   All currency values are formatted as "PHP X,XXX".
+   Status column uses the resolved display value (Overdue shown where applicable).
+   Price column exports the total per reservation (quantity × unit price).
+
+   TODO: Backend — dateScoped will be populated from
+     GET /api/reservations&from=YYYY-MM-DD&to=YYYY-MM-DD
+     No changes to this function are needed once the data source changes.
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Formats a numeric amount as a PHP currency string.
+ * Example: 1250 → "PHP 1,250"
+ */
+function phpCurrency(amount) {
+  return `PHP ${Number(amount).toLocaleString()}`;
+}
+
+/**
+ * Escapes a single CSV cell per RFC 4180:
+ * wraps in double-quotes if the value contains a comma, double-quote, or newline.
+ * Internal double-quotes are escaped by doubling them.
+ */
+function escapeCSVCell(value) {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
+}
+
+/** Converts a 2-D array of rows into a RFC 4180-compliant CSV string. */
+function buildCSV(rows) {
+  return rows
+    .map(row => row.map(escapeCSVCell).join(','))
+    .join('\n');
+}
+
+/**
+ * Composes the full Reservations report CSV and downloads it as a .csv file.
+ *
+ * @param {object} params
+ * @param {string}   params.rangeStart        - ISO date string for period start
+ * @param {string}   params.rangeEnd          - ISO date string for period end
+ * @param {Array}    params.dateScoped        - All reservations in the date range
+ * @param {number}   params.reservedQtyTotal  - Total reserved quantity (excl. Cancelled)
+ * @param {number}   params.estimatedRevenue  - Sum of Pending + Ready + Picked Up revenue
+ * @param {number}   params.pendingCount      - Count of Pending reservations
+ */
+function exportReservationsCSV({
+  rangeStart, rangeEnd,
+  dateScoped, reservedQtyTotal, estimatedRevenue, pendingCount,
+}) {
+  const period = rangeStart === rangeEnd
+    ? formatDate(rangeStart)
+    : `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+
+  const rows = [
+    // ── Section 1: Report Metadata ──────────────────────────
+    ['RESERVATIONS REPORT'],
+    ['Period', period],
+    [],
+
+    // ── Section 2: Summary ──────────────────────────────────
+    ['SUMMARY'],
+    ['Metric',                   'Value'],
+    ['Reserved Quantity Total',  reservedQtyTotal],
+    ['Estimated Revenue',        phpCurrency(estimatedRevenue)],
+    ['Total Pending',            pendingCount],
+    [],
+
+    // ── Section 3: Reservations Records ─────────────────────
+    // Status uses the resolved display value so Overdue is shown where applicable.
+    // Price is the total per reservation (quantity × unit price).
+    ['RESERVATIONS RECORDS'],
+    [
+      'Cake Type', 'Quantity', 'Price (PHP)', 'Payment Method', 'Status',
+      'Customer Name', 'Contact Number',
+      'Reservation Date', 'Pick Up Date', 'Special Instructions',
+    ],
+    ...(
+      dateScoped.length > 0
+        ? dateScoped.map(r => [
+            r.cakeType,
+            r.quantity,
+            phpCurrency(r.quantity * r.price),
+            r.paymentMethod || '',
+            isOverdue(r) ? 'Overdue' : r.status,
+            r.customer,
+            r.contact        || '',
+            formatDate(r.reservationDate),
+            formatDate(r.pickupDate),
+            r.instructions   || '',
+          ])
+        : [['No reservations for the selected period.', '', '', '', '', '', '', '', '', '']]
+    ),
+  ];
+
+  const csv  = buildCSV(rows);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // UTF-8 BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href     = url;
+  link.download = `ReservationsReport_${rangeStart}_to_${rangeEnd}`.replace(/-/g, '') + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+
+/* ──────────────────────────────────────────────────────────────
    SHARED DATA BRIDGE — consumed by salesOverview.jsx
    salesOverview reads this array and filters by status === 'Picked Up'
    to compute Reservation Sales Revenue (completionDate = pickupDate).
@@ -142,9 +271,9 @@ function StatusPill({ reservation }) {
      cakeType:        string  — cake product name
      quantity:        number
      price:           number  — unit price (₱)
+     paymentMethod:   'Cash' | 'Gcash'
      customer:        string
      contact:         string  — customer contact number
-     address:         string  — customer address
      seller:          string
      reservationDate: string  — YYYY-MM-DD
      pickupDate:      string  — YYYY-MM-DD (Sales completionDate)
@@ -158,10 +287,10 @@ function StatusPill({ reservation }) {
 //   INIT_RESERVATIONS = data.reservations
 //
 // One entry per status, all pickup dates within Mar 8–14, 2026
-// (relative to pinned TODAY = Mar 10). Address set to San Pablo City
+// (relative to pinned TODAY = Mar 13). Address set to San Pablo City
 // for all entries.
 //
-// Pickup date strategy vs TODAY (Mar 10):
+// Pickup date strategy vs TODAY (Mar 13):
 //   Pending   → Mar 13  (future, status Pending)
 //   Ready     → Mar 12  (future, status Ready → not overdue)
 //   Picked Up → Mar 11  (future, status Picked Up)
@@ -172,9 +301,9 @@ const MOCK_RESERVATIONS = [
     cakeType:        'Red Velvet Cake',
     quantity:        1,
     price:           520,
+    paymentMethod:   'Cash',
     customer:        'Dan Exconde',
     contact:         '09171234567',
-    address:         'San Pablo City',
     seller:          'Store',
     reservationDate: '2026-03-08',
     pickupDate:      '2026-03-13',
@@ -185,9 +314,9 @@ const MOCK_RESERVATIONS = [
     cakeType:        'Ube Halaya Cake',
     quantity:        2,
     price:           480,
+    paymentMethod:   'Gcash',
     customer:        'Kimberly Luceñada',
     contact:         '09182345678',
-    address:         'San Pablo City',
     seller:          'Store',
     reservationDate: '2026-03-08',
     pickupDate:      '2026-03-12',
@@ -198,9 +327,9 @@ const MOCK_RESERVATIONS = [
     cakeType:        'Caramel Macchiato Cake',
     quantity:        1,
     price:           560,
+    paymentMethod:   'Cash',
     customer:        'Ice Garcia',
     contact:         '09193456789',
-    address:         'San Pablo City',
     seller:          'Store',
     reservationDate: '2026-03-08',
     pickupDate:      '2026-03-11',
@@ -208,14 +337,14 @@ const MOCK_RESERVATIONS = [
     instructions:    '',
   },
   {
-    // Overdue: status is 'Ready' but pickupDate is before TODAY (Mar 10)
+    // Overdue: status is 'Ready' but pickupDate is before TODAY (Mar 13)
     // isOverdue() will return true and render the 'Overdue' pill.
     cakeType:        'Mango Royale Cake',
     quantity:        1,
     price:           490,
+    paymentMethod:   'Gcash',
     customer:        'Justin Arron Soriano',
     contact:         '09204567890',
-    address:         'San Pablo City',
     seller:          'Store',
     reservationDate: '2026-03-07',
     pickupDate:      '2026-03-09',
@@ -226,9 +355,9 @@ const MOCK_RESERVATIONS = [
     cakeType:        'Buko Pandan Cake',
     quantity:        2,
     price:           420,
+    paymentMethod:   'Cash',
     customer:        'Charlot Raza',
     contact:         '09215678901',
-    address:         'San Pablo City',
     seller:          'Store',
     reservationDate: '2026-03-08',
     pickupDate:      '2026-03-14',
@@ -299,9 +428,9 @@ function ReservationDetailModal({ reservation, onClose }) {
               <span className="ro-info-value">{reservation.contact || '—'}</span>
             </div>
 
-            <div className="ro-info-item full-width">
-              <span className="ro-info-label">Address</span>
-              <span className="ro-info-value">{reservation.address || '—'}</span>
+            <div className="ro-info-item">
+              <span className="ro-info-label">Payment Method</span>
+              <span className="ro-info-value">{reservation.paymentMethod || '—'}</span>
             </div>
 
           </div>
@@ -456,6 +585,14 @@ const ReservationsOverview = () => {
     }
   }
 
+  function handleExport() {
+    exportReservationsCSV({
+      rangeStart, rangeEnd,
+      dateScoped,
+      reservedQtyTotal, estimatedRevenue, pendingCount,
+    });
+  }
+
 
   // -----------------------------------------------------------
   // EFFECTS
@@ -508,7 +645,7 @@ const ReservationsOverview = () => {
       )}
 
       {/* =====================================================
-          1. HEADER + DATE FILTER
+          1. HEADER — title left · [ Date Filter ] [ Export Report ] right
           ===================================================== */}
       <div className="ro-header">
         <div>
@@ -516,56 +653,71 @@ const ReservationsOverview = () => {
           <p className="ro-subtitle">Monitor all cake reservations and upcoming pickup schedules</p>
         </div>
 
-        <div className="ro-filter-dropdown-wrapper" ref={dateDropRef}>
+        <div className="ro-header-actions">
+
+          {/* Date Filter dropdown */}
+          <div className="ro-filter-dropdown-wrapper" ref={dateDropRef}>
+            <button
+              className={`ro-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
+              onClick={() => setDateDropOpen(p => !p)}
+              title="Filter by date range"
+            >
+              <Calendar size={16} strokeWidth={2} color="currentColor" />
+              <span>{dateLabel}</span>
+              <ChevronDown size={12} />
+            </button>
+
+            {dateDropOpen && (
+              <div className="ro-date-dropdown">
+                {DATE_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    className={`ro-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
+                    onClick={() => handleDateSelect(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+
+                <div className="ro-custom-range-section">
+                  <span className="ro-custom-range-title">Custom Range</span>
+                  <label className="ro-custom-label">From</label>
+                  <input
+                    type="date"
+                    className="ro-date-input"
+                    value={customStart}
+                    onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <label className="ro-custom-label">To</label>
+                  <input
+                    type="date"
+                    className="ro-date-input"
+                    value={customEnd}
+                    min={customStart}
+                    onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
+                  />
+                  <button
+                    className="ro-apply-btn"
+                    onClick={applyCustomRange}
+                    disabled={!customStart || !customEnd}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export Report button */}
           <button
-            className={`ro-date-filter-btn ${dateDropOpen ? 'open' : ''}`}
-            onClick={() => setDateDropOpen(p => !p)}
-            title="Filter by date range"
+            className="ro-export-btn"
+            onClick={handleExport}
+            title="Download current view as CSV"
           >
-            <Calendar size={16} strokeWidth={2} color="currentColor" />
-            <span>{dateLabel}</span>
-            <ChevronDown size={12} />
+            <Download size={15} strokeWidth={2} />
+            <span>Export Report</span>
           </button>
 
-          {dateDropOpen && (
-            <div className="ro-date-dropdown">
-              {DATE_OPTIONS.map(opt => (
-                <button
-                  key={opt.key}
-                  className={`ro-dropdown-item ${dateFilter === opt.key ? 'selected' : ''}`}
-                  onClick={() => handleDateSelect(opt.key)}
-                >
-                  {opt.label}
-                </button>
-              ))}
-
-              <div className="ro-custom-range-section">
-                <span className="ro-custom-range-title">Custom Range</span>
-                <label className="ro-custom-label">From</label>
-                <input
-                  type="date"
-                  className="ro-date-input"
-                  value={customStart}
-                  onChange={e => { setCustomStart(e.target.value); setDateFilter('custom'); }}
-                />
-                <label className="ro-custom-label">To</label>
-                <input
-                  type="date"
-                  className="ro-date-input"
-                  value={customEnd}
-                  min={customStart}
-                  onChange={e => { setCustomEnd(e.target.value); setDateFilter('custom'); }}
-                />
-                <button
-                  className="ro-apply-btn"
-                  onClick={applyCustomRange}
-                  disabled={!customStart || !customEnd}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -634,7 +786,7 @@ const ReservationsOverview = () => {
           4. RESERVATIONS TABLE
           Visible columns: Cake Type · Qty · Price · Pick-Up Date · Status · Action
           Hidden from table (shown only in modal):
-            Address, Contact Number, Reservation Date, Special Instructions
+            Contact Number, Reservation Date, Payment Method, Special Instructions
           ===================================================== */}
       <div className="ro-table-container">
 

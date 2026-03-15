@@ -24,11 +24,13 @@
 //
 // EXPORT:
 //   Export Report button (top-right, beside Date Filter).
-//   Exports a PDF matching the Regis Cake Shop report style:
-//     - Logo (top-left) + "SALES REPORT" title + period subtitle
-//     - Summary table, Revenue Breakdown table, Sales Records table
-//   Uses jsPDF + autoTable (loaded at runtime via CDN script injection).
+//   Downloads a CSV file containing:
+//     - Report metadata  (title, period)
+//     - Summary          (total revenue, transactions, cakes sold)
+//     - Revenue Breakdown (per order type)
+//     - Sales Records    (one row per completed transaction)
 //   All rows in dateScoped are exported — not just the current page.
+//   All currency values use the format: PHP X,XXX
 // =============================================================
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
@@ -116,184 +118,120 @@ function orderTypePillClass(type) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   PDF EXPORT HELPERS
-   Loads jsPDF + jspdf-autotable from CDN on first use,
-   then builds the report entirely in-memory.
+   CSV EXPORT
+   Builds a structured CSV in-memory and triggers a file download.
+   No external libraries required.
+
+   Structure:
+     Section 1 — Report Metadata   (title, period)
+     Section 2 — Summary           (revenue, transactions, cakes sold)
+     Section 3 — Revenue Breakdown (per order type)
+     Section 4 — Sales Records     (one row per completed transaction)
+
+   All currency values are formatted as "PHP X,XXX".
+
+   TODO: Backend — dateScoped will be populated from
+     GET /api/sales?status=completed&from=YYYY-MM-DD&to=YYYY-MM-DD
+     No changes to this function are needed once the data source changes.
 ────────────────────────────────────────────────────────────── */
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = src;
-    s.onload  = resolve;
-    s.onerror = reject;
-    document.head.appendChild(s);
-  });
+/**
+ * Formats a numeric amount as a PHP currency string.
+ * Example: 1250 → "PHP 1,250"
+ */
+function phpCurrency(amount) {
+  return `PHP ${Number(amount).toLocaleString()}`;
 }
 
-async function ensureJsPDF() {
-  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js');
+/**
+ * Escapes a single CSV cell per RFC 4180:
+ * wraps in double-quotes if the value contains a comma, double-quote, or newline.
+ * Internal double-quotes are escaped by doubling them.
+ */
+function escapeCSVCell(value) {
+  const str = String(value ?? '');
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
 }
 
-function loadImageAsBase64(src) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width  = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
+/** Converts a 2-D array of rows into a RFC 4180-compliant CSV string. */
+function buildCSV(rows) {
+  return rows
+    .map(row => row.map(escapeCSVCell).join(','))
+    .join('\n');
 }
 
-const BLACK       = [0, 0, 0];
-const GREY_HEADER = [200, 200, 200];
-const GREY_LIGHT  = [245, 245, 245];
-
-async function exportSalesPDF({
+/**
+ * Composes the full report CSV and downloads it as a .csv file.
+ *
+ * @param {object} params
+ * @param {string}   params.rangeStart        - ISO date string for period start
+ * @param {string}   params.rangeEnd          - ISO date string for period end
+ * @param {Array}    params.dateScoped        - All sales records in the date range
+ * @param {number}   params.totalRevenue      - Sum of all amounts in dateScoped
+ * @param {number}   params.totalTransactions - Count of rows in dateScoped
+ * @param {number}   params.totalCakesSold    - Sum of qty in dateScoped
+ * @param {object}   params.breakdown         - Per-type { amount, count } keyed by ORDER_TYPES key
+ */
+function exportSalesCSV({
   rangeStart, rangeEnd,
   dateScoped, totalRevenue, totalTransactions, totalCakesSold, breakdown,
 }) {
-  await ensureJsPDF();
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const PW = doc.internal.pageSize.getWidth();
-  const PH = doc.internal.pageSize.getHeight();
-  const ML = 14;
-  const MR = 14;
+  const period = rangeStart === rangeEnd
+    ? formatDate(rangeStart)
+    : `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
 
-  const logoBase64 = await loadImageAsBase64('/src/assets/logo.png');
+  const rows = [
+    // ── Section 1: Report Metadata ──────────────────────────
+    ['SALES REPORT'],
+    ['Period', period],
+    [],
 
-  let y = 14;
+    // ── Section 2: Summary ──────────────────────────────────
+    ['SUMMARY'],
+    ['Metric',               'Value'],
+    ['Total Sales Revenue',  phpCurrency(totalRevenue)],
+    ['Total Transactions',   totalTransactions],
+    ['Total Cakes Sold',     totalCakesSold],
+    [],
 
-  // ── Header ──
-  const LOGO_SIZE = 28;
-  if (logoBase64) doc.addImage(logoBase64, 'PNG', ML, y, LOGO_SIZE, LOGO_SIZE);
-  const titleX = logoBase64 ? ML + LOGO_SIZE + 6 : ML;
+    // ── Section 3: Revenue Breakdown ────────────────────────
+    ['REVENUE BREAKDOWN'],
+    ['Order Type',     'Sales Revenue',                                    'Transactions'],
+    ['Walk-In Orders', phpCurrency(breakdown['Walk-In']?.amount      || 0), breakdown['Walk-In']?.count      ?? 0],
+    ['Reservations',   phpCurrency(breakdown['Reservation']?.amount  || 0), breakdown['Reservation']?.count  ?? 0],
+    ['Custom Orders',  phpCurrency(breakdown['Custom Order']?.amount || 0), breakdown['Custom Order']?.count ?? 0],
+    [],
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(26);
-  doc.setTextColor(...BLACK);
-  doc.text('SALES REPORT', titleX, y + 12);
+    // ── Section 4: Sales Records ─────────────────────────────
+    ['SALES RECORDS'],
+    ['Order Type', 'Cake Type', 'Qty', 'Amount (PHP)', 'Customer', 'Completion Date'],
+    ...(
+      dateScoped.length > 0
+        ? dateScoped.map(s => [
+            s.orderType,
+            s.cakeType,
+            s.qty,
+            phpCurrency(s.amount),
+            s.customer,
+            formatDate(s.completionDate),
+          ])
+        : [['No sales records for the selected period.', '', '', '', '', '']]
+    ),
+  ];
 
-  const periodText = rangeStart === rangeEnd
-    ? `PERIOD:  ${formatDate(rangeStart).toUpperCase()}`
-    : `PERIOD:  ${formatDate(rangeStart).toUpperCase()} - ${formatDate(rangeEnd).toUpperCase()}`;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(50, 50, 50);
-  doc.text(periodText, titleX, y + 21);
+  const csv  = buildCSV(rows);
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // UTF-8 BOM for Excel
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('a');
 
-  const generated = `Generated: ${new Date().toLocaleDateString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  })}`;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.setTextColor(160, 160, 160);
-  doc.text(generated, PW - MR, y + 4, { align: 'right' });
-
-  y = y + LOGO_SIZE + 10;
-
-  // ── Summary Table ──
-  doc.autoTable({
-    startY: y,
-    margin: { left: ML, right: MR },
-    head: [['Summary', 'Value']],
-    body: [
-      ['Total Sales Revenue', `\u20B1${totalRevenue.toLocaleString()}`],
-      ['Total Transactions',  String(totalTransactions)],
-      ['Total Cakes Sold',    String(totalCakesSold)],
-    ],
-    styles: { fontSize: 9, cellPadding: 4, textColor: BLACK, lineColor: [180, 180, 180], lineWidth: 0.3 },
-    headStyles: { fillColor: GREY_HEADER, textColor: BLACK, fontStyle: 'bold', fontSize: 9, halign: 'center' },
-    bodyStyles: { halign: 'center', fontStyle: 'bold' },
-    columnStyles: { 0: { halign: 'left', fontStyle: 'bold' }, 1: { halign: 'center' } },
-    alternateRowStyles: { fillColor: GREY_LIGHT },
-  });
-
-  y = doc.lastAutoTable.finalY + 12;
-
-  // ── Revenue Breakdown ──
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(...BLACK);
-  doc.text('REVENUE BREAKDOWN', ML, y);
-  y += 4;
-
-  doc.autoTable({
-    startY: y,
-    margin: { left: ML, right: MR },
-    head: [['Order Type', 'Sales Revenue']],
-    body: [
-      ['Walk-In Orders', `\u20B1${(breakdown['Walk-In']?.amount      || 0).toLocaleString()}`],
-      ['Reservations',   `\u20B1${(breakdown['Reservation']?.amount  || 0).toLocaleString()}`],
-      ['Custom Orders',  `\u20B1${(breakdown['Custom Order']?.amount || 0).toLocaleString()}`],
-    ],
-    styles: { fontSize: 9, cellPadding: 4, textColor: BLACK, lineColor: [180, 180, 180], lineWidth: 0.3 },
-    headStyles: { fillColor: GREY_HEADER, textColor: BLACK, fontStyle: 'bold', fontSize: 9, halign: 'center' },
-    columnStyles: { 0: { halign: 'center', fontStyle: 'bold' }, 1: { halign: 'center' } },
-    alternateRowStyles: { fillColor: GREY_LIGHT },
-  });
-
-  y = doc.lastAutoTable.finalY + 12;
-
-  // ── Sales Records ──
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(...BLACK);
-  doc.text('SALES RECORDS', ML, y);
-  y += 4;
-
-  const tableRows = dateScoped.map(s => [
-    s.orderType,
-    s.cakeType,
-    String(s.qty),
-    `\u20B1${s.amount.toLocaleString()}`,
-    s.customer,
-    formatDate(s.completionDate),
-  ]);
-
-  doc.autoTable({
-    startY: y,
-    margin: { left: ML, right: MR },
-    head: [['Order Type', 'Cake Type', 'Qty', 'Total Amount', 'Customer', 'Completion Date']],
-    body: tableRows.length > 0 ? tableRows : [['—', '—', '—', '—', '—', '—']],
-    styles: { fontSize: 8, cellPadding: 3, textColor: BLACK, lineColor: [180, 180, 180], lineWidth: 0.3 },
-    headStyles: { fillColor: GREY_HEADER, textColor: BLACK, fontStyle: 'bold', fontSize: 8, halign: 'center' },
-    columnStyles: {
-      0: { cellWidth: 28, halign: 'center' },
-      1: { cellWidth: 'auto' },
-      2: { cellWidth: 10, halign: 'center' },
-      3: { cellWidth: 28, halign: 'center', fontStyle: 'bold' },
-      4: { cellWidth: 'auto' },
-      5: { cellWidth: 30, halign: 'center' },
-    },
-    alternateRowStyles: { fillColor: GREY_LIGHT },
-  });
-
-  // ── Page Footer ──
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let p = 1; p <= pageCount; p++) {
-    doc.setPage(p);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(160, 160, 160);
-    doc.text('Regis Cake Shop — Confidential', ML, PH - 8);
-    doc.text(`Page ${p} of ${pageCount}`, PW - MR, PH - 8, { align: 'right' });
-    doc.setDrawColor(180, 180, 180);
-    doc.setLineWidth(0.4);
-    doc.line(ML, PH - 12, PW - MR, PH - 12);
-  }
-
-  const safePeriod = `${rangeStart}_to_${rangeEnd}`.replace(/-/g, '');
-  doc.save(`BakerySalesReport_${safePeriod}.pdf`);
+  link.href     = url;
+  link.download = `SalesReport_${rangeStart}_to_${rangeEnd}`.replace(/-/g, '') + '.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 
@@ -307,7 +245,6 @@ const SalesOverview = () => {
 
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
-  const [exporting, setExporting] = useState(false);
 
   const [dateFilter,   setDateFilter]   = useState('today');
   const [customStart,  setCustomStart]  = useState('');
@@ -339,13 +276,9 @@ const SalesOverview = () => {
   // Derived directly from the three source module arrays on every render.
   //
   // Completion rules per channel:
-  //   Walk-In    → status === 'Completed'  → completionDate = orderDate
-  //   Reservation → status === 'Picked Up' → completionDate = pickupDate
-  //   Custom      → status === 'Delivered' → completionDate = deliveryDate
-  //
-  // When any module fetches from the backend it writes back to its INIT_*
-  // export, which causes this component to re-derive salesData on the next
-  // render — keeping Sales automatically in sync with no event bus needed.
+  //   Walk-In     → status === 'Completed'  → completionDate = orderDate
+  //   Reservation → status === 'Picked Up'  → completionDate = pickupDate
+  //   Custom      → status === 'Delivered'  → completionDate = deliveryDate
   //
   // TODO: Backend — Remove this useMemo and replace with a fetch/websocket:
   //   const [salesData, setSalesData] = useState([]);
@@ -394,9 +327,6 @@ const SalesOverview = () => {
         })),
 
     ];
-  // Module-level refs are not tracked by React's dependency system.
-  // Once backend fetch calls populate these arrays, this component
-  // will re-derive on the next render via its own state updates.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -464,20 +394,13 @@ const SalesOverview = () => {
     }
   }
 
-  async function handleExport() {
-    setExporting(true);
-    try {
-      await exportSalesPDF({
-        rangeStart, rangeEnd,
-        dateScoped,
-        totalRevenue, totalTransactions, totalCakesSold,
-        breakdown,
-      });
-    } catch (err) {
-      console.error('PDF export failed:', err);
-    } finally {
-      setExporting(false);
-    }
+  function handleExport() {
+    exportSalesCSV({
+      rangeStart, rangeEnd,
+      dateScoped,
+      totalRevenue, totalTransactions, totalCakesSold,
+      breakdown,
+    });
   }
 
 
@@ -575,13 +498,12 @@ const SalesOverview = () => {
 
           {/* Export Report button */}
           <button
-            className={`so-export-btn ${exporting ? 'loading' : ''}`}
+            className="so-export-btn"
             onClick={handleExport}
-            disabled={exporting}
-            title="Export current view as PDF"
+            title="Download current view as CSV"
           >
             <Download size={15} strokeWidth={2} />
-            <span>{exporting ? 'Exporting…' : 'Export Report'}</span>
+            <span>Export Report</span>
           </button>
 
         </div>

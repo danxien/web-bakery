@@ -18,7 +18,7 @@
 }
 
 /* =========================================================
-   HEADER — title left, date filter button right
+   HEADER — title left · [ Date Filter ] [ Export Report ] right
    ========================================================= */
 .ro-header {
   display: flex;
@@ -42,12 +42,19 @@
   margin: 5px 0 0 0;
 }
 
+/* Groups the header buttons flush together */
+.ro-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* =========================================================
    DATE FILTER — calendar icon button + dropdown in header
    ========================================================= */
 .ro-filter-dropdown-wrapper {
   position: relative;
-  flex-shrink: 0;
 }
 
 .ro-date-filter-btn {
@@ -176,6 +183,35 @@
 }
 .ro-apply-btn:hover    { filter: brightness(0.95); }
 .ro-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   EXPORT REPORT BUTTON
+   ========================================================= */
+.ro-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.ro-export-btn svg { flex-shrink: 0; }
+
+.ro-export-btn:hover {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.ro-export-btn:active { transform: scale(0.97); }
 
 /* =========================================================
    METRIC CARDS
@@ -365,7 +401,7 @@
   table-layout: fixed;
 }
 
-/* ── Column width distribution (7 cols, no horizontal scroll) ── */
+/* ── Column width distribution ── */
 .ro-reservations-table col.col-cake   { width: 16%; }
 .ro-reservations-table col.col-qty    { width: 25%; }
 .ro-reservations-table col.col-price  { width: 17%; }
@@ -389,7 +425,7 @@
   white-space: nowrap;
 }
 
-/* ── Qty (col 2) and Status (col 6) centered ── */
+/* ── Qty (col 2) and Status (col 5) centered ── */
 .ro-reservations-table th:nth-child(2),
 .ro-reservations-table td:nth-child(2),
 .ro-reservations-table th:nth-child(5),
@@ -515,8 +551,15 @@
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
 }
+.ro-modal::-webkit-scrollbar       { width: 6px; }
+.ro-modal::-webkit-scrollbar-track { background: transparent; }
+.ro-modal::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 
 .ro-modal-header {
   display: flex;
@@ -637,5 +680,6 @@
   .ro-modal-info-grid      { grid-template-columns: 1fr; }
   .ro-info-item.full-width { grid-column: span 1; }
   .ro-header               { flex-direction: column; align-items: flex-start; }
+  .ro-header-actions       { flex-wrap: wrap; }
   .ro-date-dropdown        { right: auto; left: 0; }
 }

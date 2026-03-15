@@ -19,7 +19,7 @@
 }
 
 /* =========================================================
-   HEADER — title left, date filter button right
+   HEADER — title left · [ Date Filter ] [ Export Report ] right
    ========================================================= */
 .wi-header {
   display: flex;
@@ -43,12 +43,19 @@
   margin: 5px 0 0 0;
 }
 
+/* Groups the header buttons flush together */
+.wi-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* =========================================================
    DATE FILTER — calendar icon button + dropdown in header
    ========================================================= */
 .wi-filter-dropdown-wrapper {
   position: relative;
-  flex-shrink: 0;
 }
 
 .wi-date-filter-btn {
@@ -177,6 +184,35 @@
 }
 .wi-apply-btn:hover    { filter: brightness(0.95); }
 .wi-apply-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* =========================================================
+   EXPORT REPORT BUTTON
+   ========================================================= */
+.wi-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #111;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.wi-export-btn svg { flex-shrink: 0; }
+
+.wi-export-btn:hover {
+  background: #f7dd30;
+  border-color: #e5c800;
+  color: #111;
+}
+
+.wi-export-btn:active { transform: scale(0.97); }
 
 /* =========================================================
    METRIC CARDS
@@ -443,8 +479,15 @@
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
 }
+.wi-modal::-webkit-scrollbar       { width: 6px; }
+.wi-modal::-webkit-scrollbar-track { background: transparent; }
+.wi-modal::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
 
 .wi-modal-header {
   display: flex;
@@ -561,5 +604,6 @@
   .wi-modal-info-grid      { grid-template-columns: 1fr; }
   .wi-info-item.full-width { grid-column: span 1; }
   .wi-header               { flex-direction: column; align-items: flex-start; }
+  .wi-header-actions       { flex-wrap: wrap; }
   .wi-date-dropdown        { right: auto; left: 0; }
 }
