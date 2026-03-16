@@ -20,6 +20,8 @@ const STATUS_OPTIONS = [
   { key: 'Not Picked Up', label: 'Not Picked Up' },
 ];
 
+const PER_PAGE = 10;
+
 function getDateRange(filter, customStart, customEnd) {
   const start = new Date(TODAY);
   const end   = new Date(TODAY);
@@ -61,15 +63,17 @@ function formatDate(s) {
     month: 'short', day: 'numeric', year: 'numeric',
   });
 }
+
 // ─────────────────────────────────────────────────
 
 const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDelete = () => {} }) => {
-  const [dateFilter,    setDateFilter]    = useState('today');
-  const [customStart,   setCustomStart]   = useState('');
-  const [customEnd,     setCustomEnd]     = useState('');
-  const [dateDropOpen,  setDateDropOpen]  = useState(false);
-  const [statusFilter,  setStatusFilter]  = useState('all');
+  const [dateFilter,     setDateFilter]     = useState('today');
+  const [customStart,    setCustomStart]    = useState('');
+  const [customEnd,      setCustomEnd]      = useState('');
+  const [dateDropOpen,   setDateDropOpen]   = useState(false);
+  const [statusFilter,   setStatusFilter]   = useState('all');
   const [statusDropOpen, setStatusDropOpen] = useState(false);
+  const [page,           setPage]           = useState(1);
 
   const dateDropRef   = useRef(null);
   const statusDropRef = useRef(null);
@@ -99,12 +103,17 @@ const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDe
     [reservations, rangeStart, rangeEnd, statusFilter]
   );
 
+  // ── Reset to page 1 whenever filters change ──
+  useEffect(() => { setPage(1); }, [dateFilter, customStart, customEnd, statusFilter]);
+
+  // ── Pagination ──
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged      = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
   useEffect(() => {
     const handler = e => {
-      if (dateDropRef.current && !dateDropRef.current.contains(e.target))
-        setDateDropOpen(false);
-      if (statusDropRef.current && !statusDropRef.current.contains(e.target))
-        setStatusDropOpen(false);
+      if (dateDropRef.current   && !dateDropRef.current.contains(e.target))   setDateDropOpen(false);
+      if (statusDropRef.current && !statusDropRef.current.contains(e.target)) setStatusDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -172,7 +181,6 @@ const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDe
               <th>Qty</th>
               <th>Amount</th>
               <th>
-                {/* ── Status Filter in Header ── */}
                 <div className="seller-th-filter-wrapper" ref={statusDropRef}>
                   <button
                     className={`seller-th-filter-btn ${statusDropOpen ? 'open' : ''}`}
@@ -181,7 +189,6 @@ const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDe
                     <span>{statusFilter === 'all' ? 'Status' : statusLabel}</span>
                     <ChevronDown size={12} />
                   </button>
-
                   {statusDropOpen && (
                     <div className="seller-th-dropdown">
                       {STATUS_OPTIONS.map(opt => (
@@ -202,8 +209,8 @@ const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDe
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? (
-              filtered.map((res) => (
+            {paged.length > 0 ? (
+              paged.map((res) => (
                 <tr key={res.id}>
                   <td>{res.date}</td>
                   <td>{res.pickupDate}</td>
@@ -244,6 +251,23 @@ const SellerReservations = ({ reservations = [], onUpdateStatus = () => {}, onDe
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        <div className="si-pagination">
+          <span className="si-pagination-info">
+            {filtered.length === 0
+              ? 'No results'
+              : `Showing ${(page - 1) * PER_PAGE + 1}–${Math.min(page * PER_PAGE, filtered.length)} of ${filtered.length}`}
+          </span>
+          <div className="si-pagination-btns">
+            <button className="si-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`si-page-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button className="si-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

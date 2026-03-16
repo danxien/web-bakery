@@ -20,6 +20,8 @@ const STATUS_OPTIONS = [
   { key: 'Cancelled',        label: 'Cancelled' },
 ];
 
+const PER_PAGE = 10;
+
 function getDateRange(filter, customStart, customEnd) {
   const start = new Date(TODAY);
   const end   = new Date(TODAY);
@@ -62,7 +64,6 @@ function formatDate(s) {
   });
 }
 
-// Status badge color map
 const STATUS_BADGE_CLASS = {
   'Pending':          'custom-status-pending',
   'Out for Delivery': 'custom-status-out-for-delivery',
@@ -70,6 +71,7 @@ const STATUS_BADGE_CLASS = {
   'Overdue':          'custom-status-overdue',
   'Cancelled':        'custom-status-cancelled',
 };
+
 // ─────────────────────────────────────────────────
 
 const SellerCustom = ({ customOrders = [], onDelete }) => {
@@ -80,6 +82,7 @@ const SellerCustom = ({ customOrders = [], onDelete }) => {
   const [statusFilter,   setStatusFilter]   = useState('all');
   const [statusDropOpen, setStatusDropOpen] = useState(false);
   const [viewingNote,    setViewingNote]    = useState(null);
+  const [page,           setPage]           = useState(1);
 
   const dateDropRef   = useRef(null);
   const statusDropRef = useRef(null);
@@ -109,12 +112,17 @@ const SellerCustom = ({ customOrders = [], onDelete }) => {
     [customOrders, rangeStart, rangeEnd, statusFilter]
   );
 
+  // ── Reset to page 1 whenever filters change ──
+  useEffect(() => { setPage(1); }, [dateFilter, customStart, customEnd, statusFilter]);
+
+  // ── Pagination ──
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged      = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
   useEffect(() => {
     const handler = e => {
-      if (dateDropRef.current && !dateDropRef.current.contains(e.target))
-        setDateDropOpen(false);
-      if (statusDropRef.current && !statusDropRef.current.contains(e.target))
-        setStatusDropOpen(false);
+      if (dateDropRef.current   && !dateDropRef.current.contains(e.target))   setDateDropOpen(false);
+      if (statusDropRef.current && !statusDropRef.current.contains(e.target)) setStatusDropOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -183,7 +191,6 @@ const SellerCustom = ({ customOrders = [], onDelete }) => {
               <th>Customer Details</th>
               <th>Special Instructions</th>
               <th>
-                {/* ── Status Filter in Header ── */}
                 <div className="seller-th-filter-wrapper" ref={statusDropRef}>
                   <button
                     className={`seller-th-filter-btn ${statusDropOpen ? 'open' : ''}`}
@@ -192,7 +199,6 @@ const SellerCustom = ({ customOrders = [], onDelete }) => {
                     <span>{statusFilter === 'all' ? 'Status' : statusLabel}</span>
                     <ChevronDown size={12} />
                   </button>
-
                   {statusDropOpen && (
                     <div className="seller-th-dropdown">
                       {STATUS_OPTIONS.map(opt => (
@@ -212,42 +218,36 @@ const SellerCustom = ({ customOrders = [], onDelete }) => {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {paged.length === 0 ? (
               <tr>
                 <td colSpan="9" className="seller-empty-row">No custom orders recorded yet.</td>
               </tr>
             ) : (
-              filtered.map((order) => (
+              paged.map((order) => (
                 <tr key={order.id}>
                   <td>{order.date}</td>
-                  <td>{order.deliveryDate || "—"}</td>
+                  <td>{order.deliveryDate || '—'}</td>
                   <td>{order.cakeType}</td>
                   <td>{order.qty}</td>
                   <td>₱{order.amount.toLocaleString()}</td>
-
-                  {/* ── Merged Customer Details cell ── */}
                   <td>
                     <div className="custom-customer-details">
-                      <span className="custom-customer-name">{order.customer || "—"}</span>
-                      <span className="custom-customer-contact">{order.contactNo || "—"}</span>
-                      <span className="custom-customer-address">{order.address || "—"}</span>
+                      <span className="custom-customer-name">{order.customer || '—'}</span>
+                      <span className="custom-customer-contact">{order.contactNo || '—'}</span>
+                      <span className="custom-customer-address">{order.address || '—'}</span>
                     </div>
                   </td>
-
                   <td>
                     {order.instructions
                       ? <button className="seller-view-note-btn" onClick={() => setViewingNote(order.instructions)}>View</button>
                       : <span className="seller-no-note">—</span>
                     }
                   </td>
-
-                  {/* ── Status badge — read-only for seller, packer updates this ── */}
                   <td>
                     <span className={`custom-order-status-badge ${STATUS_BADGE_CLASS[order.status || 'Pending']}`}>
                       {order.status || 'Pending'}
                     </span>
                   </td>
-
                   <td>
                     <button className="seller-delete-btn" onClick={() => onDelete(order.id)}>
                       <Trash2 size={16} />
@@ -258,6 +258,22 @@ const SellerCustom = ({ customOrders = [], onDelete }) => {
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        <div className="si-pagination">
+          <span className="si-pagination-info">
+            {filtered.length === 0
+              ? 'No results'
+              : `Showing ${(page - 1) * PER_PAGE + 1}–${Math.min(page * PER_PAGE, filtered.length)} of ${filtered.length}`}
+          </span>
+          <div className="si-pagination-btns">
+            <button className="si-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`si-page-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button className="si-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+          </div>
+        </div>
       </div>
 
       {/* ── Special Instructions Modal ── */}

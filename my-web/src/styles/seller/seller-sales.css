@@ -526,3 +526,43 @@
 .custom-status-delivered        { background-color: #d1e7dd; color: #0a5c36; }
 .custom-status-overdue          { background-color: #f8d7da; color: #842029; }
 .custom-status-cancelled        { background-color: #e2e3e5; color: #41464b; }
+
+/* ─── Inventory Pagination ────────────────────────────────────────────────────*/
+.si-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.si-pagination-info {
+  font-size: 0.78rem;
+  color: #999;
+}
+
+.si-pagination-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.si-page-btn {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #555;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.13s, border-color 0.13s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+.si-page-btn:hover    { background: #fcf6c4; border-color: #e5c800; }
+.si-page-btn.active   { background: #f7dd30; border-color: #e5c800; font-weight: 700; color: #111; }
+.si-page-btn:disabled { opacity: 0.38; cursor: not-allowed; }

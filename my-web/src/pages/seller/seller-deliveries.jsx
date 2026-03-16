@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, Layers, Package } from 'lucide-react';
 import todayDeliveries from './deliveryData';
 import '../../styles/seller/seller-sales.css';
 import '../../styles/seller/seller-deliveries.css';
@@ -12,6 +12,8 @@ const DATE_OPTIONS = [
   { key: 'week',  label: 'This Week' },
   { key: 'month', label: 'This Month' },
 ];
+
+const PER_PAGE = 10;
 
 function getDateRange(filter, customStart, customEnd) {
   const start = new Date(TODAY);
@@ -55,24 +57,13 @@ function formatDate(s) {
   });
 }
 
-// ─── Status Helper ────────────────────────────────────────────────────────────
-const getExpiryStatus = (expiresStr) => {
-  const today  = new Date();
-  const expiry = new Date(expiresStr);
-  today.setHours(0, 0, 0, 0);
-  expiry.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0)  return { label: 'Expired',     className: 'seller-status-expired'     };
-  if (diffDays <= 3) return { label: 'Near Expiry', className: 'seller-status-near-expiry' };
-  return               { label: 'Fresh',        className: 'seller-status-fresh'       };
-};
-
 // ─── Component ────────────────────────────────────────────────────────────────
 const SellerDeliveries = () => {
   const [dateFilter,   setDateFilter]   = useState('today');
   const [customStart,  setCustomStart]  = useState('');
   const [customEnd,    setCustomEnd]    = useState('');
   const [dateDropOpen, setDateDropOpen] = useState(false);
+  const [page,         setPage]         = useState(1);
   const dateDropRef = useRef(null);
 
   const { start: rangeStart, end: rangeEnd } = useMemo(
@@ -86,11 +77,28 @@ const SellerDeliveries = () => {
     return DATE_OPTIONS.find(o => o.key === dateFilter)?.label || 'Today';
   }, [dateFilter, customStart, customEnd]);
 
-  // Only show deliveries whose delivery date falls within the selected range
   const filtered = useMemo(
     () => todayDeliveries.filter(d => inRange(d.delivered, rangeStart, rangeEnd)),
     [rangeStart, rangeEnd]
   );
+
+  // ── Stat calculations ──
+  const typesOfCakes = useMemo(
+    () => new Set(filtered.map(d => d.cakeType)).size,
+    [filtered]
+  );
+
+  const totalCakes = useMemo(
+    () => filtered.reduce((sum, d) => sum + (d.qty || 0), 0),
+    [filtered]
+  );
+
+  // ── Reset to page 1 whenever filter changes ──
+  useEffect(() => { setPage(1); }, [dateFilter, customStart, customEnd]);
+
+  // ── Pagination ──
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged      = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   useEffect(() => {
     const handler = e => {
@@ -100,23 +108,6 @@ const SellerDeliveries = () => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
-
-  const renderRows = (list) => list.map((delivery) => {
-    const status = getExpiryStatus(delivery.expires);
-    return (
-      <tr key={delivery.id}>
-        <td>{delivery.delivered}</td>
-        <td>{delivery.cakeType}</td>
-        <td style={{ fontWeight: 'bold' }}>{delivery.qty}</td>
-        <td>{delivery.expires}</td>
-        <td>
-          <span className={`seller-delivery-status-badge ${status.className}`}>
-            {status.label}
-          </span>
-        </td>
-      </tr>
-    );
-  });
 
   return (
     <div className="seller-sales-container">
@@ -170,7 +161,32 @@ const SellerDeliveries = () => {
         </div>
       </div>
 
-      {/* ── Single Filtered Table ── */}
+      {/* ── Stat Tiles ── */}
+      <div className="sd-metrics-row">
+        <div className="sd-metric-card">
+          <div className="sd-card-top">
+            <span className="sd-metric-label">Types of Cakes Delivered</span>
+            <Layers size={20} className="sd-blue-icon" />
+          </div>
+          <div className="sd-card-bottom">
+            <span className="sd-metric-value">{typesOfCakes}</span>
+            <span className="sd-metric-subtext">Unique cake types</span>
+          </div>
+        </div>
+
+        <div className="sd-metric-card">
+          <div className="sd-card-top">
+            <span className="sd-metric-label">Total Cakes Delivered</span>
+            <Package size={20} className="sd-green-icon" />
+          </div>
+          <div className="sd-card-bottom">
+            <span className="sd-metric-value">{totalCakes}</span>
+            <span className="sd-metric-subtext">Cakes received into stock</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Table ── */}
       <div className="seller-table-container">
         <table className="seller-sales-table">
           <thead>
@@ -179,17 +195,41 @@ const SellerDeliveries = () => {
               <th>Cake Type</th>
               <th>Quantity</th>
               <th>Expiry Date</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? renderRows(filtered) : (
+            {paged.length > 0 ? (
+              paged.map((delivery) => (
+                <tr key={delivery.id}>
+                  <td>{delivery.delivered}</td>
+                  <td>{delivery.cakeType}</td>
+                  <td style={{ fontWeight: 'bold' }}>{delivery.qty}</td>
+                  <td>{delivery.expires}</td>
+                </tr>
+              ))
+            ) : (
               <tr>
-                <td colSpan="5" className="seller-empty-row">No deliveries found for this period.</td>
+                <td colSpan="4" className="seller-empty-row">No deliveries found for this period.</td>
               </tr>
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        <div className="si-pagination">
+          <span className="si-pagination-info">
+            {filtered.length === 0
+              ? 'No results'
+              : `Showing ${(page - 1) * PER_PAGE + 1}–${Math.min(page * PER_PAGE, filtered.length)} of ${filtered.length}`}
+          </span>
+          <div className="si-pagination-btns">
+            <button className="si-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`si-page-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button className="si-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+          </div>
+        </div>
       </div>
 
     </div>

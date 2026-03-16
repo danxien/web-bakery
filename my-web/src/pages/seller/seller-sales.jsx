@@ -24,6 +24,8 @@ const PAYMENT_OPTIONS = [
   { key: 'GCash',  label: 'GCash' },
 ];
 
+const PER_PAGE = 10;
+
 function getDateRange(filter, customStart, customEnd) {
   const start = new Date(TODAY);
   const end   = new Date(TODAY);
@@ -65,17 +67,19 @@ function formatDate(s) {
     month: 'short', day: 'numeric', year: 'numeric',
   });
 }
+
 // ─────────────────────────────────────────────────
 
 const SellerSales = ({ transactions = [], onDelete }) => {
-  const [dateFilter,      setDateFilter]      = useState('today');
-  const [customStart,     setCustomStart]     = useState('');
-  const [customEnd,       setCustomEnd]       = useState('');
-  const [dateDropOpen,    setDateDropOpen]    = useState(false);
-  const [txFilter,        setTxFilter]        = useState('all');
-  const [txDropOpen,      setTxDropOpen]      = useState(false);
-  const [payFilter,       setPayFilter]       = useState('all');
-  const [payDropOpen,     setPayDropOpen]     = useState(false);
+  const [dateFilter,   setDateFilter]   = useState('today');
+  const [customStart,  setCustomStart]  = useState('');
+  const [customEnd,    setCustomEnd]    = useState('');
+  const [dateDropOpen, setDateDropOpen] = useState(false);
+  const [txFilter,     setTxFilter]     = useState('all');
+  const [txDropOpen,   setTxDropOpen]   = useState(false);
+  const [payFilter,    setPayFilter]    = useState('all');
+  const [payDropOpen,  setPayDropOpen]  = useState(false);
+  const [page,         setPage]         = useState(1);
 
   const dateDropRef = useRef(null);
   const txDropRef   = useRef(null);
@@ -104,6 +108,13 @@ const SellerSales = ({ transactions = [], onDelete }) => {
     }),
     [transactions, rangeStart, rangeEnd, txFilter, payFilter]
   );
+
+  // ── Reset to page 1 whenever filters change ──
+  useEffect(() => { setPage(1); }, [dateFilter, customStart, customEnd, txFilter, payFilter]);
+
+  // ── Pagination ──
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paged      = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   useEffect(() => {
     const handler = e => {
@@ -175,7 +186,6 @@ const SellerSales = ({ transactions = [], onDelete }) => {
               <th>Customer</th>
               <th>Qty</th>
               <th>
-                {/* ── Transaction Filter ── */}
                 <div className="seller-th-filter-wrapper" ref={txDropRef}>
                   <button
                     className={`seller-th-filter-btn ${txDropOpen ? 'open' : ''}`}
@@ -201,7 +211,6 @@ const SellerSales = ({ transactions = [], onDelete }) => {
               </th>
               <th>Amount</th>
               <th>
-                {/* ── Payment Filter ── */}
                 <div className="seller-th-filter-wrapper" ref={payDropRef}>
                   <button
                     className={`seller-th-filter-btn ${payDropOpen ? 'open' : ''}`}
@@ -229,8 +238,8 @@ const SellerSales = ({ transactions = [], onDelete }) => {
             </tr>
           </thead>
           <tbody>
-            {filtered.length > 0 ? (
-              filtered.map((sale) => (
+            {paged.length > 0 ? (
+              paged.map((sale) => (
                 <tr key={sale.id}>
                   <td>{sale.date}</td>
                   <td>{sale.cakeType}</td>
@@ -257,6 +266,23 @@ const SellerSales = ({ transactions = [], onDelete }) => {
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        <div className="si-pagination">
+          <span className="si-pagination-info">
+            {filtered.length === 0
+              ? 'No results'
+              : `Showing ${(page - 1) * PER_PAGE + 1}–${Math.min(page * PER_PAGE, filtered.length)} of ${filtered.length}`}
+          </span>
+          <div className="si-pagination-btns">
+            <button className="si-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`si-page-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button className="si-page-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>›</button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
